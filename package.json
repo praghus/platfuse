@@ -1,0 +1,63 @@
+{
+    "name": "platfuse",
+    "version": "1.0.0",
+    "description": "Platform game engine concept based on Tiled map editor",
+    "author": "Piotr Praga <praghus@gmail.com>",
+    "homepage": "https://github.com/praghus/platfuse",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/praghus/platfuse"
+    },
+    "license": "ISC",
+    "keywords": [
+        "typescript",
+        "canvas",
+        "game",
+        "gamedev",
+        "engine",
+        "pixelart",
+        "tiled",
+        "tmx",
+        "platformer"
+    ],
+    "main": "dist/platfuse.cjs.js",
+    "module": "dist/platfuse.esm.js",
+    "browser": "dist/platfuse.umd.js",
+    "types": "dist/@types/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "dev": "rollup -c -w",
+        "build": "rollup -c",
+        "prebuild:types": "rimraf ./build",
+        "build:types": "tsc -p ./tsconfig.json --outDir build --declaration true && api-extractor run",
+        "predocs": "rimraf ./docs",
+        "prettier:write": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+        "prettier:check": "prettier -c \"src/**/*.{js,jsx,ts,tsx}\"",
+        "docs": "typedoc src --out docs",
+        "clean": "rimraf ./build ./dist ./docs",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "devDependencies": {
+        "@microsoft/api-extractor": "^7.18.7",
+        "@rollup/plugin-commonjs": "^20.0.0",
+        "@rollup/plugin-node-resolve": "^13.0.4",
+        "@rollup/plugin-typescript": "^8.2.5",
+        "@types/dat.gui": "^0.7.7",
+        "@types/howler": "^2.2.4",
+        "eslint": "^7.32.0",
+        "interface": "^1.2.1",
+        "prettier": "^2.4.1",
+        "rimraf": "^3.0.2",
+        "rollup": "^2.56.3",
+        "ts-node": "^10.2.1",
+        "tslib": "^2.3.1",
+        "typedoc": "^0.21.9",
+        "typescript": "^4.4.2"
+    },
+    "dependencies": {
+        "dat.gui": "^0.7.7",
+        "howler": "^2.2.3"
+    }
+}
