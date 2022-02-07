@@ -1,3 +1,6 @@
+import { TMXFlips } from '../../types'
+import { FLIPPED } from './constants'
+
 export const noop = () => {}
 
 export function uuid(): string {
@@ -11,3 +14,9 @@ export function getPerformance(): number {
 export function isValidArray(arr: any): boolean {
     return !!(arr && arr.length)
 }
+
+export const getFlips = (gid: number): TMXFlips => ({
+    H: !!(gid & FLIPPED.HORIZONTALLY),
+    V: !!(gid & FLIPPED.VERTICALLY),
+    D: !!(gid & FLIPPED.DIAGONALLY)
+})

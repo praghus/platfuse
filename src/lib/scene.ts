@@ -1,5 +1,5 @@
-import { Constructable, StringTMap, TMXObject, TMXTileset, TMXLayer } from '../types'
-import { isValidArray, noop } from './utils/helpers'
+import { Constructable, StringTMap, TMXObject, TMXTileset, TMXLayer, TMXFlips } from '../types'
+import { isValidArray, getFlips, noop } from './utils/helpers'
 import { Vec2 } from './utils/math'
 import { Game } from './game'
 import { Camera } from './camera'
@@ -7,7 +7,7 @@ import { Entity } from './entity'
 import { Layer } from './layer'
 import { Sprite } from './sprite'
 import { Tile } from './tile'
-import { COLORS } from './utils/constants'
+import { COLORS, FLIPPED } from './utils/constants'
 
 export class Scene {
     camera: Camera
@@ -116,7 +116,7 @@ export class Scene {
             }
         }
     }
-    forEachVisibleTile(game: Game, layer: Layer, fn: (tile: Tile, x: number, y: number) => void = noop): void {
+    forEachVisibleTile(game: Game, layer: Layer, fn: (tile: Tile, pos: Vec2, flips?: TMXFlips) => void = noop): void {
         const { camera, tilewidth, tileheight } = this
         const { resolution } = game
 
@@ -128,7 +128,7 @@ export class Scene {
             let _x = Math.floor(-camera.pos.x / tilewidth)
             while (x < resolution.x) {
                 const tileId = layer?.get(_x, _y)
-                tileId && fn(this.getTileObject(tileId), x, y)
+                tileId && fn(this.getTileObject(tileId), new Vec2(x, y), getFlips(tileId))
                 x += tilewidth
                 _x++
             }
@@ -166,7 +166,8 @@ export class Scene {
     getTile(x: number, y: number, layerId: number): Tile {
         return this.getTileObject(this.getLayer(layerId).get(x, y) || 0)
     }
-    getTileObject(gid: number): Tile {
+    getTileObject(id: number): Tile {
+        const gid: number = (id &= ~(FLIPPED.HORIZONTALLY | FLIPPED.VERTICALLY | FLIPPED.DIAGONALLY))
         return this.tiles[gid]
     }
     removeLayer(index: number): void {

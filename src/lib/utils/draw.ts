@@ -21,20 +21,16 @@ export class Draw {
     }
     outline(rect: Box, color: string, lineWidth = 1): void {
         const { ctx } = this
-        const {
-            pos: { x, y },
-            width,
-            height
-        } = rect
+        const { pos, width, height } = rect
         ctx.save()
         ctx.strokeStyle = color
         ctx.lineWidth = lineWidth
         ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(x + width, y)
-        ctx.lineTo(x + width, y + height)
-        ctx.lineTo(x, y + height)
-        ctx.lineTo(x, y)
+        ctx.moveTo(pos.x, pos.y)
+        ctx.lineTo(pos.x + width, pos.y)
+        ctx.lineTo(pos.x + width, pos.y + height)
+        ctx.lineTo(pos.x, pos.y + height)
+        ctx.lineTo(pos.x, pos.y)
         ctx.stroke()
         ctx.restore()
     }

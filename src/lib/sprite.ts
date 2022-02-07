@@ -1,6 +1,6 @@
-import { Animation, Drawable } from '../types'
+import { Animation, Drawable, TMXFlips } from '../types'
 import { getPerformance } from './utils/helpers'
-import { normalize } from './utils/math'
+import { normalize, Vec2 } from './utils/math'
 import { Game } from './game'
 
 export class Sprite implements Drawable {
@@ -37,19 +37,19 @@ export class Sprite implements Drawable {
             }
         }
     }
-    draw(game: Game, x: number, y: number): void {
-        const { id, animation, animFrame, width, height, flipH, flipV } = this
+    draw(game: Game, pos: Vec2, flips?: TMXFlips): void {
+        const { id, animation, animFrame, width, height } = this
         const { ctx } = game
         const image = game.getImage(id)
-        const scaleH = flipH ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
-        const scaleV = flipV ? -1 : 1 // Set verical scale to -1 if flip vertical
-        const FX = flipH ? width * -1 : 0 // Set x position to -100% if flip horizontal
-        const FY = flipV ? height * -1 : 0 // Set y position to -100% if flip vertical
-        const flip = flipH || flipV
-        const [x1, y1] = [(x - FX) * scaleH, (y - FY) * scaleV]
+        const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
+        const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
+        const FX = flips?.H ? width * -1 : 0 // Set x position to -100% if flip horizontal
+        const FY = flips?.V ? height * -1 : 0 // Set y position to -100% if flip vertical
+        const flip = flips?.H || flips?.V
+        const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
 
+        ctx.save()
         flip && ctx.scale(scaleH, scaleV)
-
         if (animation) {
             const { frames, strip } = animation
             const frame = (frames && frames[animFrame]) || [0, 0]
@@ -70,6 +70,6 @@ export class Sprite implements Drawable {
         } else if (image) {
             ctx.drawImage(image, 0, 0, width, height, x1, y1, width, height)
         }
-        flip && ctx.scale(scaleH, scaleV)
+        ctx.restore()
     }
 }

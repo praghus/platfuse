@@ -1,18 +1,18 @@
-import { StringTMap, TMXLayer } from '../types'
-import { COLORS, NODE_TYPE } from './utils/constants'
+import { StringTMap, TMXLayer, TMXFlips } from '../types'
+import { NODE_TYPE } from './utils/constants'
 import { Entity } from './entity'
 import { Game } from './game'
 
 export class Layer {
-    id: number = 0
-    name: string = ''
-    type: string = NODE_TYPE.CUSTOM
+    id = 0
+    width = 0
+    height = 0
+    name?: string
+    type = NODE_TYPE.CUSTOM as string
     properties: StringTMap<any> = {}
-    width: number = 0
-    height: number = 0
-    visible: boolean = true
     data: (number | null)[] = []
     objects: Entity[] = []
+    visible = true
 
     constructor(layerData?: TMXLayer) {
         if (layerData) {
@@ -51,7 +51,7 @@ export class Layer {
         if (this.visible) {
             switch (this.type) {
                 case NODE_TYPE.LAYER:
-                    scene.forEachVisibleTile(game, this, (tile, x, y) => tile.draw(game, x, y))
+                    scene.forEachVisibleTile(game, this, (tile, pos, flips) => tile?.draw(game, pos, flips as TMXFlips))
                     break
                 case NODE_TYPE.OBJECT_GROUP:
                     scene.forEachVisibleObject(obj => obj.visible && obj.draw(game), this.id)

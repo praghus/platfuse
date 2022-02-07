@@ -1,4 +1,4 @@
-import { Drawable, StringTMap, TMXTileset } from '../types'
+import { Drawable, StringTMap, TMXFlips, TMXTileset } from '../types'
 import { COLORS, TILE_TYPE } from './utils/constants'
 import { getPerformance, isValidArray } from './utils/helpers'
 import { normalize, Box, Vec2 } from './utils/math'
@@ -52,17 +52,27 @@ export class Tile implements Drawable {
             return frames[this.animFrame].tileid + this.tileset.firstgid
         } else return this.id
     }
-    draw(game: Game, x: number, y: number): void {
+    draw(game: Game, pos: Vec2, flips?: TMXFlips): void {
         if (!this.isInvisible()) {
             const { ctx, draw } = game
             const { image, columns, firstgid, tilewidth, tileheight } = this.tileset
             const tileGid = this.getNextGid()
             const posX = ((tileGid - firstgid) % columns) * tilewidth
             const posY = (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
+            const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
+            const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
+            const FX = flips?.H ? tilewidth * -1 : 0 // Set x position to -100% if flip horizontal
+            const FY = flips?.V ? tileheight * -1 : 0 // Set y position to -100% if flip vertical
+            const flip = flips?.H || flips?.V
+            const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
 
-            ctx.drawImage(game.getImage(image), posX, posY, tilewidth, tileheight, x, y, tilewidth, tileheight)
+            ctx.save()
+            flip && ctx.scale(scaleH, scaleV)
+            ctx.drawImage(game.getImage(image), posX, posY, tilewidth, tileheight, x1, y1, tilewidth, tileheight)
+            ctx.restore()
             if (game.getCurrentScene().debug) {
-                draw.fillText(`${this.id}`, x + 2, y + 6, COLORS.WHITE_50)
+                draw.fillText(`${this.id}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
+                draw.outline(new Box(pos, tilewidth, tileheight), COLORS.WHITE_25, 0.1)
             }
         }
     }

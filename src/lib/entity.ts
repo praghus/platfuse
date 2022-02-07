@@ -1,18 +1,18 @@
 import { boxOverlap, Box, Vec2 } from './utils/math'
-import { Animation, Drawable, StringTMap } from '../types'
+import { Animation, Drawable, StringTMap, TMXFlips } from '../types'
 import { COLORS, NODE_TYPE, SHAPE } from './utils/constants'
 import { isValidArray, uuid, noop } from './utils/helpers'
 import { Game } from './game'
 
 export class Entity {
     id: string
+    width = 0
+    height = 0
     pos = new Vec2(0, 0)
     expectedPos = new Vec2(0, 0)
     initialPos = new Vec2(0, 0)
     force = new Vec2(0, 0)
     shape = SHAPE.BOX
-    width: number
-    height: number
     layerId: number
     type: string
     color?: string
@@ -20,6 +20,7 @@ export class Entity {
     family?: string
     image?: string
     bounds?: Box
+    flips?: TMXFlips
     rotatation?: number
     animation?: Animation
     properties: StringTMap<any>
@@ -43,8 +44,8 @@ export class Entity {
         this.pos = new Vec2(obj.x, obj.y - (obj.gid ? obj.height : 0))
         this.color = obj.color
         this.type = obj.type
-        this.width = obj.width
-        this.height = obj.height
+        this.width = obj.width || this.width
+        this.height = obj.height || this.height
         this.properties = obj.properties
         this.rotatation = obj.rotation
         this.layerId = obj.layerId
@@ -72,8 +73,9 @@ export class Entity {
         if (this.visible) {
             const { ctx } = game
             const { camera, debug } = game.getCurrentScene()
+            const pos = new Vec2(Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
             if (this.sprite) {
-                this.sprite.draw(game, Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
+                this.sprite.draw(game, pos, this.flips)
             } else if (this.color) {
                 ctx.save()
                 ctx.fillStyle = this.color
@@ -89,10 +91,9 @@ export class Entity {
     addSprite(sprite: Drawable) {
         this.sprite = sprite
     }
-    animate(animation: Animation, flipH = false, flipV = false, cb: (frame: number) => void = noop): void {
+    animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop): void {
         if (this.sprite && this.sprite.animate) {
-            this.sprite.flipH = flipH
-            this.sprite.flipV = flipV
+            this.flips = flips
             this.sprite.animate(animation)
             cb(this.sprite.animFrame)
         }
@@ -106,12 +107,6 @@ export class Entity {
     }
     setAnimationFrame(frame: number) {
         if (this.sprite) this.sprite.animFrame = frame
-    }
-    setAnimationFlip(flipH = false, flipV = false): void {
-        if (this.sprite) {
-            this.sprite.flipH = flipH
-            this.sprite.flipV = flipV
-        }
     }
     kill(): void {
         this.dead = true
@@ -246,7 +241,7 @@ export class Entity {
         const [posX, posY] = [Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y)]
         const [x, y] = [posX + width + 4, posY + height / 2]
 
-        draw.outline(new Box(new Vec2(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.5)
+        draw.outline(new Box(new Vec2(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.25)
         draw.outline(this.getBoundingBox(posX, posY), visible ? COLORS.GREEN : COLORS.PURPLE, 0.5)
         draw.fillText(`${type}`, posX, posY - 10, COLORS.WHITE)
         draw.fillText(`x:${Math.floor(this.pos.x)}`, posX, posY - 6, COLORS.LIGHT_RED)

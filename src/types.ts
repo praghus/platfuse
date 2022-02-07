@@ -1,4 +1,5 @@
 import { Game } from './lib/game'
+import { Vec2 } from './lib/utils/math'
 
 export interface StringTMap<T> {
     [key: string]: T
@@ -32,12 +33,10 @@ export interface Drawable {
     animFrame: number
     then: number
     frameStart: number
-    flipV: boolean
-    flipH: boolean
 
     animate?(animation?: Animation): void
     getNextGid?(): number
-    draw(game: Game, x: number, y: number, scale?: number): void
+    draw(game: Game, pos: Vec2, flips?: TMXFlips): void
 }
 
 export interface TMXTiledMap {
@@ -130,7 +129,7 @@ export interface TMXObject {
 }
 
 export interface TMXFlips {
-    H: boolean
-    V: boolean
-    D: boolean
+    H?: boolean
+    V?: boolean
+    D?: boolean
 }

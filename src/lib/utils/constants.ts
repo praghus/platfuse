@@ -30,3 +30,9 @@ export enum SHAPE {
     BOX = 'box',
     POLYGON = 'polygon'
 }
+
+export enum FLIPPED {
+    DIAGONALLY = 0x20000000,
+    HORIZONTALLY = 0x80000000,
+    VERTICALLY = 0x40000000
+}
