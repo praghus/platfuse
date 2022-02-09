@@ -1,4 +1,4 @@
-import { Constructable, StringTMap, TMXObject, TMXTileset, TMXLayer, TMXFlips } from '../types'
+import { Constructable, StringTMap, TMXTileset, TMXLayer, TMXFlips } from '../types'
 import { isValidArray, getFlips, noop } from './utils/helpers'
 import { Vec2 } from './utils/math'
 import { Game } from './game'
@@ -10,6 +10,7 @@ import { Tile } from './tile'
 import { COLORS, FLIPPED } from './utils/constants'
 
 export class Scene {
+    game: Game
     camera: Camera
     entities: StringTMap<any> = {}
     layers: Layer[] = []
@@ -23,6 +24,7 @@ export class Scene {
     debug = false
 
     constructor(game: Game) {
+        this.game = game
         this.camera = new Camera(game)
         if (game.debug && game.gui) {
             const f1 = game.gui.addFolder('Camera')
@@ -35,31 +37,31 @@ export class Scene {
             f2.add(this, 'debug').listen()
         }
     }
-    async init(game: Game): Promise<void> {}
-    update(game: Game): void {
+    async init(): Promise<void> {}
+    update(): void {
         for (const layer of this.layers) {
-            layer instanceof Layer && layer.update(game)
+            layer instanceof Layer && layer.update()
         }
         for (const obj of this.objects) {
             if (obj.active) {
-                obj.update(game)
+                obj.update()
                 obj.dead && this.removeObject(obj)
             }
         }
         this.camera.update()
     }
-    draw(game: Game): void {
-        const { ctx, draw, width, height, scale } = game
+    draw(): void {
+        const { ctx, colors, draw, width, height, scale } = this.game
         ctx.imageSmoothingEnabled = false
         ctx.save()
         ctx.scale(scale, scale)
         ctx.clearRect(0, 0, width / scale, height / scale)
-        if (game.colors.backgroundColor) {
-            ctx.fillStyle = game.colors.backgroundColor
+        if (colors.backgroundColor) {
+            ctx.fillStyle = colors.backgroundColor
             ctx.fillRect(0, 0, width / scale, height / scale)
         }
         for (const layer of this.layers) {
-            layer instanceof Layer && layer.draw(game)
+            layer instanceof Layer && layer.draw()
         }
         if (this.debug) {
             draw.fillText('CAMERA', 4, 8, COLORS.WHITE)
@@ -81,13 +83,15 @@ export class Scene {
     }
     addLayer(l: Constructable<Layer> | TMXLayer): void {
         if (typeof l === 'function') {
-            this.layers.push(new l())
+            this.layers.push(new l(null, this.game))
         } else {
-            this.layers.push(new Layer(l))
-            l.objects && l.objects.forEach(obj => this.createObject(obj, l.id))
+            this.layers.push(new Layer(l, this.game))
+            l.objects && l.objects.forEach(obj => this.addObject(obj.type, { ...obj, layerId: l.id }))
         }
     }
-    addObject(entity: Entity, index?: number): Entity {
+    addObject(type: string, props: StringTMap<any>, index?: number): Entity {
+        const Model: Constructable<Entity> = this.game.objectClasses[type]
+        const entity: Entity = Model ? new Model(props, this.game) : new Entity(props, this.game)
         if (entity.image) {
             entity.addSprite(this.createSprite(entity.image, entity.width, entity.height))
         } else if (entity.gid) {
@@ -102,12 +106,8 @@ export class Scene {
     addTileset(tileset: TMXTileset, image: string): void {
         const newTileset = { ...tileset, image }
         for (let i = 0; i < newTileset.tilecount; i++) {
-            this.tiles[i + newTileset.firstgid] = new Tile(i + newTileset.firstgid, newTileset)
+            this.tiles[i + newTileset.firstgid] = new Tile(i + newTileset.firstgid, newTileset, this.game)
         }
-    }
-    createObject(obj: TMXObject, layerId: number): void {
-        const Model = this.entities[obj.type]
-        this.addObject(Model ? new Model({ layerId, ...obj }) : new Entity({ layerId, ...obj }))
     }
     forEachVisibleObject(cb: (obj: Entity) => void = noop, layerId?: number): void {
         for (const obj of this.objects) {
@@ -116,17 +116,17 @@ export class Scene {
             }
         }
     }
-    forEachVisibleTile(game: Game, layer: Layer, fn: (tile: Tile, pos: Vec2, flips?: TMXFlips) => void = noop): void {
+    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vec2, flips?: TMXFlips) => void = noop): void {
         const { camera, tilewidth, tileheight } = this
-        const { resolution } = game
+        const { resolution } = this.game
 
         let y = Math.floor(camera.pos.y % tileheight)
         let _y = Math.floor(-camera.pos.y / tileheight)
 
-        while (y < resolution.y) {
+        while (y <= resolution.y) {
             let x = Math.floor(camera.pos.x % tilewidth)
             let _x = Math.floor(-camera.pos.x / tilewidth)
-            while (x < resolution.x) {
+            while (x <= resolution.x) {
                 const tileId = layer?.get(_x, _y)
                 tileId && fn(this.getTileObject(tileId), new Vec2(x, y), getFlips(tileId))
                 x += tilewidth
@@ -140,7 +140,7 @@ export class Scene {
         this.camera && this.camera.resize(game.width, game.height, game.scale)
     }
     createSprite(id: string, width: number, height: number): Sprite {
-        return new Sprite(id, width, height)
+        return new Sprite(id, width, height, this.game)
     }
     getLayer(id: number): Layer {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)

@@ -13,10 +13,8 @@ export class Tile implements Drawable {
     then = getPerformance()
     frameStart = getPerformance()
     terrain: number[]
-    flipV = false
-    flipH = false
 
-    constructor(public id: number, public tileset: any) {
+    constructor(public id: number, public tileset: any, public game: Game) {
         this.properties = this.getTileProperties(id, this.tileset)
         this.type = (this.properties && this.properties.type) || null
         this.width = this.tileset.tilewidth
@@ -52,9 +50,9 @@ export class Tile implements Drawable {
             return frames[this.animFrame].tileid + this.tileset.firstgid
         } else return this.id
     }
-    draw(game: Game, pos: Vec2, flips?: TMXFlips): void {
+    draw(pos: Vec2, flips?: TMXFlips): void {
         if (!this.isInvisible()) {
-            const { ctx, draw } = game
+            const { ctx, draw } = this.game
             const { image, columns, firstgid, tilewidth, tileheight } = this.tileset
             const tileGid = this.getNextGid()
             const posX = ((tileGid - firstgid) % columns) * tilewidth
@@ -68,9 +66,9 @@ export class Tile implements Drawable {
 
             ctx.save()
             flip && ctx.scale(scaleH, scaleV)
-            ctx.drawImage(game.getImage(image), posX, posY, tilewidth, tileheight, x1, y1, tilewidth, tileheight)
+            ctx.drawImage(this.game.getImage(image), posX, posY, tilewidth, tileheight, x1, y1, tilewidth, tileheight)
             ctx.restore()
-            if (game.getCurrentScene().debug) {
+            if (this.game.getCurrentScene().debug) {
                 draw.fillText(`${this.id}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
                 draw.outline(new Box(pos, tilewidth, tileheight), COLORS.WHITE_25, 0.1)
             }

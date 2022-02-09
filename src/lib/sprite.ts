@@ -8,11 +8,8 @@ export class Sprite implements Drawable {
     animFrame = 0
     then = getPerformance()
     frameStart = getPerformance()
-    flipV = false
-    flipH = false
 
-    constructor(public id: string, public width: number, public height: number) {}
-
+    constructor(public id: string, public width: number, public height: number, public game: Game) {}
     animate(animation = this.animation): void {
         if (animation) {
             this.animFrame = this.animFrame || 0
@@ -37,10 +34,10 @@ export class Sprite implements Drawable {
             }
         }
     }
-    draw(game: Game, pos: Vec2, flips?: TMXFlips): void {
+    draw(pos: Vec2, flips?: TMXFlips): void {
         const { id, animation, animFrame, width, height } = this
-        const { ctx } = game
-        const image = game.getImage(id)
+        const { ctx } = this.game
+        const image = this.game.getImage(id)
         const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
         const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
         const FX = flips?.H ? width * -1 : 0 // Set x position to -100% if flip horizontal

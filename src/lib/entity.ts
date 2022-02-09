@@ -8,10 +8,10 @@ export class Entity {
     id: string
     width = 0
     height = 0
-    pos = new Vec2(0, 0)
-    expectedPos = new Vec2(0, 0)
-    initialPos = new Vec2(0, 0)
-    force = new Vec2(0, 0)
+    pos = new Vec2()
+    expectedPos = new Vec2()
+    initialPos = new Vec2()
+    force = new Vec2()
     shape = SHAPE.BOX
     layerId: number
     type: string
@@ -20,6 +20,7 @@ export class Entity {
     family?: string
     image?: string
     bounds?: Box
+    redius?: number
     flips?: TMXFlips
     rotatation?: number
     animation?: Animation
@@ -30,15 +31,9 @@ export class Entity {
     visible = true
     active = true
     dead = false
+    #sprite?: Drawable
 
-    private sprite?: Drawable
-
-    onGround = () => this.pos.y < this.expectedPos.y
-    onCeiling = () => this.pos.y > this.expectedPos.y
-    onRightWall = () => this.pos.x < this.expectedPos.x
-    onLeftWall = () => this.pos.x > this.expectedPos.x
-
-    constructor(obj: StringTMap<any>) {
+    constructor(obj: StringTMap<any>, public game: Game) {
         this.id = (obj.id && `${obj.id}`) || uuid()
         this.gid = obj.gid
         this.pos = new Vec2(obj.x, obj.y - (obj.gid ? obj.height : 0))
@@ -50,18 +45,19 @@ export class Entity {
         this.rotatation = obj.rotation
         this.layerId = obj.layerId
         this.visible = obj.visible !== undefined ? obj.visible : true
-        this.initialPos = this.pos
+        this.initialPos = this.pos.clone()
     }
+    collide(obj: Entity): void {}
     setCollisionArea(...args: number[]): void {
         if (args.length === 4) {
             const [x, y, w, h] = args
             this.bounds = new Box(new Vec2(x, y), w, h)
         } else {
-            this.bounds = new Box(new Vec2(0, 0), this.width, this.height)
+            this.bounds = new Box(new Vec2(), this.width, this.height)
         }
     }
     getCollisionArea(): Box {
-        return this.bounds || new Box(new Vec2(0, 0), this.width, this.height)
+        return this.bounds || new Box(new Vec2(), this.width, this.height)
     }
     getBoundingBox(nextX = this.pos.x, nextY = this.pos.y): Box {
         if (this.bounds) {
@@ -69,13 +65,13 @@ export class Entity {
             return new Box(new Vec2(pos.x + nextX, pos.y + nextY), width, height)
         } else return new Box(new Vec2(nextX, nextY), this.width, this.height)
     }
-    draw(game: Game): void {
+    draw(): void {
         if (this.visible) {
-            const { ctx } = game
-            const { camera, debug } = game.getCurrentScene()
+            const { ctx } = this.game
+            const { camera, debug } = this.game.getCurrentScene()
             const pos = new Vec2(Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
-            if (this.sprite) {
-                this.sprite.draw(game, pos, this.flips)
+            if (this.#sprite) {
+                this.#sprite.draw(pos, this.flips)
             } else if (this.color) {
                 ctx.save()
                 ctx.fillStyle = this.color
@@ -85,17 +81,17 @@ export class Entity {
                 ctx.closePath()
                 ctx.restore()
             }
-            if (debug) this._displayDebug(game)
+            if (debug) this.displayDebug()
         }
     }
     addSprite(sprite: Drawable) {
-        this.sprite = sprite
+        this.#sprite = sprite
     }
     animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop): void {
-        if (this.sprite && this.sprite.animate) {
+        if (this.#sprite && this.#sprite.animate) {
             this.flips = flips
-            this.sprite.animate(animation)
-            cb(this.sprite.animFrame)
+            this.#sprite.animate(animation)
+            cb(this.#sprite.animFrame)
         }
         if (animation !== this.animation && animation.bounds && isValidArray(animation.bounds)) {
             this.setCollisionArea(...animation.bounds)
@@ -103,10 +99,10 @@ export class Entity {
         this.animation = animation
     }
     getAnimationFrame(): number {
-        return this.sprite?.animFrame || 0
+        return this.#sprite?.animFrame || 0
     }
     setAnimationFrame(frame: number) {
-        if (this.sprite) this.sprite.animFrame = frame
+        if (this.#sprite) this.#sprite.animFrame = frame
     }
     kill(): void {
         this.dead = true
@@ -117,16 +113,15 @@ export class Entity {
     hide(): void {
         this.visible = false
     }
-    collide(obj: Entity, game: Game): void {}
     approach(start: number, end: number, shift: number, delta = 1) {
         return start < end ? Math.min(start + shift * delta, end * delta) : Math.max(start - shift * delta, end * delta)
     }
-    update(game: Game): void {
+    update(): void {
         this.expectedPos = new Vec2(this.pos.x + this.force.x, this.pos.y + this.force.y)
 
         if (this.collisions && (this.force.x !== 0 || this.force.y !== 0)) {
+            const scene = this.game.getCurrentScene()
             const b = this.getCollisionArea()
-            const scene = game.getCurrentScene()
             const cb = scene.camera.getBounds()
             const { tilewidth, tileheight } = scene
 
@@ -208,8 +203,8 @@ export class Entity {
                                         }
                                     }
                                     if (boxOverlap(ob, this.getBoundingBox(this.expectedPos.x, this.expectedPos.y))) {
-                                        this.collide(obj, game)
-                                        obj.collide(this, game)
+                                        this.collide(obj)
+                                        obj.collide(this)
                                     }
                                 }
                             })
@@ -221,32 +216,35 @@ export class Entity {
         this.pos.x += this.force.x
         this.pos.y += this.force.y
     }
-    onScreen(game: Game): boolean {
-        const scene = game.getCurrentScene()
+    onScreen(): boolean {
+        const scene = this.game.getCurrentScene()
         const { camera, tilewidth, tileheight } = scene
         const { pos, width, height } = this.getCollisionArea()
+        const { x, y } = this.game.resolution
         const cx = this.pos.x + pos.x
         const cy = this.pos.y + pos.y
         return (
             cx + width + tilewidth > -camera.pos.x &&
             cy + height + tileheight > -camera.pos.y &&
-            cx - tilewidth < -camera.pos.x + game.resolution.x &&
-            cy - tileheight < -camera.pos.y + game.resolution.y
+            cx - tilewidth < -camera.pos.x + x &&
+            cy - tileheight < -camera.pos.y + y
         )
     }
-    private _displayDebug(game: Game) {
-        const { camera } = game.getCurrentScene()
-        const { draw } = game
+    onGround = (): boolean => this.pos.y < this.expectedPos.y
+    onCeiling = (): boolean => this.pos.y > this.expectedPos.y
+    onRightWall = (): boolean => this.pos.x < this.expectedPos.x
+    onLeftWall = (): boolean => this.pos.x > this.expectedPos.x
+    displayDebug() {
+        const { draw } = this.game
+        const { camera } = this.game.getCurrentScene()
         const { width, height, type, visible, force } = this
         const [posX, posY] = [Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y)]
         const [x, y] = [posX + width + 4, posY + height / 2]
-
         draw.outline(new Box(new Vec2(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.25)
         draw.outline(this.getBoundingBox(posX, posY), visible ? COLORS.GREEN : COLORS.PURPLE, 0.5)
         draw.fillText(`${type}`, posX, posY - 10, COLORS.WHITE)
         draw.fillText(`x:${Math.floor(this.pos.x)}`, posX, posY - 6, COLORS.LIGHT_RED)
         draw.fillText(`y:${Math.floor(this.pos.y)}`, posX, posY - 2, COLORS.LIGHT_RED)
-
         force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, x, y - 2, COLORS.LIGHT_RED)
         force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, x, y + 2, COLORS.LIGHT_RED)
     }

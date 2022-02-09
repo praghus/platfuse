@@ -5,17 +5,18 @@ import { Vec2 } from './utils/math'
 import { getPerformance } from './utils/helpers'
 import { Constructable, StringTMap } from '../types'
 import { Draw } from './utils/draw'
-
-const DEFAULT_SCALE = 1
+import { Entity } from './entity'
 
 type TConfig = {
     width?: number
     height?: number
     canvas: any
+    entities: StringTMap<Constructable<Entity>>
+    scenes: Constructable<Scene>[]
     backgroundColor?: string
     preloaderColor?: string
     scale?: number
-    scenes: any[]
+    global?: boolean
     debug?: boolean
 }
 
@@ -25,7 +26,7 @@ type TColors = {
 }
 
 export class Game {
-    resolution = new Vec2(0, 0)
+    resolution = new Vec2()
     then = getPerformance()
     ctx: CanvasRenderingContext2D
     gui?: dat.GUI
@@ -33,12 +34,13 @@ export class Game {
     assets: StringTMap<HTMLImageElement | HTMLAudioElement> = {}
     soundFiles: StringTMap<string> = {}
     sounds: StringTMap<Howl> = {}
-    scenes: Constructable<Scene>[] = []
-    scenesObjs: Scene[] = []
+    objectClasses: StringTMap<Constructable<Entity>> = {}
+    sceneClasses: Constructable<Scene>[] = []
+    scenes: Scene[] = []
     colors: TColors
     animationFrame: any
-    keyStates: StringTMap<any> = {}
     events: StringTMap<any> = {}
+    keyStates: StringTMap<any> = {}
     timeouts: Record<string, any> = {}
     width: number
     height: number
@@ -56,10 +58,11 @@ export class Game {
 
     constructor(config: TConfig) {
         this.ctx = config.canvas.getContext('2d')
-        this.scenes = config.scenes
+        this.sceneClasses = config.scenes
+        this.objectClasses = config.entities
         this.width = config?.width || config.canvas.width
         this.height = config?.height || config.canvas.height
-        this.scale = config.scale || DEFAULT_SCALE
+        this.scale = config.scale || 1
         this.debug = !!config.debug
         this.colors = {
             backgroundColor: config?.backgroundColor || '#000',
@@ -69,13 +72,14 @@ export class Game {
         this.debug && this.datGui()
         document.addEventListener('keydown', e => this.onKey(true, e), false)
         document.addEventListener('keyup', e => this.onKey(false, e), false)
+        if (!!config.global) window.Platfuse = this
     }
     async onLoad(loadedAssets: StringTMap<HTMLImageElement | HTMLAudioElement>) {
         this.assets = loadedAssets
-        this.scenesObjs = await Promise.all(
-            this.scenes.map(async Model => {
+        this.scenes = await Promise.all(
+            this.sceneClasses.map(async Model => {
                 const s: Scene = new Model(this)
-                await s.init(this)
+                await s.init()
                 return s
             })
         )
@@ -137,8 +141,8 @@ export class Game {
         const scene = this.getCurrentScene()
         if (scene instanceof Scene) {
             this.fireEvents()
-            scene.update(this)
-            scene.draw(this)
+            scene.update()
+            scene.draw()
         }
     }
     start(): void {
@@ -174,8 +178,8 @@ export class Game {
             : { ...this.events, [k]: cb }
     }
     getCurrentScene(): Scene {
-        if (this.scenesObjs[this.currentScene] instanceof Scene) {
-            return this.scenesObjs[this.currentScene]
+        if (this.scenes[this.currentScene] instanceof Scene) {
+            return this.scenes[this.currentScene]
         } else throw new Error('No current scene!')
     }
     getImage(name: string): HTMLImageElement {
@@ -199,8 +203,8 @@ export class Game {
     onResize() {
         this.resolution.x = Math.round(this.width / this.scale)
         this.resolution.y = Math.round(this.height / this.scale)
-        if (this.scenesObjs[this.currentScene] instanceof Scene) {
-            this.scenesObjs[this.currentScene].resize(this)
+        if (this.scenes[this.currentScene] instanceof Scene) {
+            this.scenes[this.currentScene].resize(this)
         }
     }
     wait(id: string, fn: (game: Game) => void, duration: number): void {
@@ -238,5 +242,11 @@ export class Game {
             this.sounds[name] = new Howl({ src: this.soundFiles[name], loop: true, volume })
             this.sounds[name].play()
         } else throw new Error('Invalid sound!')
+    }
+}
+
+declare global {
+    interface Window {
+        Platfuse: any
     }
 }

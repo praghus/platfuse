@@ -7,18 +7,15 @@ export interface StringTMap<T> {
 export interface NumberTMap<T> {
     [key: number]: T
 }
-
 export interface Constructable<T> {
     new (...args: any[]): T
 }
-
 export interface AnimationStrip {
     x: number
     y: number
     frames: number
     duration: number
 }
-
 export interface Animation {
     strip?: AnimationStrip
     frames?: number[][]
@@ -27,7 +24,6 @@ export interface Animation {
     height: number
     loop: boolean
 }
-
 export interface Drawable {
     animation?: Animation
     animFrame: number
@@ -36,9 +32,8 @@ export interface Drawable {
 
     animate?(animation?: Animation): void
     getNextGid?(): number
-    draw(game: Game, pos: Vec2, flips?: TMXFlips): void
+    draw(pos: Vec2, flips?: TMXFlips): void
 }
-
 export interface TMXTiledMap {
     backgroundcolor: string
     height: number
@@ -57,18 +52,17 @@ export interface TMXTiledMap {
     layers: TMXLayer[]
     tilesets: TMXTileset[]
 }
-
 export interface TMXLayer {
     id: number
-    name: string
-    x?: number
-    y?: number
+    type: string
+    name?: string
     width: number
     height: number
+    visible: boolean
+    x?: number
+    y?: number
     opacity?: number
-    properties: Record<string, any> | null
-    type: string
-    visible: number
+    properties?: Record<string, any> | null
     tintcolor?: string
     offsetx?: number
     offsety?: number
@@ -78,7 +72,6 @@ export interface TMXLayer {
     objects?: TMXObject[]
     image?: TMXImage
 }
-
 export interface TMXLayerGroup {
     id: number
     layers: TMXLayer[]
@@ -86,7 +79,6 @@ export interface TMXLayerGroup {
     properties: Record<string, any> | null
     type: string
 }
-
 export interface TMXTileset {
     columns: number
     firstgid: number
@@ -99,13 +91,11 @@ export interface TMXTileset {
     tilewidth: number
     tiles: TMXTile[]
 }
-
 export interface TMXImage {
     height: number
     width: number
     source: string
 }
-
 export interface TMXTile {
     id: number
     type: string
@@ -113,7 +103,6 @@ export interface TMXTile {
     objects?: Record<string, any>[]
     probability?: number
 }
-
 export interface TMXObject {
     gid: number
     height: number
@@ -127,7 +116,6 @@ export interface TMXObject {
     y: number
     flips?: TMXFlips
 }
-
 export interface TMXFlips {
     H?: boolean
     V?: boolean
