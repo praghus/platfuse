@@ -36,7 +36,7 @@
         "prettier:write": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
         "prettier:check": "prettier -c \"src/**/*.{js,jsx,ts,tsx}\"",
         "predocs": "rimraf ./docs",
-        "docs": "typedoc src --out docs",
+        "docs": "typedoc src --name Platfuse --out docs",
         "doc:publish": "gh-pages -m \"[ci skip] Updates\" -d docs",
         "clean": "rimraf ./build ./dist ./docs",
         "test": "echo \"Error: no test specified\" && exit 1"

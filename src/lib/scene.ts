@@ -18,7 +18,6 @@ export class Scene {
     objects: Entity[] = []
     tilewidth = 0
     tileheight = 0
-    gravity = 0
     width = 0
     height = 0
     debug = false
@@ -27,14 +26,7 @@ export class Scene {
         this.game = game
         this.camera = new Camera(game)
         if (game.debug && game.gui) {
-            const f1 = game.gui.addFolder('Camera')
-            const f2 = game.gui.addFolder('Scene')
-            f1.add(this.camera.pos, 'x').max(0).listen()
-            f1.add(this.camera.pos, 'y').max(0).listen()
-            f1.add(this.camera, 'width').listen()
-            f1.add(this.camera, 'height').listen()
-            f2.add(this, 'gravity').listen()
-            f2.add(this, 'debug').listen()
+            game.gui.add(this, 'debug').listen()
         }
     }
 
