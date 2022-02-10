@@ -24,25 +24,31 @@ export class Layer {
         this.properties = layerData?.properties || {}
         this.data = layerData?.data || []
     }
+
     isInRange(x: number, y: number): boolean {
         return x >= 0 && y >= 0 && x < this.width && y < this.height
     }
+
     get(x: number, y: number): number | null {
         return (this.isInRange(x, y) && this.data[x + this.width * y]) || null
     }
+
     put(x: number, y: number, tileId: number): void {
         if (this.isInRange(x, y)) {
             this.data[x + this.width * y] = tileId
         }
     }
+
     clear(x: number, y: number): void {
         if (this.isInRange(x, y)) {
             this.data[x + this.width * y] = null
         }
     }
+
     toggleVisibility(toggle: boolean): void {
         this.visible = toggle
     }
+
     draw(): void {
         const scene = this.game.getCurrentScene()
         if (this.visible) {

@@ -14,15 +14,14 @@ export class Tile implements Drawable {
     frameStart = getPerformance()
     terrain: number[]
 
-    constructor(public id: number, public tileset: any, public game: Game) {
+    constructor(public id: number, public tileset: TMXTileset, public game: Game) {
         this.properties = this.getTileProperties(id, this.tileset)
         this.type = (this.properties && this.properties.type) || null
         this.width = this.tileset.tilewidth
         this.height = this.tileset.tileheight
         this.terrain = this.getTerrain()
     }
-    getProperties = (obj: any, property: string): any => obj.properties && obj.properties[property]
-    isCutomShape = (): boolean => this.getProperties(this, 'objects')
+
     isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
     isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
     isInvisible = (): boolean => this.type === TILE_TYPE.INVISIBLE
@@ -30,13 +29,24 @@ export class Tile implements Drawable {
         const { firstgid, tiles } = tileset
         return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
     }
+
     getBounds(x: number, y: number): Box {
         return new Box(new Vec2(x * this.width, y * this.height), this.width, this.height)
     }
+
+    /**
+     * Get terrain
+     * @returns {number[]} Array of terrain gid's
+     */
     getTerrain(): number[] {
         const { terrain } = this.properties
         return terrain && terrain.split(',').map((id: string) => (id ? parseInt(id) : null))
     }
+
+    /**
+     * Gets next tile gid for animation
+     * @returns {number} Tile gid
+     */
     getNextGid(): number {
         if (this.properties && this.properties.animation) {
             this.frameStart = getPerformance()
@@ -50,6 +60,12 @@ export class Tile implements Drawable {
             return frames[this.animFrame].tileid + this.tileset.firstgid
         } else return this.id
     }
+
+    /**
+     * Draw tile image
+     * @param {Vec2} pos Position
+     * @param {TMXFlips} flips Flips
+     */
     draw(pos: Vec2, flips?: TMXFlips): void {
         if (!this.isInvisible()) {
             const { ctx, draw } = this.game

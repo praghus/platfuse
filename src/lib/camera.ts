@@ -23,10 +23,12 @@ export class Camera {
         this.shaker = new Shaker(this)
         this.setFocus(Math.round(width / scale) / 2, Math.round(height / scale) / 2)
     }
+
     moveTo(x: number, y: number): void {
         this.pos = new Vec2(-x, -y)
         this.anchor = this.pos.clone()
     }
+
     center(): void {
         this.follow
             ? this.moveTo(
@@ -35,33 +37,41 @@ export class Camera {
               )
             : this.moveTo(this.width / 2, this.height / 2)
     }
+
     resize(width: number, height: number, scale: number): void {
         this.width = width
         this.height = height
         this.scale = scale
     }
+
     getBounds(): Box {
         if (!this.bounds) {
             this.setBounds(0, 0, this.width, this.height)
         }
         return this.bounds as Box
     }
+
     setBounds(x: number, y: number, width: number, height: number): void {
         this.bounds = new Box(new Vec2(x, y), width, height)
     }
+
     setFocus(x: number, y: number): void {
         this.focus = new Vec2(x, y)
     }
+
     setOffset(x: number, y: number): void {
         this.offset = new Vec2(-x, -y)
     }
+
     setFollow(follow: Entity, center = true): void {
         this.follow = follow
         center && this.center()
     }
+
     shake(duration: number, intensity: Vec2) {
         this.shaker.start(duration, intensity)
     }
+
     update(): void {
         const { follow, focus, width, height, scale } = this
         const resolutionX = Math.round(width / scale)

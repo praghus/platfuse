@@ -5,6 +5,7 @@ export class Vec2 {
         this.y = y
         return this
     }
+
     clone = (): Vec2 => new Vec2(this.x, this.y)
     add = (p2: Vec2): Vec2 => new Vec2(this.x + p2.x, this.y + p2.y)
     sub = (p2: Vec2): Vec2 => new Vec2(this.x - p2.x, this.y - p2.y)

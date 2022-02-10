@@ -19,6 +19,7 @@ export class Draw {
         ctx.fillStyle = colors.preloaderColor
         ctx.fillRect(sx + 2 * s, sy - 3 * s, (sw - 4 * s) * p, 6 * s)
     }
+
     outline(rect: Box, color: string, lineWidth = 1): void {
         const { ctx } = this
         const { pos, width, height } = rect
@@ -34,6 +35,7 @@ export class Draw {
         ctx.stroke()
         ctx.restore()
     }
+
     stroke(x: number, y: number, points: Vec2[], color: string): void {
         const { ctx } = this
         ctx.save()
@@ -45,17 +47,21 @@ export class Draw {
         ctx.stroke()
         ctx.restore()
     }
+
     fillText(text: string, x: number, y: number, color: string): void {
         const { ctx } = this
         ctx.font = '4px Courier'
         ctx.fillStyle = color
         ctx.fillText(text, x, y)
     }
-    createPixelFontRenderer =
-        (image: HTMLImageElement, fontSize: number, rows: number): any =>
-        (text: string, x: number, y: number) =>
-            text
-                .split('\n')
+
+    createPixelFontRenderer(
+        image: HTMLImageElement,
+        fontSize: number,
+        rows: number
+    ): (text: string, x: number, y: number) => void {
+        return (text: string, x: number, y: number): void => {
+            text.split('\n')
                 .reverse()
                 .map((output, index) => {
                     for (let i = 0; i < output.length; i++) {
@@ -73,4 +79,6 @@ export class Draw {
                         )
                     }
                 })
+        }
+    }
 }

@@ -47,7 +47,9 @@ export class Entity {
         this.visible = obj.visible !== undefined ? obj.visible : true
         this.initialPos = this.pos.clone()
     }
-    collide(obj: Entity): void {}
+
+    collide(obj: Entity): void {} // eslint-disable-line @typescript-eslint/no-unused-vars
+
     setCollisionArea(...args: number[]): void {
         if (args.length === 4) {
             const [x, y, w, h] = args
@@ -56,15 +58,18 @@ export class Entity {
             this.bounds = new Box(new Vec2(), this.width, this.height)
         }
     }
+
     getCollisionArea(): Box {
         return this.bounds || new Box(new Vec2(), this.width, this.height)
     }
+
     getBoundingBox(nextX = this.pos.x, nextY = this.pos.y): Box {
         if (this.bounds) {
             const { pos, width, height } = this.bounds
             return new Box(new Vec2(pos.x + nextX, pos.y + nextY), width, height)
         } else return new Box(new Vec2(nextX, nextY), this.width, this.height)
     }
+
     draw(): void {
         if (this.visible) {
             const { ctx } = this.game
@@ -84,9 +89,11 @@ export class Entity {
             if (debug) this.displayDebug()
         }
     }
-    addSprite(sprite: Drawable) {
+
+    addSprite(sprite: Drawable): void {
         this.#sprite = sprite
     }
+
     animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop): void {
         if (this.#sprite && this.#sprite.animate) {
             this.flips = flips
@@ -98,27 +105,33 @@ export class Entity {
         }
         this.animation = animation
     }
+
     getAnimationFrame(): number {
         return this.#sprite?.animFrame || 0
     }
+
     setAnimationFrame(frame: number) {
         if (this.#sprite) this.#sprite.animFrame = frame
     }
+
     kill(): void {
         this.dead = true
     }
+
     show(): void {
         this.visible = true
     }
+
     hide(): void {
         this.visible = false
     }
+
     approach(start: number, end: number, shift: number, delta = 1) {
         return start < end ? Math.min(start + shift * delta, end * delta) : Math.max(start - shift * delta, end * delta)
     }
+
     update(): void {
         this.expectedPos = new Vec2(this.pos.x + this.force.x, this.pos.y + this.force.y)
-
         if (this.collisions && (this.force.x !== 0 || this.force.y !== 0)) {
             const scene = this.game.getCurrentScene()
             const b = this.getCollisionArea()
@@ -216,6 +229,7 @@ export class Entity {
         this.pos.x += this.force.x
         this.pos.y += this.force.y
     }
+
     onScreen(): boolean {
         const scene = this.game.getCurrentScene()
         const { camera, tilewidth, tileheight } = scene
@@ -230,6 +244,7 @@ export class Entity {
             cy - tileheight < -camera.pos.y + y
         )
     }
+
     onGround = (): boolean => this.pos.y < this.expectedPos.y
     onCeiling = (): boolean => this.pos.y > this.expectedPos.y
     onRightWall = (): boolean => this.pos.x < this.expectedPos.x

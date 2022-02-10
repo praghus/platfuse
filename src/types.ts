@@ -1,4 +1,3 @@
-import { Game } from './lib/game'
 import { Vec2 } from './lib/utils/math'
 
 export interface StringTMap<T> {
@@ -83,7 +82,7 @@ export interface TMXTileset {
     columns: number
     firstgid: number
     name: string
-    image: TMXImage
+    image: string
     spacing?: number
     margin?: number
     tilecount: number

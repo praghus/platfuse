@@ -34,6 +34,11 @@ export class Sprite implements Drawable {
             }
         }
     }
+
+    /**
+     * @param pos 
+     * @param flips 
+     */
     draw(pos: Vec2, flips?: TMXFlips): void {
         const { id, animation, animFrame, width, height } = this
         const { ctx } = this.game

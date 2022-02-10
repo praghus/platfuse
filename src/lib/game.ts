@@ -10,7 +10,7 @@ import { Entity } from './entity'
 type TConfig = {
     width?: number
     height?: number
-    canvas: any
+    canvas: HTMLCanvasElement
     entities: StringTMap<Constructable<Entity>>
     scenes: Constructable<Scene>[]
     backgroundColor?: string
@@ -38,10 +38,10 @@ export class Game {
     sceneClasses: Constructable<Scene>[] = []
     scenes: Scene[] = []
     colors: TColors
-    animationFrame: any
     events: StringTMap<any> = {}
     keyStates: StringTMap<any> = {}
     timeouts: Record<string, any> = {}
+    animationFrame?: number
     width: number
     height: number
     scale: number
@@ -57,7 +57,7 @@ export class Game {
     fps = 60
 
     constructor(config: TConfig) {
-        this.ctx = config.canvas.getContext('2d')
+        this.ctx = config.canvas.getContext('2d') as CanvasRenderingContext2D
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
         this.width = config?.width || config.canvas.width
@@ -74,6 +74,7 @@ export class Game {
         document.addEventListener('keyup', e => this.onKey(false, e), false)
         if (!!config.global) window.Platfuse = this
     }
+
     async onLoad(loadedAssets: StringTMap<HTMLImageElement | HTMLAudioElement>) {
         this.assets = loadedAssets
         this.scenes = await Promise.all(
@@ -85,6 +86,7 @@ export class Game {
         )
         this.loaded = true
     }
+
     async preload(assets: StringTMap<string>) {
         this.loaded = false
         let loadedCount = 0
@@ -123,7 +125,8 @@ export class Game {
 
         return loadedAssets
     }
-    frame = (time: number): void => {
+
+    frame(time: number): void {
         if (this.loaded && !this.stoped) {
             const now = getPerformance()
             this.delta = (time - this.lastFrameTime) / 1000
@@ -134,9 +137,10 @@ export class Game {
                 this.loop()
             }
             this.lastFrameTime = time
-            this.animationFrame = requestAnimationFrame(this.frame)
+            this.animationFrame = requestAnimationFrame((time: number) => this.frame(time))
         }
     }
+
     loop(): void {
         const scene = this.getCurrentScene()
         if (scene instanceof Scene) {
@@ -145,18 +149,22 @@ export class Game {
             scene.draw()
         }
     }
+
     start(): void {
         this.stoped = false
-        this.animationFrame = requestAnimationFrame(this.frame)
+        this.animationFrame = requestAnimationFrame((time: number) => this.frame(time))
     }
+
     stop(): void {
         this.stoped = true
-        cancelAnimationFrame(this.animationFrame)
+        this.animationFrame && cancelAnimationFrame(this.animationFrame)
     }
+
     restart(): void {
         this.stop()
         this.start()
     }
+
     fireEvents(): void {
         Object.keys(this.keyStates).map((key: string) => {
             if (typeof this.events[key] === 'function') {
@@ -164,42 +172,51 @@ export class Game {
             }
         })
     }
+
     onKey(pressed: boolean, e: KeyboardEvent) {
         pressed ? (this.keyStates[e.code] = pressed) : delete this.keyStates[e.code]
         e.preventDefault && e.preventDefault()
         e.stopPropagation && e.stopPropagation()
     }
+
     isKeyDown(key: string): boolean {
         return this.keyStates[key] || false
     }
+
     onKeyDown(k: string | string[], cb: () => void) {
         this.events = Array.isArray(k)
             ? Object.assign({}, this.events, ...k.map(key => ({ [key]: cb })))
             : { ...this.events, [k]: cb }
     }
+
     getCurrentScene(): Scene {
         if (this.scenes[this.currentScene] instanceof Scene) {
             return this.scenes[this.currentScene]
         } else throw new Error('No current scene!')
     }
+
     getImage(name: string): HTMLImageElement {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
         } else throw new Error('Invalid image!')
     }
+
     playScene(idx: number): void {
         this.currentScene = idx
         this.restart()
     }
+
     setScale(scale: number): void {
         this.scale = scale
         this.onResize()
     }
+
     setSize(width: number, height: number, scale?: number): void {
         this.width = width
         this.height = height
         this.setScale(scale || this.scale)
     }
+
     onResize() {
         this.resolution.x = Math.round(this.width / this.scale)
         this.resolution.y = Math.round(this.height / this.scale)
@@ -207,28 +224,33 @@ export class Game {
             this.scenes[this.currentScene].resize(this)
         }
     }
-    wait(id: string, fn: (game: Game) => void, duration: number): void {
+
+    wait(id: string, fn: () => void, duration: number): void {
         if (!this.timeouts[id]) {
             this.timeouts[id] = setTimeout(() => {
                 this.cancelWait(id)
-                typeof fn === 'function' && fn(this)
+                typeof fn === 'function' && fn()
             }, duration)
         }
     }
+
     cancelWait(id: string): void {
         if (this.timeouts[id]) {
             clearTimeout(this.timeouts[id])
             delete this.timeouts[id]
         }
     }
+
     datGui(): void {
         if (this.gui) this.gui.destroy()
         this.gui = new dat.GUI()
         this.gui.add(this, 'fps').listen()
     }
+
     setAudioVolume(volume: number): void {
         Howler.volume(volume)
     }
+
     playSound(name: string): void {
         if (this.sounds[name] instanceof Howl) {
             this.sounds[name].play()
@@ -237,6 +259,7 @@ export class Game {
             this.sounds[name].play()
         } else throw new Error('Invalid sound!')
     }
+
     loopSound(name: string, volume = 1): void {
         if (this.soundFiles[name]) {
             this.sounds[name] = new Howl({ src: this.soundFiles[name], loop: true, volume })

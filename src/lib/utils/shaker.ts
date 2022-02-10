@@ -1,5 +1,4 @@
 import { Camera } from '../camera'
-import { Game } from '../game'
 import { Vec2, clamp } from './math'
 
 export default class Shaker {
@@ -20,6 +19,7 @@ export default class Shaker {
         this.progress = 0
         this.elapsed = 0
     }
+
     update(delta: number) {
         if (!this.isRunning) return
 
@@ -36,6 +36,7 @@ export default class Shaker {
             this.reset()
         }
     }
+
     reset() {
         this.isRunning = false
         this.offset.set(0)
