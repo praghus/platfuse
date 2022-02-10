@@ -12,7 +12,6 @@ export class Layer {
     data: (number | null)[] = []
     objects: Entity[] = []
     visible = true
-    update(): void {}
 
     constructor(layerData: TMXLayer, public game: Game) {
         this.id = layerData?.id || 0
@@ -24,6 +23,8 @@ export class Layer {
         this.properties = layerData?.properties || {}
         this.data = layerData?.data || []
     }
+
+    update(): void {}
 
     isInRange(x: number, y: number): boolean {
         return x >= 0 && y >= 0 && x < this.width && y < this.height
