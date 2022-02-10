@@ -25,6 +25,7 @@ export class Tile implements Drawable {
     isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
     isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
     isInvisible = (): boolean => this.type === TILE_TYPE.INVISIBLE
+    
     getTileProperties(gid: number, tileset: TMXTileset): StringTMap<any> {
         const { firstgid, tiles } = tileset
         return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
