@@ -249,6 +249,7 @@ export class Entity {
     onCeiling = (): boolean => this.pos.y > this.expectedPos.y
     onRightWall = (): boolean => this.pos.x < this.expectedPos.x
     onLeftWall = (): boolean => this.pos.x > this.expectedPos.x
+    
     displayDebug() {
         const { draw } = this.game
         const { camera } = this.game.getCurrentScene()
