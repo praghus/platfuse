@@ -140,10 +140,6 @@ export class Scene {
         }
     }
 
-    resize(game: Game): void {
-        this.camera && this.camera.resize(game.width, game.height, game.scale)
-    }
-
     createSprite(id: string, width: number, height: number): Sprite {
         return new Sprite(id, width, height, this.game)
     }

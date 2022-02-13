@@ -1,4 +1,4 @@
-import { Camera } from '../camera'
+import { Game } from '../game'
 import { Vec2, clamp } from './math'
 
 export default class Shaker {
@@ -9,7 +9,7 @@ export default class Shaker {
     intensity = new Vec2()
     offset = new Vec2()
 
-    constructor(public camera: Camera) {}
+    constructor(public game: Game) {}
 
     start(duration: number, intensity: Vec2) {
         this.isRunning = true
@@ -20,17 +20,16 @@ export default class Shaker {
         this.elapsed = 0
     }
 
-    update(delta: number) {
+    update() {
         if (!this.isRunning) return
-
+        const { delta, resolution } = this.game
         this.elapsed += delta * 1000
         this.progress = clamp(this.elapsed / this.duration, 0, 1)
 
         if (this.elapsed < this.duration) {
-            const { width, height } = this.camera
             this.offset.set(
-                Math.random() * this.intensity.x * width * 2 - this.intensity.x * width,
-                Math.random() * this.intensity.y * height * 2 - this.intensity.y * height
+                Math.random() * this.intensity.x * resolution.x * 2 - this.intensity.x * resolution.x,
+                Math.random() * this.intensity.y * resolution.y * 2 - this.intensity.y * resolution.y
             )
         } else {
             this.reset()

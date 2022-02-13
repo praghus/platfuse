@@ -208,21 +208,14 @@ export class Game {
 
     setScale(scale: number): void {
         this.scale = scale
-        this.onResize()
+        this.resolution.x = Math.round(this.width / this.scale)
+        this.resolution.y = Math.round(this.height / this.scale)
     }
 
     setSize(width: number, height: number, scale?: number): void {
         this.width = width
         this.height = height
         this.setScale(scale || this.scale)
-    }
-
-    onResize() {
-        this.resolution.x = Math.round(this.width / this.scale)
-        this.resolution.y = Math.round(this.height / this.scale)
-        if (this.scenes[this.currentScene] instanceof Scene) {
-            this.scenes[this.currentScene].resize(this)
-        }
     }
 
     wait(id: string, fn: () => void, duration: number): void {
