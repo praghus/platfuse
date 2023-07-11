@@ -1,9 +1,9 @@
-import { StringTMap } from '../../types'
-import { Box, Vec2 } from '../utils/math'
+import { Box, Vector } from '../utils/math'
 
 export class Draw {
     constructor(public ctx: CanvasRenderingContext2D) {}
-    preloader(p: number, resolution: Vec2, s: number, colors: StringTMap<string>): void {
+
+    preloader(p: number, resolution: Vector, s: number, colors: Record<string, string>) {
         const { ctx } = this
         const padding = 0.15
         const sx = Math.round(resolution.x * s) * padding
@@ -20,47 +20,43 @@ export class Draw {
         ctx.fillRect(sx + 2 * s, sy - 3 * s, (sw - 4 * s) * p, 6 * s)
     }
 
-    outline(rect: Box, color: string, lineWidth = 1): void {
+    outline(rect: Box, color: string, lineWidth = 1) {
         const { ctx } = this
-        const { pos, width, height } = rect
+        const { pos, w, h } = rect
         ctx.save()
         ctx.strokeStyle = color
         ctx.lineWidth = lineWidth
         ctx.beginPath()
         ctx.moveTo(pos.x, pos.y)
-        ctx.lineTo(pos.x + width, pos.y)
-        ctx.lineTo(pos.x + width, pos.y + height)
-        ctx.lineTo(pos.x, pos.y + height)
+        ctx.lineTo(pos.x + w, pos.y)
+        ctx.lineTo(pos.x + w, pos.y + h)
+        ctx.lineTo(pos.x, pos.y + h)
         ctx.lineTo(pos.x, pos.y)
         ctx.stroke()
         ctx.restore()
     }
 
-    stroke(x: number, y: number, points: Vec2[], color: string): void {
+    stroke(x: number, y: number, points: Vector[], color: string) {
         const { ctx } = this
         ctx.save()
         ctx.strokeStyle = color
         ctx.beginPath()
         ctx.moveTo(points[0].x + x, points[0].y + y)
-        points.map((v: Vec2) => ctx.lineTo(x + v.x, y + v.y))
+        points.map((v: Vector) => ctx.lineTo(x + v.x, y + v.y))
         ctx.lineTo(points[0].x + x, points[0].y + y)
         ctx.stroke()
         ctx.restore()
     }
 
-    fillText(text: string, x: number, y: number, color: string): void {
+    fillText(text: string, x: number, y: number, color: string, size = 4) {
         const { ctx } = this
-        ctx.font = '4px Courier'
+        ctx.font = `${size}px Courier`
         ctx.fillStyle = color
         ctx.fillText(text, x, y)
     }
 
-    createPixelFontRenderer(
-        image: HTMLImageElement,
-        fontSize: number,
-        rows: number
-    ): (text: string, x: number, y: number) => void {
-        return (text: string, x: number, y: number): void => {
+    createPixelFontRenderer(image: HTMLImageElement, fontSize: number, rows: number) {
+        return (text: string, x: number, y: number) => {
             text.split('\n')
                 .reverse()
                 .map((output, index) => {

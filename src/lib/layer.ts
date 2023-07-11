@@ -1,56 +1,61 @@
-import { StringTMap, TMXLayer, TMXFlips } from '../types'
+import { TMXLayer, TMXFlips } from '../types'
 import { NODE_TYPE } from './utils/constants'
 import { Entity } from './entity'
 import { Game } from './game'
 export class Layer {
     id: number
-    width: number
-    height: number
+    width = 0
+    height = 0
     name?: string
     type = NODE_TYPE.CUSTOM as string
-    properties: StringTMap<any> = {}
-    data: (number | null)[] = []
-    objects: Entity[] = []
+    properties: Record<string, any> = {}
+    data?: (number | null)[]
+    objects?: Entity[]
     visible = true
 
-    constructor(layerData: TMXLayer, public game: Game) {
-        this.id = layerData?.id || 0
-        this.name = layerData?.name
-        this.type = layerData?.type || NODE_TYPE.CUSTOM
-        this.width = layerData?.width
-        this.height = layerData?.height
-        this.visible = layerData?.visible === undefined ? true : !!layerData.visible
-        this.properties = layerData?.properties || {}
-        this.data = layerData?.data || []
+    constructor(layerData: TMXLayer | null, public game: Game) {
+        if (layerData) {
+            this.id = layerData.id
+            this.name = layerData.name
+            this.type = layerData.type
+            this.width = layerData.width
+            this.height = layerData.height
+            this.visible = layerData.visible === undefined ? true : !!layerData.visible
+            this.properties = layerData?.properties || {}
+            this.data = layerData?.data
+        } else {
+            this.type = NODE_TYPE.CUSTOM
+            this.id = 0
+        }
     }
 
-    update(): void {}
+    update() {}
 
-    isInRange(x: number, y: number): boolean {
+    isInRange(x: number, y: number) {
         return x >= 0 && y >= 0 && x < this.width && y < this.height
     }
 
-    get(x: number, y: number): number | null {
-        return (this.isInRange(x, y) && this.data[x + this.width * y]) || null
+    get(x: number, y: number) {
+        return (this.isInRange(x, y) && this.data && this.data[x + this.width * y]) || null
     }
 
-    put(x: number, y: number, tileId: number): void {
-        if (this.isInRange(x, y)) {
+    put(x: number, y: number, tileId: number) {
+        if (this.data && this.isInRange(x, y)) {
             this.data[x + this.width * y] = tileId
         }
     }
 
-    clear(x: number, y: number): void {
-        if (this.isInRange(x, y)) {
+    clear(x: number, y: number) {
+        if (this.data && this.isInRange(x, y)) {
             this.data[x + this.width * y] = null
         }
     }
 
-    toggleVisibility(toggle: boolean): void {
+    toggleVisibility(toggle: boolean) {
         this.visible = toggle
     }
 
-    draw(): void {
+    draw() {
         const scene = this.game.getCurrentScene()
         if (this.visible) {
             switch (this.type) {

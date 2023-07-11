@@ -1,5 +1,5 @@
-import { boxOverlap, Box, Vec2 } from './utils/math'
-import { Animation, Drawable, StringTMap, TMXFlips } from '../types'
+import { boxOverlap, Box, Vector } from './utils/math'
+import { Animation, Drawable, TMXFlips } from '../types'
 import { COLORS, NODE_TYPE, SHAPE } from './utils/constants'
 import { isValidArray, uuid, noop } from './utils/helpers'
 import { Game } from './game'
@@ -8,10 +8,10 @@ export class Entity {
     id: string
     width = 0
     height = 0
-    pos = new Vec2()
-    expectedPos = new Vec2()
-    initialPos = new Vec2()
-    force = new Vec2()
+    pos = new Vector()
+    expectedPos = new Vector()
+    initialPos = new Vector()
+    force = new Vector()
     shape = SHAPE.BOX
     layerId: number
     type: string
@@ -24,7 +24,7 @@ export class Entity {
     flips?: TMXFlips
     rotatation?: number
     animation?: Animation
-    properties: StringTMap<any>
+    properties: Record<string, any>
     collisionLayers: number[] = []
     collisions = false
     solid = false
@@ -33,10 +33,10 @@ export class Entity {
     dead = false
     #sprite?: Drawable
 
-    constructor(obj: StringTMap<any>, public game: Game) {
+    constructor(obj: Record<string, any>, public game: Game) {
         this.id = (obj.id && `${obj.id}`) || uuid()
         this.gid = obj.gid
-        this.pos = new Vec2(obj.x, obj.y - (obj.gid ? obj.height : 0))
+        this.pos = new Vector(obj.x, obj.y - (obj.gid ? obj.height : 0))
         this.color = obj.color
         this.type = obj.type
         this.width = obj.width || this.width
@@ -48,33 +48,33 @@ export class Entity {
         this.initialPos = this.pos.clone()
     }
 
-    collide(obj: Entity): void {} // eslint-disable-line @typescript-eslint/no-unused-vars
+    collide(obj: Entity) {} // eslint-disable-line @typescript-eslint/no-unused-vars
 
-    setCollisionArea(...args: number[]): void {
+    setCollisionArea(...args: number[]) {
         if (args.length === 4) {
             const [x, y, w, h] = args
-            this.bounds = new Box(new Vec2(x, y), w, h)
+            this.bounds = new Box(new Vector(x, y), w, h)
         } else {
-            this.bounds = new Box(new Vec2(), this.width, this.height)
+            this.bounds = new Box(new Vector(), this.width, this.height)
         }
     }
 
-    getCollisionArea(): Box {
-        return this.bounds || new Box(new Vec2(), this.width, this.height)
+    getCollisionArea() {
+        return this.bounds || new Box(new Vector(), this.width, this.height)
     }
 
-    getBoundingBox(nextX = this.pos.x, nextY = this.pos.y): Box {
+    getBoundingBox(nextX = this.pos.x, nextY = this.pos.y) {
         if (this.bounds) {
-            const { pos, width, height } = this.bounds
-            return new Box(new Vec2(pos.x + nextX, pos.y + nextY), width, height)
-        } else return new Box(new Vec2(nextX, nextY), this.width, this.height)
+            const { pos, w, h } = this.bounds
+            return new Box(new Vector(pos.x + nextX, pos.y + nextY), w, h)
+        } else return new Box(new Vector(nextX, nextY), this.width, this.height)
     }
 
-    draw(): void {
-        if (this.visible) {
+    draw() {
+        if (this.visible && this.onScreen()) {
             const { ctx } = this.game
             const { camera, debug } = this.game.getCurrentScene()
-            const pos = new Vec2(Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
+            const pos = new Vector(Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
             if (this.#sprite) {
                 this.#sprite.draw(pos, this.flips)
             } else if (this.color) {
@@ -90,11 +90,11 @@ export class Entity {
         }
     }
 
-    addSprite(sprite: Drawable): void {
+    addSprite(sprite: Drawable) {
         this.#sprite = sprite
     }
 
-    animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop): void {
+    animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop) {
         if (this.#sprite && this.#sprite.animate) {
             this.flips = flips
             this.#sprite.animate(animation)
@@ -106,7 +106,7 @@ export class Entity {
         this.animation = animation
     }
 
-    getAnimationFrame(): number {
+    getAnimationFrame() {
         return this.#sprite?.animFrame || 0
     }
 
@@ -114,15 +114,15 @@ export class Entity {
         if (this.#sprite) this.#sprite.animFrame = frame
     }
 
-    kill(): void {
+    kill() {
         this.dead = true
     }
 
-    show(): void {
+    show() {
         this.visible = true
     }
 
-    hide(): void {
+    hide() {
         this.visible = false
     }
 
@@ -130,31 +130,29 @@ export class Entity {
         return start < end ? Math.min(start + shift * delta, end * delta) : Math.max(start - shift * delta, end * delta)
     }
 
-    update(): void {
-        this.expectedPos = new Vec2(this.pos.x + this.force.x, this.pos.y + this.force.y)
+    update() {
+        this.move()
+    }
+
+    move(nextPos = this.force) {
+        this.expectedPos = new Vector(this.pos.x + nextPos.x, this.pos.y + nextPos.y) // this.pos.add(nextPos)
         if (this.collisions && (this.force.x !== 0 || this.force.y !== 0)) {
             const scene = this.game.getCurrentScene()
             const b = this.getCollisionArea()
             const cb = scene.camera.getBounds()
             const { tilewidth, tileheight } = scene
 
-            if (
-                this.expectedPos.x + b.pos.x <= cb.pos.x ||
-                this.expectedPos.x + b.pos.x + b.width >= cb.pos.x + cb.width
-            )
-                this.force.x = 0
-            if (
-                this.expectedPos.y + b.pos.y <= cb.pos.y ||
-                this.expectedPos.y + b.pos.y + b.height >= cb.pos.y + cb.height
-            )
-                this.force.y = 0
+            if (this.expectedPos.x + b.pos.x <= cb.pos.x || this.expectedPos.x + b.pos.x + b.w >= cb.pos.x + cb.w)
+                nextPos.x = 0
+            if (this.expectedPos.y + b.pos.y <= cb.pos.y || this.expectedPos.y + b.pos.y + b.h >= cb.pos.y + cb.h)
+                nextPos.y = 0
 
             const offsetX = this.pos.x + b.pos.x
             const offsetY = this.pos.y + b.pos.y
             const PX = Math.ceil((this.expectedPos.x + b.pos.x) / tilewidth) - 1
             const PY = Math.ceil((this.expectedPos.y + b.pos.y) / tileheight) - 1
-            const PW = Math.ceil((this.expectedPos.x + b.pos.x + b.width) / tilewidth)
-            const PH = Math.ceil((this.expectedPos.y + b.pos.y + b.height) / tileheight)
+            const PW = Math.ceil((this.expectedPos.x + b.pos.x + b.w) / tilewidth)
+            const PH = Math.ceil((this.expectedPos.y + b.pos.y + b.h) / tileheight)
             const nextX = this.getBoundingBox(this.expectedPos.x, this.pos.y)
             const nextY = this.getBoundingBox(this.pos.x, this.expectedPos.y)
 
@@ -168,24 +166,24 @@ export class Entity {
                                     const tile = scene.getTile(x, y, layer.id)
                                     if (tile && tile.isSolid()) {
                                         const tb = tile.getBounds(x, y)
-                                        if (boxOverlap(tb, nextX) && Math.abs(this.force.x) > 0 && !tile.isOneWay()) {
-                                            this.force.x =
-                                                this.force.x < 0
+                                        if (boxOverlap(tb, nextX) && Math.abs(nextPos.x) > 0 && !tile.isOneWay()) {
+                                            nextPos.x =
+                                                nextPos.x < 0
                                                     ? tb.pos.x + tile.width - offsetX
-                                                    : tb.pos.x - b.width - offsetX
+                                                    : tb.pos.x - b.w - offsetX
                                         }
                                         if (boxOverlap(tb, nextY)) {
-                                            if (!tile.isOneWay() && Math.abs(this.force.y) > 0) {
-                                                this.force.y =
-                                                    this.force.y < 0
+                                            if (!tile.isOneWay() && Math.abs(nextPos.y) > 0) {
+                                                nextPos.y =
+                                                    nextPos.y < 0
                                                         ? tb.pos.y + tile.height - offsetY
-                                                        : tb.pos.y - b.height - offsetY
+                                                        : tb.pos.y - b.h - offsetY
                                             } else if (
-                                                this.force.y >= 0 &&
+                                                nextPos.y >= 0 &&
                                                 tile.isOneWay() &&
-                                                this.pos.y + b.pos.y + b.height <= tb.pos.y
+                                                this.pos.y + b.pos.y + b.h <= tb.pos.y
                                             ) {
-                                                this.force.y = tb.pos.y - b.height - offsetY
+                                                nextPos.y = tb.pos.y - b.h - offsetY
                                             }
                                         }
                                     }
@@ -202,17 +200,17 @@ export class Entity {
                                     obj.collisionLayers.includes(this.layerId)
                                 ) {
                                     if (obj.solid) {
-                                        if (boxOverlap(ob, nextY) && Math.abs(this.force.y) > 0) {
-                                            this.force.y =
-                                                this.force.y < 0
+                                        if (boxOverlap(ob, nextY) && Math.abs(nextPos.y) > 0) {
+                                            nextPos.y =
+                                                nextPos.y < 0
                                                     ? ob.pos.y + obj.height - offsetY
-                                                    : ob.pos.y - b.height - offsetY
+                                                    : ob.pos.y - b.h - offsetY
                                         }
-                                        if (boxOverlap(ob, nextX) && Math.abs(this.force.x) > 0) {
-                                            this.force.x =
-                                                this.force.x < 0
+                                        if (boxOverlap(ob, nextX) && Math.abs(nextPos.x) > 0) {
+                                            nextPos.x =
+                                                nextPos.x < 0
                                                     ? ob.pos.x + obj.width - offsetX
-                                                    : ob.pos.x - b.width - offsetX
+                                                    : ob.pos.x - b.w - offsetX
                                         }
                                     }
                                     if (boxOverlap(ob, this.getBoundingBox(this.expectedPos.x, this.expectedPos.y))) {
@@ -226,37 +224,36 @@ export class Entity {
                 }
             }
         }
-        this.pos.x += this.force.x
-        this.pos.y += this.force.y
+        this.pos = this.pos.add(nextPos)
     }
 
-    onScreen(): boolean {
+    onScreen() {
         const scene = this.game.getCurrentScene()
         const { camera, tilewidth, tileheight } = scene
-        const { pos, width, height } = this.getCollisionArea()
+        const { pos, w, h } = this.getCollisionArea()
         const { x, y } = this.game.resolution
         const cx = this.pos.x + pos.x
         const cy = this.pos.y + pos.y
         return (
-            cx + width + tilewidth > -camera.pos.x &&
-            cy + height + tileheight > -camera.pos.y &&
+            cx + w + tilewidth > -camera.pos.x &&
+            cy + h + tileheight > -camera.pos.y &&
             cx - tilewidth < -camera.pos.x + x &&
             cy - tileheight < -camera.pos.y + y
         )
     }
 
-    onGround = (): boolean => this.pos.y < this.expectedPos.y
-    onCeiling = (): boolean => this.pos.y > this.expectedPos.y
-    onRightWall = (): boolean => this.pos.x < this.expectedPos.x
-    onLeftWall = (): boolean => this.pos.x > this.expectedPos.x
-    
+    onGround = () => this.pos.y < this.expectedPos.y
+    onCeiling = () => this.pos.y > this.expectedPos.y
+    onRightWall = () => this.pos.x < this.expectedPos.x
+    onLeftWall = () => this.pos.x > this.expectedPos.x
+
     displayDebug() {
         const { draw } = this.game
         const { camera } = this.game.getCurrentScene()
         const { width, height, type, visible, force } = this
         const [posX, posY] = [Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y)]
         const [x, y] = [posX + width + 4, posY + height / 2]
-        draw.outline(new Box(new Vec2(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.25)
+        draw.outline(new Box(new Vector(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.25)
         draw.outline(this.getBoundingBox(posX, posY), visible ? COLORS.GREEN : COLORS.PURPLE, 0.5)
         draw.fillText(`${type}`, posX, posY - 10, COLORS.WHITE)
         draw.fillText(`x:${Math.floor(this.pos.x)}`, posX, posY - 6, COLORS.LIGHT_RED)

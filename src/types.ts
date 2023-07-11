@@ -1,20 +1,17 @@
-import { Vec2 } from './lib/utils/math'
+import { Vector } from './lib/utils/math'
+import { Entity, Scene } from './index'
 
-export interface StringTMap<T> {
-    [key: string]: T
-}
-export interface NumberTMap<T> {
-    [key: number]: T
-}
 export interface Constructable<T> {
     new (...args: any[]): T
 }
+
 export interface AnimationStrip {
     x: number
     y: number
     frames: number
     duration: number
 }
+
 export interface Animation {
     strip?: AnimationStrip
     frames?: number[][]
@@ -23,6 +20,7 @@ export interface Animation {
     height: number
     loop: boolean
 }
+
 export interface Drawable {
     animation?: Animation
     animFrame: number
@@ -31,8 +29,9 @@ export interface Drawable {
 
     animate?(animation?: Animation): void
     getNextGid?(): number
-    draw(pos: Vec2, flips?: TMXFlips): void
+    draw(pos: Vector, flips?: TMXFlips): void
 }
+
 export interface TMXTiledMap {
     backgroundcolor: string
     height: number
@@ -71,6 +70,7 @@ export interface TMXLayer {
     objects?: TMXObject[]
     image?: TMXImage
 }
+
 export interface TMXLayerGroup {
     id: number
     layers: TMXLayer[]
@@ -78,11 +78,12 @@ export interface TMXLayerGroup {
     properties: Record<string, any> | null
     type: string
 }
+
 export interface TMXTileset {
     columns: number
     firstgid: number
     name: string
-    image: string
+    image: TMXImage
     spacing?: number
     margin?: number
     tilecount: number
@@ -90,11 +91,13 @@ export interface TMXTileset {
     tilewidth: number
     tiles: TMXTile[]
 }
+
 export interface TMXImage {
     height: number
     width: number
     source: string
 }
+
 export interface TMXTile {
     id: number
     type: string
@@ -102,6 +105,7 @@ export interface TMXTile {
     objects?: Record<string, any>[]
     probability?: number
 }
+
 export interface TMXObject {
     gid: number
     height: number
@@ -115,8 +119,22 @@ export interface TMXObject {
     y: number
     flips?: TMXFlips
 }
+
 export interface TMXFlips {
     H?: boolean
     V?: boolean
     D?: boolean
+}
+
+export interface GameConfig {
+    width?: number
+    height?: number
+    canvas: HTMLCanvasElement
+    entities: Record<string, Constructable<Entity>>
+    scenes: Constructable<Scene>[]
+    backgroundColor?: string
+    preloaderColor?: string
+    scale?: number
+    global?: boolean
+    debug?: boolean
 }

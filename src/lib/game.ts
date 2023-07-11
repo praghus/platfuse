@@ -1,50 +1,40 @@
 import * as dat from 'dat.gui'
 import { Howl, Howler } from 'howler'
 import { Scene } from './scene'
-import { Vec2 } from './utils/math'
+import { Vector } from './utils/math'
 import { getPerformance } from './utils/helpers'
-import { Constructable, StringTMap } from '../types'
+import { Constructable, GameConfig } from '../types'
 import { Draw } from './utils/draw'
 import { Entity } from './entity'
 
-type TConfig = {
-    width?: number
-    height?: number
-    canvas: HTMLCanvasElement
-    entities: StringTMap<Constructable<Entity>>
-    scenes: Constructable<Scene>[]
-    backgroundColor?: string
-    preloaderColor?: string
-    scale?: number
-    global?: boolean
-    debug?: boolean
-}
-
-type TColors = {
-    backgroundColor?: string
-    preloaderColor?: string
-}
+const MOUSE_BUTTONS = ['left', 'middle', 'right', 'back', 'forward']
 
 export class Game {
-    resolution = new Vec2()
+    resolution = new Vector()
     then = getPerformance()
     ctx: CanvasRenderingContext2D
     gui?: dat.GUI
     draw: Draw
-    assets: StringTMap<HTMLImageElement | HTMLAudioElement> = {}
-    soundFiles: StringTMap<string> = {}
-    sounds: StringTMap<Howl> = {}
-    objectClasses: StringTMap<Constructable<Entity>> = {}
+    assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
+    soundFiles: Record<string, string> = {}
+    sounds: Record<string, Howl> = {}
+    objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Constructable<Scene>[] = []
     scenes: Scene[] = []
-    colors: TColors
-    events: StringTMap<any> = {}
-    keyStates: StringTMap<any> = {}
+    colors: Record<string, string>
+    events: Record<string, any> = {}
+    mouseEvents: Record<string, any> = {}
+    keyStates: Record<string, any> = {}
     timeouts: Record<string, any> = {}
     animationFrame?: number
-    width: number
-    height: number
-    scale: number
+    mouseStates: Record<string, any> = {}
+    mousePos = new Vector()
+    mouseDeltaPos = new Vector()
+    mouseStarted = false
+    isMouseMoved = false
+    width = window.innerWidth
+    height = window.innerHeight
+    scale = 1
     debug = false
     paused = false
     loaded = false
@@ -56,13 +46,13 @@ export class Game {
     delta = 0
     fps = 60
 
-    constructor(config: TConfig) {
+    constructor(config: GameConfig) {
         this.ctx = config.canvas.getContext('2d') as CanvasRenderingContext2D
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
         this.width = config?.width || config.canvas.width
         this.height = config?.height || config.canvas.height
-        this.scale = config.scale || 1
+        this.scale = config?.scale || 1
         this.debug = !!config.debug
         this.colors = {
             backgroundColor: config?.backgroundColor || '#000',
@@ -72,10 +62,13 @@ export class Game {
         this.debug && this.datGui()
         document.addEventListener('keydown', e => this.onKey(true, e), false)
         document.addEventListener('keyup', e => this.onKey(false, e), false)
+        document.addEventListener('mousedown', e => this.onMouseDown(e))
+        document.addEventListener('mousemove', e => this.onMouseMove(e))
+        document.addEventListener('mouseup', e => this.onMouseUp(e))
         if (!!config.global) window.Platfuse = this
     }
 
-    async onLoad(loadedAssets: StringTMap<HTMLImageElement | HTMLAudioElement>) {
+    async onLoad(loadedAssets: Record<string, HTMLImageElement | HTMLAudioElement>) {
         this.assets = loadedAssets
         this.scenes = await Promise.all(
             this.sceneClasses.map(async Model => {
@@ -87,7 +80,7 @@ export class Game {
         this.loaded = true
     }
 
-    async preload(assets: StringTMap<string>) {
+    async preload(assets: Record<string, string>) {
         this.loaded = false
         let loadedCount = 0
         const count = Object.keys(assets).length
@@ -95,14 +88,14 @@ export class Game {
         const load = (key: string) => {
             const src = assets[key]
             return new Promise(res => {
-                if (/\.(gif|jpe?g|png|webp|bmp)$/i.test(src)) {
+                if (/\.(gif|jpe?g|png|webp|bmp)$/i.test(src) || /(data:image\/[^;]+;base64[^"]+)$/i.test(src)) {
                     const img = new Image()
                     img.src = src
                     img.onload = () => {
                         indicator(++loadedCount / count)
                         return res(img)
                     }
-                } else if (/\.(webm|mp3|wav)$/i.test(src)) {
+                } else if (/\.(webm|mp3|wav)$/i.test(src) || /(data:audio\/[^;]+;base64[^"]+)$/i.test(src)) {
                     const audio = new Audio()
                     audio.addEventListener(
                         'canplaythrough',
@@ -123,10 +116,10 @@ export class Game {
         const loadedAssets = Object.assign({}, ...(await Promise.all(promises)))
         await this.onLoad(loadedAssets)
 
-        return loadedAssets
+        return Promise.resolve(loadedAssets)
     }
 
-    frame(time: number): void {
+    frame(time: number) {
         if (this.loaded && !this.stoped) {
             const now = getPerformance()
             this.delta = (time - this.lastFrameTime) / 1000
@@ -141,7 +134,7 @@ export class Game {
         }
     }
 
-    loop(): void {
+    loop() {
         const scene = this.getCurrentScene()
         if (scene instanceof Scene) {
             this.fireEvents()
@@ -150,27 +143,64 @@ export class Game {
         }
     }
 
-    start(): void {
+    start() {
         this.stoped = false
         this.animationFrame = requestAnimationFrame((time: number) => this.frame(time))
     }
 
-    stop(): void {
+    stop() {
         this.stoped = true
         this.animationFrame && cancelAnimationFrame(this.animationFrame)
     }
 
-    restart(): void {
+    restart() {
         this.stop()
         this.start()
     }
 
-    fireEvents(): void {
+    fireEvents() {
         Object.keys(this.keyStates).map((key: string) => {
             if (typeof this.events[key] === 'function') {
                 this.events[key]()
             }
         })
+    }
+
+    fireMouseEvent(type: string) {
+        if (typeof this.mouseEvents[type] === 'function') {
+            this.mouseEvents[type](this.mousePos)
+        }
+    }
+
+    setMousePos(x: number, y: number) {
+        const mpos = new Vector(Math.floor(x / this.scale), Math.floor(y / this.scale))
+        if (this.mouseStarted) {
+            this.mouseDeltaPos = mpos.sub(this.mousePos)
+        }
+        this.mousePos = mpos
+        this.mouseStarted = true
+        this.isMouseMoved = true
+    }
+
+    onMouseDown(e: MouseEvent) {
+        const m = MOUSE_BUTTONS[e.button]
+        if (m) {
+            this.mouseStates[m] = 'pressed'
+            this.fireMouseEvent(e.type)
+        }
+    }
+
+    onMouseMove(e: MouseEvent) {
+        this.setMousePos(e.offsetX, e.offsetY)
+        this.fireMouseEvent(e.type)
+    }
+
+    onMouseUp(e: MouseEvent) {
+        const m = MOUSE_BUTTONS[e.button]
+        if (m) {
+            this.mouseStates[m] = 'released'
+            this.fireMouseEvent(e.type)
+        }
     }
 
     onKey(pressed: boolean, e: KeyboardEvent) {
@@ -179,46 +209,50 @@ export class Game {
         e.stopPropagation && e.stopPropagation()
     }
 
-    isKeyDown(key: string): boolean {
-        return this.keyStates[key] || false
-    }
-
     onKeyDown(k: string | string[], cb: () => void) {
         this.events = Array.isArray(k)
             ? Object.assign({}, this.events, ...k.map(key => ({ [key]: cb })))
             : { ...this.events, [k]: cb }
     }
 
-    getCurrentScene(): Scene {
+    onMouseEvent(k: string | string[], cb: (pos: Vector) => void) {
+        this.mouseEvents = Array.isArray(k)
+            ? Object.assign({}, this.mouseEvents, ...k.map(key => ({ [key]: cb })))
+            : { ...this.mouseEvents, [k]: cb }
+
+        console.info(this.mouseEvents)
+    }
+
+    getCurrentScene() {
         if (this.scenes[this.currentScene] instanceof Scene) {
             return this.scenes[this.currentScene]
         } else throw new Error('No current scene!')
     }
 
-    getImage(name: string): HTMLImageElement {
+    getImage(name: string) {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
         } else throw new Error('Invalid image!')
     }
 
-    playScene(idx: number): void {
+    playScene(idx: number) {
         this.currentScene = idx
         this.restart()
     }
 
-    setScale(scale: number): void {
+    setScale(scale: number) {
         this.scale = scale
         this.resolution.x = Math.round(this.width / this.scale)
         this.resolution.y = Math.round(this.height / this.scale)
     }
 
-    setSize(width: number, height: number, scale?: number): void {
+    setSize(width: number, height: number, scale?: number) {
         this.width = width
         this.height = height
         this.setScale(scale || this.scale)
     }
 
-    wait(id: string, fn: () => void, duration: number): void {
+    wait(id: string, fn: () => void, duration: number) {
         if (!this.timeouts[id]) {
             this.timeouts[id] = setTimeout(() => {
                 this.cancelWait(id)
@@ -227,24 +261,24 @@ export class Game {
         }
     }
 
-    cancelWait(id: string): void {
+    cancelWait(id: string) {
         if (this.timeouts[id]) {
             clearTimeout(this.timeouts[id])
             delete this.timeouts[id]
         }
     }
 
-    datGui(): void {
+    datGui() {
         if (this.gui) this.gui.destroy()
         this.gui = new dat.GUI()
         this.gui.add(this, 'fps').listen()
     }
 
-    setAudioVolume(volume: number): void {
+    setAudioVolume(volume: number) {
         Howler.volume(volume)
     }
 
-    playSound(name: string): void {
+    playSound(name: string) {
         if (this.sounds[name] instanceof Howl) {
             this.sounds[name].play()
         } else if (this.soundFiles[name]) {
@@ -253,7 +287,7 @@ export class Game {
         } else throw new Error('Invalid sound!')
     }
 
-    loopSound(name: string, volume = 1): void {
+    loopSound(name: string, volume = 1) {
         if (this.soundFiles[name]) {
             this.sounds[name] = new Howl({ src: this.soundFiles[name], loop: true, volume })
             this.sounds[name].play()

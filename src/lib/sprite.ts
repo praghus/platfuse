@@ -1,6 +1,6 @@
 import { Animation, Drawable, TMXFlips } from '../types'
 import { getPerformance } from './utils/helpers'
-import { normalize, Vec2 } from './utils/math'
+import { normalize, Vector } from './utils/math'
 import { Game } from './game'
 
 export class Sprite implements Drawable {
@@ -10,7 +10,8 @@ export class Sprite implements Drawable {
     frameStart = getPerformance()
 
     constructor(public id: string, public width: number, public height: number, public game: Game) {}
-    animate(animation = this.animation): void {
+
+    animate(animation = this.animation) {
         if (animation) {
             this.animFrame = this.animFrame || 0
             this.frameStart = getPerformance()
@@ -35,11 +36,7 @@ export class Sprite implements Drawable {
         }
     }
 
-    /**
-     * @param pos 
-     * @param flips 
-     */
-    draw(pos: Vec2, flips?: TMXFlips): void {
+    draw(pos: Vector, flips?: TMXFlips) {
         const { id, animation, animFrame, width, height } = this
         const { ctx } = this.game
         const image = this.game.getImage(id)

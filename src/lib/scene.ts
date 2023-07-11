@@ -1,6 +1,6 @@
-import { Constructable, StringTMap, TMXTileset, TMXLayer, TMXFlips } from '../types'
-import { isValidArray, getFlips, noop } from './utils/helpers'
-import { Vec2 } from './utils/math'
+import { Constructable, TMXTileset, TMXLayer, TMXFlips } from '../types'
+import { isValidArray, getFlips, noop, getFilename } from './utils/helpers'
+import { Vector } from './utils/math'
 import { Game } from './game'
 import { Camera } from './camera'
 import { Entity } from './entity'
@@ -12,9 +12,9 @@ import { COLORS, FLIPPED } from './utils/constants'
 export class Scene {
     game: Game
     camera: Camera
-    entities: StringTMap<any> = {}
+    entities: Record<string, any> = {}
     layers: Layer[] = []
-    tiles: StringTMap<Tile> = {}
+    tiles: Record<string, Tile> = {}
     objects: Entity[] = []
     tilewidth = 0
     tileheight = 0
@@ -32,7 +32,7 @@ export class Scene {
 
     async init(): Promise<void> {}
 
-    update(): void {
+    update() {
         for (const layer of this.layers) {
             layer instanceof Layer && layer.update()
         }
@@ -45,7 +45,7 @@ export class Scene {
         this.camera.update()
     }
 
-    draw(): void {
+    draw() {
         const { ctx, colors, draw, width, height, scale } = this.game
         ctx.imageSmoothingEnabled = false
         ctx.save()
@@ -66,7 +66,7 @@ export class Scene {
         ctx.restore()
     }
 
-    setDimensions(width: number, height: number, tilewidth: number, tileheight: number): void {
+    setDimensions(width: number, height: number, tilewidth: number, tileheight: number) {
         this.tilewidth = tilewidth
         this.tileheight = tileheight
         this.width = width
@@ -74,12 +74,12 @@ export class Scene {
         this.camera.setBounds(0, 0, width * tilewidth, height * tileheight)
     }
 
-    createLayers(layers: (Constructable<Layer> | TMXLayer)[]): void {
+    createLayers(layers: (Constructable<Layer> | TMXLayer)[]) {
         this.layers = []
         layers.forEach(l => this.addLayer(l))
     }
 
-    addLayer(l: Constructable<Layer> | TMXLayer): void {
+    addLayer(l: Constructable<Layer> | TMXLayer) {
         if (typeof l === 'function') {
             this.layers.push(new l(null, this.game))
         } else {
@@ -88,7 +88,7 @@ export class Scene {
         }
     }
 
-    addObject(type: string, props: StringTMap<any>, index?: number): Entity {
+    addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(props, this.game) : new Entity(props, this.game)
         if (entity.image) {
@@ -100,18 +100,27 @@ export class Scene {
         return entity
     }
 
-    removeObject(obj: Entity): void {
+    removeObject(obj: Entity) {
         this.objects.splice(this.objects.indexOf(obj), 1)
     }
 
-    addTileset(tileset: TMXTileset, image: string): void {
-        const newTileset = { ...tileset, image }
+    addTileset(tileset: TMXTileset, source: string) {
+        const newTileset = { ...tileset, image: { ...tileset.image, source } }
         for (let i = 0; i < newTileset.tilecount; i++) {
             this.tiles[i + newTileset.firstgid] = new Tile(i + newTileset.firstgid, newTileset, this.game)
         }
     }
 
-    forEachVisibleObject(cb: (obj: Entity) => void = noop, layerId?: number): void {
+    createTilesets(tilesets: TMXTileset[]) {
+        tilesets.map((tileset: TMXTileset) => {
+            const asset = getFilename(tileset.image.source)
+            if (Object.keys(this.game.assets).includes(asset)) {
+                this.addTileset(tileset, asset)
+            }
+        })
+    }
+
+    forEachVisibleObject(cb: (obj: Entity) => void = noop, layerId?: number) {
         for (const obj of this.objects) {
             if ((layerId === undefined || obj.layerId === layerId) && obj.visible) {
                 cb(obj)
@@ -119,7 +128,7 @@ export class Scene {
         }
     }
 
-    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vec2, flips?: TMXFlips) => void = noop): void {
+    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
         const { camera, tilewidth, tileheight } = this
         const { resolution } = this.game
 
@@ -131,7 +140,7 @@ export class Scene {
             let _x = Math.floor(-camera.pos.x / tilewidth)
             while (x <= resolution.x) {
                 const tileId = layer?.get(_x, _y)
-                tileId && fn(this.getTileObject(tileId), new Vec2(x, y), getFlips(tileId))
+                tileId && fn(this.getTileObject(tileId), new Vector(x, y), getFlips(tileId))
                 x += tilewidth
                 _x++
             }
@@ -140,56 +149,56 @@ export class Scene {
         }
     }
 
-    createSprite(id: string, width: number, height: number): Sprite {
+    createSprite(id: string, width: number, height: number) {
         return new Sprite(id, width, height, this.game)
     }
 
-    getLayer(id: number): Layer {
+    getLayer(id: number) {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
     }
 
-    getObjects(): Entity[] {
+    getObjects() {
         return this.objects
     }
 
-    getObjectById(id: string): Entity | undefined {
+    getObjectById(id: string) {
         return this.objects.find(object => object.id === id)
     }
 
-    getObjectByType(type: string): Entity | undefined {
+    getObjectByType(type: string) {
         return this.objects.find(object => object.type === type)
     }
 
-    getObjectsByType(type: string): Entity[] {
+    getObjectsByType(type: string) {
         return this.objects.filter(object => object.type === type)
     }
 
-    getObjectLayers(): Layer[] {
+    getObjectLayers() {
         return this.layers.filter((layer: Layer) => isValidArray(layer.objects))
     }
 
-    getObjectGridPos(obj: Entity): Vec2 {
-        return new Vec2(Math.round(obj.pos.x / this.tilewidth), Math.round(obj.pos.y / this.tileheight))
+    getObjectGridPos(obj: Entity) {
+        return new Vector(Math.floor(obj.pos.x / this.tilewidth), Math.floor(obj.pos.y / this.tileheight))
     }
 
-    getTile(x: number, y: number, layerId: number): Tile {
+    getTile(x: number, y: number, layerId: number) {
         return this.getTileObject(this.getLayer(layerId).get(x, y) || 0)
     }
 
-    getTileObject(id: number): Tile {
+    getTileObject(id: number) {
         const gid: number = (id &= ~(FLIPPED.HORIZONTALLY | FLIPPED.VERTICALLY | FLIPPED.DIAGONALLY))
         return this.tiles[gid]
     }
 
-    removeLayer(index: number): void {
+    removeLayer(index: number) {
         this.layers.splice(index, 1)
     }
 
-    showLayer(layerId: number): void {
+    showLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(true)
     }
 
-    hideLayer(layerId: number): void {
+    hideLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(false)
     }
 }

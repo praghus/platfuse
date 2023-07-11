@@ -1,11 +1,11 @@
-import { Drawable, StringTMap, TMXFlips, TMXTileset } from '../types'
+import { Drawable, TMXFlips, TMXTileset } from '../types'
 import { COLORS, TILE_TYPE } from './utils/constants'
 import { getPerformance, isValidArray } from './utils/helpers'
-import { normalize, Box, Vec2 } from './utils/math'
+import { normalize, Box, Vector } from './utils/math'
 import { Game } from './game'
 
 export class Tile implements Drawable {
-    properties: StringTMap<any>
+    properties: Record<string, any>
     type: string
     width: number
     height: number
@@ -25,21 +25,21 @@ export class Tile implements Drawable {
     isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
     isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
     isInvisible = (): boolean => this.type === TILE_TYPE.INVISIBLE
-    
-    getTileProperties(gid: number, tileset: TMXTileset): StringTMap<any> {
+
+    getTileProperties(gid: number, tileset: TMXTileset) {
         const { firstgid, tiles } = tileset
         return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
     }
 
-    getBounds(x: number, y: number): Box {
-        return new Box(new Vec2(x * this.width, y * this.height), this.width, this.height)
+    getBounds(x: number, y: number) {
+        return new Box(new Vector(x * this.width, y * this.height), this.width, this.height)
     }
 
     /**
      * Get terrain
      * @returns {number[]} Array of terrain gid's
      */
-    getTerrain(): number[] {
+    getTerrain() {
         const { terrain } = this.properties
         return terrain && terrain.split(',').map((id: string) => (id ? parseInt(id) : null))
     }
@@ -48,7 +48,7 @@ export class Tile implements Drawable {
      * Gets next tile gid for animation
      * @returns {number} Tile gid
      */
-    getNextGid(): number {
+    getNextGid() {
         if (this.properties && this.properties.animation) {
             this.frameStart = getPerformance()
             const { frames } = this.properties.animation
@@ -64,10 +64,10 @@ export class Tile implements Drawable {
 
     /**
      * Draw tile image
-     * @param {Vec2} pos Position
+     * @param {Vector} pos Position
      * @param {TMXFlips} flips Flips
      */
-    draw(pos: Vec2, flips?: TMXFlips): void {
+    draw(pos: Vector, flips?: TMXFlips) {
         if (!this.isInvisible()) {
             const { ctx, draw } = this.game
             const { image, columns, firstgid, tilewidth, tileheight } = this.tileset
@@ -83,7 +83,17 @@ export class Tile implements Drawable {
 
             ctx.save()
             flip && ctx.scale(scaleH, scaleV)
-            ctx.drawImage(this.game.getImage(image), posX, posY, tilewidth, tileheight, x1, y1, tilewidth, tileheight)
+            ctx.drawImage(
+                this.game.getImage(image.source),
+                posX,
+                posY,
+                tilewidth,
+                tileheight,
+                x1,
+                y1,
+                tilewidth,
+                tileheight
+            )
             ctx.restore()
             if (this.game.getCurrentScene().debug) {
                 draw.fillText(`${this.id}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
