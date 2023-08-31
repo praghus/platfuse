@@ -24,6 +24,7 @@ export class Tile implements Drawable {
 
     isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
     isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
+    isLadder = (): boolean => this.type === TILE_TYPE.LADDER
     isInvisible = (): boolean => this.type === TILE_TYPE.INVISIBLE
 
     getTileProperties(gid: number, tileset: TMXTileset) {

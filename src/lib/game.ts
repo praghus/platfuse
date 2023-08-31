@@ -26,6 +26,7 @@ export class Game {
     mouseEvents: Record<string, any> = {}
     keyStates: Record<string, any> = {}
     timeouts: Record<string, any> = {}
+    settings: Record<string, any> = {}
     animationFrame?: number
     mouseStates: Record<string, any> = {}
     mousePos = new Vector()
@@ -140,6 +141,7 @@ export class Game {
             this.fireEvents()
             scene.update()
             scene.draw()
+            // effects
         }
     }
 
@@ -170,6 +172,18 @@ export class Game {
         if (typeof this.mouseEvents[type] === 'function') {
             this.mouseEvents[type](this.mousePos)
         }
+    }
+
+    setSettings(value: any) {
+        this.settings = value
+    }
+
+    setSetting(key: string, value: any) {
+        this.settings = { ...this.settings, [key]: value }
+    }
+
+    getSetting(key: string) {
+        return this.settings[key]
     }
 
     setMousePos(x: number, y: number) {

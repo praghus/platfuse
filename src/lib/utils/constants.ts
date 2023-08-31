@@ -9,6 +9,7 @@ export enum NODE_TYPE {
 export enum TILE_TYPE {
     NON_COLLIDING = 'noCollide',
     INVISIBLE = 'invisible',
+    LADDER = 'ladder',
     ONE_WAY = 'oneWay'
 }
 export enum COLORS {

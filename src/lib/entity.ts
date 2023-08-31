@@ -136,7 +136,7 @@ export class Entity {
 
     move(nextPos = this.force) {
         this.expectedPos = new Vector(this.pos.x + nextPos.x, this.pos.y + nextPos.y) // this.pos.add(nextPos)
-        if (this.collisions && (this.force.x !== 0 || this.force.y !== 0)) {
+        if (this.collisions) {
             const scene = this.game.getCurrentScene()
             const b = this.getCollisionArea()
             const cb = scene.camera.getBounds()
