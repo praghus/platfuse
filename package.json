@@ -1,6 +1,6 @@
 {
     "name": "platfuse",
-    "version": "1.0.6",
+    "version": "1.1.0",
     "description": "Platform game engine concept based on Tiled map editor",
     "author": "Piotr Praga <praghus@gmail.com>",
     "homepage": "https://praghus.github.io/platfuse",
