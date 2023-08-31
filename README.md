@@ -2,6 +2,8 @@
 
 Platform game engine concept based on Tiled Map Editor
 
+[Showcase](https://codesandbox.io/p/sandbox/platfuse-showcase-p8hgy5)
+
 [Documentation](https://praghus.github.io/platfuse)
 
 ## License
