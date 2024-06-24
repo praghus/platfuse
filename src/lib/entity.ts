@@ -1,90 +1,109 @@
-import { boxOverlap, Box, Vector } from './utils/math'
+import { Box, Vector, vec2, clamp, box, lerp, randVector, isOverlapping } from './utils/math'
 import { Animation, Drawable, TMXFlips } from '../types'
-import { COLORS, NODE_TYPE, SHAPE } from './utils/constants'
-import { isValidArray, uuid, noop } from './utils/helpers'
+import { COLORS } from './utils/constants'
+import { uuid, noop } from './utils/helpers'
 import { Game } from './game'
+import { Scene } from './scene'
 
 export class Entity {
     id: string
-    width = 0
-    height = 0
-    pos = new Vector()
-    expectedPos = new Vector()
-    initialPos = new Vector()
-    force = new Vector()
-    shape = SHAPE.BOX
-    layerId: number
+    pos = vec2()
+    size = vec2()
+    force = vec2()
+    // shape = SHAPE.BOX
     type: string
     color?: string
     gid?: number
-    family?: string
+    name?: string
     image?: string
-    bounds?: Box
     redius?: number
     flips?: TMXFlips
     rotatation?: number
     animation?: Animation
     properties: Record<string, any>
-    collisionLayers: number[] = []
-    collisions = false
-    solid = false
+
+    solid = true
     visible = true
     active = true
     dead = false
+
+    tmxRect: Box | null
+
+    collideTiles = true
+    collideObjects = true
+    collideSolidObjects = true
+    groundObject: Entity | boolean = false
+    maxSpeed = 1
+
+    mass = 1 // How heavy the object is, static if 0
+    damping = 0.9 // How much to slow down force each frame (0-1)
+    elasticity = 0 //  How bouncy the object is when colliding (0-1)
+    friction = 0.8 // How much friction to apply when sliding (0-1)
+    gravityScale = 1 // How much to scale gravity by for this object
+    angleVelocity = 0 // Angular force of the object
+    angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
+    angle = 0
+
+    c: Vector[] = []
+
     #sprite?: Drawable
 
-    constructor(obj: Record<string, any>, public game: Game) {
+    constructor(
+        obj: Record<string, any>,
+        public scene: Scene,
+        public game: Game
+    ) {
         this.id = (obj.id && `${obj.id}`) || uuid()
         this.gid = obj.gid
-        this.pos = new Vector(obj.x, obj.y - (obj.gid ? obj.height : 0))
-        this.color = obj.color
         this.type = obj.type
-        this.width = obj.width || this.width
-        this.height = obj.height || this.height
+        this.name = obj.name
+        this.tmxRect = obj.x && obj.y ? box(obj.x, obj.y, obj.width, obj.height) : null
         this.properties = obj.properties
         this.rotatation = obj.rotation
-        this.layerId = obj.layerId
         this.visible = obj.visible !== undefined ? obj.visible : true
-        this.initialPos = this.pos.clone()
     }
 
-    collide(obj: Entity) {} // eslint-disable-line @typescript-eslint/no-unused-vars
-
-    setCollisionArea(...args: number[]) {
-        if (args.length === 4) {
-            const [x, y, w, h] = args
-            this.bounds = new Box(new Vector(x, y), w, h)
-        } else {
-            this.bounds = new Box(new Vector(), this.width, this.height)
+    init() {
+        const { tileSize } = this.scene
+        if (this.tmxRect) {
+            this.size = vec2(this.tmxRect.size.x / tileSize.x, this.tmxRect.size.y / tileSize.y)
+            this.pos = vec2(
+                this.tmxRect.pos.x / tileSize.x + this.size.x / 2,
+                this.tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
+            )
         }
     }
 
-    getCollisionArea() {
-        return this.bounds || new Box(new Vector(), this.width, this.height)
+    destroy() {
+        this.dead = true
     }
 
-    getBoundingBox(nextX = this.pos.x, nextY = this.pos.y) {
-        if (this.bounds) {
-            const { pos, w, h } = this.bounds
-            return new Box(new Vector(pos.x + nextX, pos.y + nextY), w, h)
-        } else return new Box(new Vector(nextX, nextY), this.width, this.height)
+    collideWithTile(tileId: number, pos: Vector) {
+        if (tileId > 0 && this.scene.debug) {
+            this.c.push(pos)
+        }
+        return tileId > 0
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    collideWithObject(entity: Entity) {
+        return 1
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    collideWithTileRaycast(tileData: number, pos: Vector) {
+        return tileData > 0
     }
 
     draw() {
         if (this.visible && this.onScreen()) {
-            const { ctx } = this.game
-            const { camera, debug } = this.game.getCurrentScene()
-            const pos = new Vector(Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y))
+            const { draw } = this.game
+            const { debug } = this.scene
+            const rect = this.scene.getRectWorldPos(this)
             if (this.#sprite) {
-                this.#sprite.draw(pos, this.flips)
+                this.#sprite.draw(rect.pos.add(this.scene.camera.pos), this.flips)
             } else if (this.color) {
-                ctx.save()
-                ctx.fillStyle = this.color
-                ctx.beginPath()
-                ctx.rect(this.pos.x + camera.pos.x, this.pos.y + camera.pos.y, this.width, this.height)
-                ctx.fill()
-                ctx.closePath()
-                ctx.restore()
+                draw.fillRect(rect, this.color)
             }
             if (debug) this.displayDebug()
         }
@@ -94,14 +113,11 @@ export class Entity {
         this.#sprite = sprite
     }
 
-    animate(animation: Animation, flips?: TMXFlips, cb: (frame: number) => void = noop) {
+    animate(animation = this.animation, flips?: TMXFlips, cb: (frame: number) => void = noop) {
         if (this.#sprite && this.#sprite.animate) {
             this.flips = flips
             this.#sprite.animate(animation)
             cb(this.#sprite.animFrame)
-        }
-        if (animation !== this.animation && animation.bounds && isValidArray(animation.bounds)) {
-            this.setCollisionArea(...animation.bounds)
         }
         this.animation = animation
     }
@@ -114,151 +130,202 @@ export class Entity {
         if (this.#sprite) this.#sprite.animFrame = frame
     }
 
-    kill() {
-        this.dead = true
-    }
-
-    show() {
-        this.visible = true
-    }
-
-    hide() {
-        this.visible = false
-    }
-
-    approach(start: number, end: number, shift: number, delta = 1) {
-        return start < end ? Math.min(start + shift * delta, end * delta) : Math.max(start - shift * delta, end * delta)
+    getTranslatedPositionRect() {
+        return this.scene.getRectWorldPos(this)
     }
 
     update() {
-        this.move()
-    }
+        const { scene } = this
 
-    move(nextPos = this.force) {
-        this.expectedPos = new Vector(this.pos.x + nextPos.x, this.pos.y + nextPos.y) // this.pos.add(nextPos)
-        if (this.collisions) {
-            const scene = this.game.getCurrentScene()
-            const b = this.getCollisionArea()
-            const cb = scene.camera.getBounds()
-            const { tilewidth, tileheight } = scene
+        const engineObjectsCollide = scene.objects.filter(o => o.collideSolidObjects)
 
-            if (this.expectedPos.x + b.pos.x <= cb.pos.x || this.expectedPos.x + b.pos.x + b.w >= cb.pos.x + cb.w)
-                nextPos.x = 0
-            if (this.expectedPos.y + b.pos.y <= cb.pos.y || this.expectedPos.y + b.pos.y + b.h >= cb.pos.y + cb.h)
-                nextPos.y = 0
+        // limit max speed to prevent missing collisions
+        this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
+        this.force.y = clamp(this.force.y, -this.maxSpeed, this.maxSpeed)
 
-            const offsetX = this.pos.x + b.pos.x
-            const offsetY = this.pos.y + b.pos.y
-            const PX = Math.ceil((this.expectedPos.x + b.pos.x) / tilewidth) - 1
-            const PY = Math.ceil((this.expectedPos.y + b.pos.y) / tileheight) - 1
-            const PW = Math.ceil((this.expectedPos.x + b.pos.x + b.w) / tilewidth)
-            const PH = Math.ceil((this.expectedPos.y + b.pos.y + b.h) / tileheight)
-            const nextX = this.getBoundingBox(this.expectedPos.x, this.pos.y)
-            const nextY = this.getBoundingBox(this.pos.x, this.expectedPos.y)
+        // do not update collision for fixed objects
+        if (!this.mass) return
 
-            if (isValidArray(this.collisionLayers)) {
-                for (const layerId of this.collisionLayers) {
-                    const layer = scene.getLayer(layerId)
-                    switch (layer.type) {
-                        case NODE_TYPE.LAYER:
-                            for (let y = PY; y < PH; y++) {
-                                for (let x = PX; x < PW; x++) {
-                                    const tile = scene.getTile(x, y, layer.id)
-                                    if (tile && tile.isSolid()) {
-                                        const tb = tile.getBounds(x, y)
-                                        if (boxOverlap(tb, nextX) && Math.abs(nextPos.x) > 0 && !tile.isOneWay()) {
-                                            nextPos.x =
-                                                nextPos.x < 0
-                                                    ? tb.pos.x + tile.width - offsetX
-                                                    : tb.pos.x - b.w - offsetX
-                                        }
-                                        if (boxOverlap(tb, nextY)) {
-                                            if (!tile.isOneWay() && Math.abs(nextPos.y) > 0) {
-                                                nextPos.y =
-                                                    nextPos.y < 0
-                                                        ? tb.pos.y + tile.height - offsetY
-                                                        : tb.pos.y - b.h - offsetY
-                                            } else if (
-                                                nextPos.y >= 0 &&
-                                                tile.isOneWay() &&
-                                                this.pos.y + b.pos.y + b.h <= tb.pos.y
-                                            ) {
-                                                nextPos.y = tb.pos.y - b.h - offsetY
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            break
-                        case NODE_TYPE.OBJECT_GROUP:
-                            scene.objects.forEach(obj => {
-                                const ob = obj.getBoundingBox(obj.pos.x, obj.pos.y)
-                                if (
-                                    obj.id !== this.id &&
-                                    obj.collisions &&
-                                    obj.layerId === layerId &&
-                                    obj.collisionLayers.includes(this.layerId)
-                                ) {
-                                    if (obj.solid) {
-                                        if (boxOverlap(ob, nextY) && Math.abs(nextPos.y) > 0) {
-                                            nextPos.y =
-                                                nextPos.y < 0
-                                                    ? ob.pos.y + obj.height - offsetY
-                                                    : ob.pos.y - b.h - offsetY
-                                        }
-                                        if (boxOverlap(ob, nextX) && Math.abs(nextPos.x) > 0) {
-                                            nextPos.x =
-                                                nextPos.x < 0
-                                                    ? ob.pos.x + obj.width - offsetX
-                                                    : ob.pos.x - b.w - offsetX
-                                        }
-                                    }
-                                    if (boxOverlap(ob, this.getBoundingBox(this.expectedPos.x, this.expectedPos.y))) {
-                                        this.collide(obj)
-                                        obj.collide(this)
-                                    }
-                                }
-                            })
-                            break
+        // apply physics
+        const oldPos = this.pos.copy()
+        this.force.y += scene.gravity * this.gravityScale
+        this.pos.x += this.force.x *= this.damping
+        this.pos.y += this.force.y *= this.damping
+        this.angle += this.angleVelocity *= this.angleDamping
+
+        const wasMovingDown = this.force.y < 0
+
+        if (this.groundObject) {
+            // apply friction in local space of ground object
+            const groundSpeed = 0 //this.groundObject.force ? this.groundObject.force.x : 0;
+            this.force.x = groundSpeed + (this.force.x - groundSpeed) * this.friction
+            this.groundObject = false
+        }
+
+        if (this.collideSolidObjects) {
+            // check collisions against solid objects
+            const epsilon = 0.001 // necessary to push slightly outside of the collision
+            for (const o of engineObjectsCollide) {
+                // non solid objects don't collide with eachother
+                if ((!this.solid && !o.solid) || o.dead || o == this) continue
+
+                // check collision
+                if (!isOverlapping(this.pos, this.size, o.pos, o.size)) continue
+
+                // notify objects of collision and check if should be resolved
+                const collide1 = this.collideWithObject(o)
+                const collide2 = o.collideWithObject(this)
+                if (!collide1 || !collide2) continue
+
+                if (isOverlapping(oldPos, this.size, o.pos, o.size)) {
+                    // if already was touching, try to push away
+                    const deltaPos = oldPos.subtract(o.pos)
+                    const length = deltaPos.length()
+                    const pushAwayAccel = 0.001 // push away if already overlapping
+                    const force = length < 0.01 ? randVector(pushAwayAccel) : deltaPos.scale(pushAwayAccel / length)
+                    this.force = this.force.add(force)
+                    if (o.mass)
+                        // push away if not fixed
+                        o.force = o.force.subtract(force)
+
+                    // debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f00')
+                    continue
+                }
+
+                // check for collision
+                const sizeBoth = this.size.add(o.size)
+                const smallStepUp = (oldPos.y - o.pos.y) * 2 > sizeBoth.y + scene.gravity // prefer to push up if small delta
+                const isBlockedX = Math.abs(oldPos.y - o.pos.y) * 2 < sizeBoth.y
+                const isBlockedY = Math.abs(oldPos.x - o.pos.x) * 2 < sizeBoth.x
+                const elasticity = Math.max(this.elasticity, o.elasticity)
+
+                if (smallStepUp || isBlockedY || !isBlockedX) {
+                    // resolve y collision
+                    // push outside object collision
+                    this.pos.y = o.pos.y + (sizeBoth.y / 2 + epsilon) * Math.sign(oldPos.y - o.pos.y)
+                    if ((o.groundObject && wasMovingDown) || !o.mass) {
+                        // set ground object if landed on something
+                        if (wasMovingDown) this.groundObject = o
+
+                        // bounce if other object is fixed or grounded
+                        this.force.y *= -elasticity
+                    } else if (o.mass) {
+                        // inelastic collision
+                        const inelastic = (this.mass * this.force.y + o.mass * o.force.y) / (this.mass + o.mass)
+
+                        // elastic collision
+                        const elastic0 =
+                            (this.force.y * (this.mass - o.mass)) / (this.mass + o.mass) +
+                            (o.force.y * 2 * o.mass) / (this.mass + o.mass)
+                        const elastic1 =
+                            (o.force.y * (o.mass - this.mass)) / (this.mass + o.mass) +
+                            (this.force.y * 2 * this.mass) / (this.mass + o.mass)
+
+                        // lerp betwen elastic or inelastic based on elasticity
+                        this.force.y = lerp(elasticity, inelastic, elastic0)
+                        o.force.y = lerp(elasticity, inelastic, elastic1)
+                    }
+                }
+                if (!smallStepUp && isBlockedX) {
+                    // resolve x collision
+                    // push outside collision
+                    this.pos.x = o.pos.x + (sizeBoth.x / 2 + epsilon) * Math.sign(oldPos.x - o.pos.x)
+                    if (o.mass) {
+                        // inelastic collision
+                        const inelastic = (this.mass * this.force.x + o.mass * o.force.x) / (this.mass + o.mass)
+
+                        // elastic collision
+                        const elastic0 =
+                            (this.force.x * (this.mass - o.mass)) / (this.mass + o.mass) +
+                            (o.force.x * 2 * o.mass) / (this.mass + o.mass)
+                        const elastic1 =
+                            (o.force.x * (o.mass - this.mass)) / (this.mass + o.mass) +
+                            (this.force.x * 2 * this.mass) / (this.mass + o.mass)
+
+                        // lerp betwen elastic or inelastic based on elasticity
+                        this.force.x = lerp(elasticity, inelastic, elastic0)
+                        o.force.x = lerp(elasticity, inelastic, elastic1)
+                    } // bounce if other object is fixed
+                    else this.force.x *= -elasticity
+                }
+                // debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f0f');
+            }
+        }
+
+        if (this.collideTiles) {
+            // check collision against tiles
+            if (scene.tileCollisionTest(this.pos, this.size, this)) {
+                // if already was stuck in collision, don't do anything
+                // this should not happen unless something starts in collision
+                if (!scene.tileCollisionTest(oldPos, this.size, this)) {
+                    // test which side we bounced off (or both if a corner)
+                    const isBlockedY = scene.tileCollisionTest(vec2(oldPos.x, this.pos.y), this.size, this)
+                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, oldPos.y), this.size, this)
+                    if (isBlockedY || !isBlockedX) {
+                        this.groundObject = wasMovingDown // set if landed on ground
+                        this.force.y *= -this.elasticity // bounce force
+
+                        // adjust next force to settle on ground
+                        const o = ((oldPos.y - this.size.y / 2) | 0) - (oldPos.y - this.size.y / 2)
+                        if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
+                            this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
+
+                        // move to previous position
+                        this.pos.y = oldPos.y
+                    }
+                    if (isBlockedX) {
+                        // move to previous position and bounce
+                        this.pos.x = oldPos.x
+                        this.force.x *= -this.elasticity
                     }
                 }
             }
         }
-        this.pos = this.pos.add(nextPos)
+        this.animate()
     }
 
     onScreen() {
-        const scene = this.game.getCurrentScene()
-        const { camera, tilewidth, tileheight } = scene
-        const { pos, w, h } = this.getCollisionArea()
-        const { x, y } = this.game.resolution
+        const scene = this.scene
+        const { camera, tileSize } = scene
+        const { pos, size } = this.getTranslatedPositionRect()
+        const { x, y } = camera.resolution
         const cx = this.pos.x + pos.x
         const cy = this.pos.y + pos.y
         return (
-            cx + w + tilewidth > -camera.pos.x &&
-            cy + h + tileheight > -camera.pos.y &&
-            cx - tilewidth < -camera.pos.x + x &&
-            cy - tileheight < -camera.pos.y + y
+            cx + size.x + tileSize.x > -camera.pos.x &&
+            cy + size.y + tileSize.y > -camera.pos.y &&
+            cx - tileSize.x < -camera.pos.x + x &&
+            cy - tileSize.y < -camera.pos.y + y
         )
     }
 
-    onGround = () => this.pos.y < this.expectedPos.y
-    onCeiling = () => this.pos.y > this.expectedPos.y
-    onRightWall = () => this.pos.x < this.expectedPos.x
-    onLeftWall = () => this.pos.x > this.expectedPos.x
+    // onGround = () => this.pos.y < this.expectedPos.y
+    // onCeiling = () => this.pos.y > this.expectedPos.y
+    // onRightWall = () => this.pos.x < this.expectedPos.x
+    // onLeftWall = () => this.pos.x > this.expectedPos.x
 
     displayDebug() {
+        const scene = this.scene
         const { draw } = this.game
-        const { camera } = this.game.getCurrentScene()
-        const { width, height, type, visible, force } = this
-        const [posX, posY] = [Math.floor(this.pos.x + camera.pos.x), Math.floor(this.pos.y + camera.pos.y)]
-        const [x, y] = [posX + width + 4, posY + height / 2]
-        draw.outline(new Box(new Vector(posX, posY), width, height), visible ? COLORS.WHITE_50 : COLORS.PURPLE, 0.25)
-        draw.outline(this.getBoundingBox(posX, posY), visible ? COLORS.GREEN : COLORS.PURPLE, 0.5)
-        draw.fillText(`${type}`, posX, posY - 10, COLORS.WHITE)
-        draw.fillText(`x:${Math.floor(this.pos.x)}`, posX, posY - 6, COLORS.LIGHT_RED)
-        draw.fillText(`y:${Math.floor(this.pos.y)}`, posX, posY - 2, COLORS.LIGHT_RED)
-        force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, x, y - 2, COLORS.LIGHT_RED)
-        force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, x, y + 2, COLORS.LIGHT_RED)
+        const { type, visible } = this
+
+        const rect = this.getTranslatedPositionRect().move(scene.camera.pos)
+
+        draw.outline(rect, visible ? COLORS.PURPLE : COLORS.WHITE_50, 0.5)
+        draw.fillText(`${type}`, rect.pos.x, rect.pos.y - 10, COLORS.WHITE)
+        draw.fillText(`x:${this.pos.x.toFixed(1)}`, rect.pos.x, rect.pos.y - 5, COLORS.WHITE)
+        draw.fillText(`y:${this.pos.y.toFixed(1)}`, rect.pos.x, rect.pos.y, COLORS.WHITE)
+
+        // force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, x, y - 2, COLORS.LIGHT_RED)
+        // force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, x, y + 2, COLORS.LIGHT_RED)
+
+        if (this.type === 'player' && this.c.length > 0) {
+            this.c.forEach(pos => {
+                const pp = vec2(pos.x * scene.tileSize.x, pos.y * scene.tileSize.y).add(this.scene.camera.pos)
+                draw.outline(new Box(pp, scene.tileSize), '#f00')
+            })
+        }
+
+        this.c = []
     }
 }

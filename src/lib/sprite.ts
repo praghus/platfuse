@@ -1,6 +1,6 @@
 import { Animation, Drawable, TMXFlips } from '../types'
 import { getPerformance } from './utils/helpers'
-import { normalize, Vector } from './utils/math'
+import { normalize, vec2, Vector } from './utils/math'
 import { Game } from './game'
 
 export class Sprite implements Drawable {
@@ -9,7 +9,11 @@ export class Sprite implements Drawable {
     then = getPerformance()
     frameStart = getPerformance()
 
-    constructor(public id: string, public width: number, public height: number, public game: Game) {}
+    constructor(
+        public id: string,
+        public size: Vector,
+        public game: Game
+    ) {}
 
     animate(animation = this.animation) {
         if (animation) {
@@ -37,13 +41,14 @@ export class Sprite implements Drawable {
     }
 
     draw(pos: Vector, flips?: TMXFlips) {
-        const { id, animation, animFrame, width, height } = this
+        const { id, animation, animFrame, size } = this
         const { ctx } = this.game
         const image = this.game.getImage(id)
+        const offset = animation?.offset ? vec2(...animation.offset) : vec2(0, 0)
         const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
         const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
-        const FX = flips?.H ? width * -1 : 0 // Set x position to -100% if flip horizontal
-        const FY = flips?.V ? height * -1 : 0 // Set y position to -100% if flip vertical
+        const FX = flips?.H ? size.x * -1 : 0 // Set x position to -100% if flip horizontal
+        const FY = flips?.V ? size.y * -1 : 0 // Set y position to -100% if flip vertical
         const flip = flips?.H || flips?.V
         const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
 
@@ -61,13 +66,13 @@ export class Sprite implements Drawable {
                 posY,
                 animation.width,
                 animation.height,
-                x1,
-                y1,
+                x1 - offset.x,
+                y1 - offset.y,
                 animation.width,
                 animation.height
             )
         } else if (image) {
-            ctx.drawImage(image, 0, 0, width, height, x1, y1, width, height)
+            ctx.drawImage(image, 0, 0, size.x, size.y, x1, y1, size.x, size.y)
         }
         ctx.restore()
     }

@@ -6,7 +6,7 @@ export { Scene } from './lib/scene'
 export { Sprite } from './lib/sprite'
 export { Tile } from './lib/tile'
 
-export { Vector, Box } from './lib/utils/math'
+export { approach, clamp, vec2, Vector, Box } from './lib/utils/math'
 export { Draw } from './lib/utils/draw'
 export { Shaker } from './lib/utils/shaker'
 

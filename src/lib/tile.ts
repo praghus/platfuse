@@ -1,24 +1,26 @@
 import { Drawable, TMXFlips, TMXTileset } from '../types'
 import { COLORS, TILE_TYPE } from './utils/constants'
 import { getPerformance, isValidArray } from './utils/helpers'
-import { normalize, Box, Vector } from './utils/math'
+import { normalize, Box, Vector, vec2 } from './utils/math'
 import { Game } from './game'
 
 export class Tile implements Drawable {
     properties: Record<string, any>
     type: string
-    width: number
-    height: number
+    size = vec2()
     animFrame = 0
     then = getPerformance()
     frameStart = getPerformance()
     terrain: number[]
 
-    constructor(public id: number, public tileset: TMXTileset, public game: Game) {
+    constructor(
+        public id: number,
+        public tileset: TMXTileset,
+        public game: Game
+    ) {
         this.properties = this.getTileProperties(id, this.tileset)
         this.type = (this.properties && this.properties.type) || null
-        this.width = this.tileset.tilewidth
-        this.height = this.tileset.tileheight
+        this.size = vec2(this.tileset.tilewidth, this.tileset.tileheight)
         this.terrain = this.getTerrain()
     }
 
@@ -32,9 +34,9 @@ export class Tile implements Drawable {
         return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
     }
 
-    getBounds(x: number, y: number) {
-        return new Box(new Vector(x * this.width, y * this.height), this.width, this.height)
-    }
+    // getBounds(x: number, y: number) {
+    //     return new Box(new Vector(x * this.width, y * this.height), this.width, this.height)
+    // }
 
     /**
      * Get terrain
@@ -84,21 +86,22 @@ export class Tile implements Drawable {
 
             ctx.save()
             flip && ctx.scale(scaleH, scaleV)
+            ctx.translate(0.5, 0.5)
             ctx.drawImage(
                 this.game.getImage(image.source),
                 posX,
                 posY,
                 tilewidth,
                 tileheight,
-                x1,
-                y1,
+                x1 - 0.5,
+                y1 - 0.5,
                 tilewidth,
                 tileheight
             )
             ctx.restore()
-            if (this.game.getCurrentScene().debug) {
-                draw.fillText(`${this.id}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
-                draw.outline(new Box(pos, tilewidth, tileheight), COLORS.WHITE_25, 0.1)
+            if (this.game.currentScene?.debug) {
+                // draw.fillText(`${pos.x / 16},${pos.y / 16}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
+                draw.outline(new Box(pos, this.size), COLORS.WHITE_25, 1)
             }
         }
     }

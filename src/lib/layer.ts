@@ -2,24 +2,26 @@ import { TMXLayer, TMXFlips } from '../types'
 import { NODE_TYPE } from './utils/constants'
 import { Entity } from './entity'
 import { Game } from './game'
+import { Vector, vec2 } from './utils/math'
 export class Layer {
     id: number
-    width = 0
-    height = 0
     name?: string
     type = NODE_TYPE.CUSTOM as string
+    size = vec2()
     properties: Record<string, any> = {}
     data?: (number | null)[]
     objects?: Entity[]
     visible = true
 
-    constructor(layerData: TMXLayer | null, public game: Game) {
+    constructor(
+        layerData: TMXLayer | null,
+        public game: Game
+    ) {
         if (layerData) {
             this.id = layerData.id
             this.name = layerData.name
             this.type = layerData.type
-            this.width = layerData.width
-            this.height = layerData.height
+            this.size = vec2(layerData.width, layerData.height)
             this.visible = layerData.visible === undefined ? true : !!layerData.visible
             this.properties = layerData?.properties || {}
             this.data = layerData?.data
@@ -31,23 +33,19 @@ export class Layer {
 
     update() {}
 
-    isInRange(x: number, y: number) {
-        return x >= 0 && y >= 0 && x < this.width && y < this.height
+    get(pos: Vector) {
+        return (pos.inRange(this.size) && this.data && this.data[pos.x + this.size.x * pos.y]) || null
     }
 
-    get(x: number, y: number) {
-        return (this.isInRange(x, y) && this.data && this.data[x + this.width * y]) || null
-    }
-
-    put(x: number, y: number, tileId: number) {
-        if (this.data && this.isInRange(x, y)) {
-            this.data[x + this.width * y] = tileId
+    set(pos: Vector, tileId: number) {
+        if (this.data && pos.inRange(this.size)) {
+            this.data[pos.x + this.size.x * pos.y] = tileId
         }
     }
 
-    clear(x: number, y: number) {
-        if (this.data && this.isInRange(x, y)) {
-            this.data[x + this.width * y] = null
+    clear(pos: Vector) {
+        if (this.data && pos.inRange(this.size)) {
+            this.data[pos.x + this.size.x * pos.y] = null
         }
     }
 
@@ -56,16 +54,19 @@ export class Layer {
     }
 
     draw() {
-        const scene = this.game.getCurrentScene()
-        if (this.visible) {
+        const scene = this.game.currentScene
+        if (scene && this.visible) {
             switch (this.type) {
                 case NODE_TYPE.LAYER:
                     scene.forEachVisibleTile(this, (tile, pos, flips) => tile?.draw(pos, flips as TMXFlips))
                     break
                 case NODE_TYPE.OBJECT_GROUP:
-                    scene.forEachVisibleObject(obj => obj.visible && obj.draw(), this.id)
+                    scene.forEachVisibleObject(obj => obj.visible && obj.draw())
                     break
             }
         }
+        // if (scene.debug) {
+        //     scene.forEachVisibleTile(scene.tileCollision, (tile, pos, flips) => tile?.draw(pos, flips as TMXFlips))
+        // }
     }
 }

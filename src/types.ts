@@ -15,7 +15,7 @@ export interface AnimationStrip {
 export interface Animation {
     strip?: AnimationStrip
     frames?: number[][]
-    bounds?: number[]
+    offset?: number[]
     width: number
     height: number
     loop: boolean
@@ -127,11 +127,9 @@ export interface TMXFlips {
 }
 
 export interface GameConfig {
-    width?: number
-    height?: number
-    canvas: HTMLCanvasElement
+    fixedSize?: Vector
     entities: Record<string, Constructable<Entity>>
-    scenes: Constructable<Scene>[]
+    scenes: Record<string, Constructable<Scene>>
     backgroundColor?: string
     preloaderColor?: string
     scale?: number

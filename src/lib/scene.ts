@@ -1,6 +1,6 @@
 import { Constructable, TMXTileset, TMXLayer, TMXFlips } from '../types'
 import { isValidArray, getFlips, noop, getFilename } from './utils/helpers'
-import { Vector } from './utils/math'
+import { Vector, box, vec2 } from './utils/math'
 import { Game } from './game'
 import { Camera } from './camera'
 import { Entity } from './entity'
@@ -8,70 +8,141 @@ import { Layer } from './layer'
 import { Sprite } from './sprite'
 import { Tile } from './tile'
 import { COLORS, FLIPPED } from './utils/constants'
+import { tmx } from 'tmx-map-parser'
 
 export class Scene {
     game: Game
     camera: Camera
-    entities: Record<string, any> = {}
     layers: Layer[] = []
+    size: Vector = vec2()
+    tileSize: Vector = vec2()
     tiles: Record<string, Tile> = {}
+    tileCollision: number[] = []
     objects: Entity[] = []
-    tilewidth = 0
-    tileheight = 0
-    width = 0
-    height = 0
+    gravity = 0
     debug = false
 
     constructor(game: Game) {
         this.game = game
-        this.camera = new Camera(game)
+        this.camera = new Camera(vec2(game.width, game.height))
         if (game.debug && game.gui) {
             game.gui.add(this, 'debug').listen()
         }
     }
 
-    async init(): Promise<void> {}
+    async init(map?: string): Promise<void> {
+        if (map) {
+            const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
+            this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight), 2)
+            this.createTilesets(tilesets)
+            this.createLayers(layers)
+        }
+    }
 
-    update() {
+    update() {}
+
+    updateCamera() {
+        this.camera.update()
+    }
+
+    updateLayers() {
         for (const layer of this.layers) {
             layer instanceof Layer && layer.update()
         }
+    }
+
+    updateObjects() {
         for (const obj of this.objects) {
             if (obj.active) {
                 obj.update()
                 obj.dead && this.removeObject(obj)
             }
         }
-        this.camera.update()
     }
 
     draw() {
-        const { ctx, colors, draw, width, height, scale } = this.game
-        ctx.imageSmoothingEnabled = false
+        const { ctx, backgroundColor, width, height } = this.game
+        const { scale } = this.camera
         ctx.save()
         ctx.scale(scale, scale)
         ctx.clearRect(0, 0, width / scale, height / scale)
-        if (colors.backgroundColor) {
-            ctx.fillStyle = colors.backgroundColor
+        if (backgroundColor) {
+            ctx.fillStyle = backgroundColor
             ctx.fillRect(0, 0, width / scale, height / scale)
         }
         for (const layer of this.layers) {
             layer instanceof Layer && layer.draw()
         }
         if (this.debug) {
-            draw.fillText('CAMERA', 4, 8, COLORS.WHITE)
-            draw.fillText(`x:${Math.floor(this.camera.pos.x)}`, 4, 12, COLORS.LIGHT_RED)
-            draw.fillText(`y:${Math.floor(this.camera.pos.y)}`, 4, 16, COLORS.LIGHT_RED)
+            this.displayDebug()
         }
         ctx.restore()
     }
 
-    setDimensions(width: number, height: number, tilewidth: number, tileheight: number) {
-        this.tilewidth = tilewidth
-        this.tileheight = tileheight
-        this.width = width
-        this.height = height
-        this.camera.setBounds(0, 0, width * tilewidth, height * tileheight)
+    setDimensions(size: Vector, tileSize: Vector, scale = 1) {
+        this.size = size
+        this.tileSize = tileSize
+        this.camera.setScale(scale)
+        this.camera.setBounds(0, 0, size.x * tileSize.x, size.y * tileSize.y)
+    }
+
+    setTileCollisionLayer(layerIndex: number) {
+        const layer = this.layers[layerIndex]
+        if (layer) {
+            this.tileCollision =
+                layer?.data?.map((id): number => {
+                    const t = id && this.getTileObject(id)
+                    return t && t.isSolid() ? 1 : 0
+                }) || []
+        }
+    }
+
+    tileCollisionTest(pos: Vector, size: Vector, entity?: Entity) {
+        const minX = Math.max((pos.x - size.x / 2) | 0, 0)
+        const minY = Math.max((pos.y - size.y / 2) | 0, 0)
+        const maxX = Math.min(pos.x + size.x / 2, this.size.x)
+        const maxY = Math.min(pos.y + size.y / 2, this.size.y)
+
+        for (let y = minY; y < maxY; ++y) {
+            for (let x = minX; x < maxX; ++x) {
+                const tileData = this.tileCollision[x + this.size.x * y]
+                if (tileData && (!entity || entity.collideWithTile(tileData, vec2(x, y)))) return true
+            }
+        }
+        return false
+    }
+
+    tileCollisionRaycast(posStart: Vector, posEnd: Vector, entity?: Entity) {
+        // test if a ray collides with tiles from start to end
+        // todo: a way to get the exact hit point, it must still be inside the hit tile
+        const delta = posEnd.subtract(posStart)
+        const totalLength = delta.length()
+        const normalizedDelta = delta.normalize()
+        const unit = vec2(Math.abs(1 / normalizedDelta.x), Math.abs(1 / normalizedDelta.y))
+        const flooredPosStart = posStart.floor()
+
+        // setup iteration variables
+        const pos = flooredPosStart
+        let xi = unit.x * (delta.x < 0 ? posStart.x - pos.x : pos.x - posStart.x + 1)
+        let yi = unit.y * (delta.y < 0 ? posStart.y - pos.y : pos.y - posStart.y + 1)
+
+        while (1) {
+            // check for tile collision
+            const tileData = this.getTileCollisionData(pos)
+            if (tileData && (!entity || entity.collideWithTile(tileData, pos))) {
+                // debugRaycast && debugLine(posStart, posEnd, '#f00', .02);
+                // debugRaycast && debugPoint(pos.add(vec2(.5)), '#ff0');
+                return pos.add(vec2(0.5))
+            }
+
+            // check if past the end
+            if (xi > totalLength && yi > totalLength) break
+
+            // get coordinates of the next tile to check
+            if (xi > yi) (pos.y += Math.sign(delta.y)), (yi += unit.y)
+            else (pos.x += Math.sign(delta.x)), (xi += unit.x)
+        }
+        // debugRaycast && debugLine(posStart, posEnd, '#00f', 0.02)
     }
 
     createLayers(layers: (Constructable<Layer> | TMXLayer)[]) {
@@ -90,12 +161,13 @@ export class Scene {
 
     addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
-        const entity: Entity = Model ? new Model(props, this.game) : new Entity(props, this.game)
+        const entity: Entity = Model ? new Model(props, this, this.game) : new Entity(props, this, this.game)
         if (entity.image) {
-            entity.addSprite(this.createSprite(entity.image, entity.width, entity.height))
+            entity.addSprite(this.createSprite(entity.image, entity.size))
         } else if (entity.gid) {
             entity.addSprite(this.tiles[entity.gid])
         }
+        entity.init()
         index !== undefined ? this.objects.splice(index, 0, entity) : this.objects.push(entity)
         return entity
     }
@@ -120,37 +192,41 @@ export class Scene {
         })
     }
 
-    forEachVisibleObject(cb: (obj: Entity) => void = noop, layerId?: number) {
-        for (const obj of this.objects) {
-            if ((layerId === undefined || obj.layerId === layerId) && obj.visible) {
-                cb(obj)
-            }
-        }
+    setTileCollisionData(pos: Vector, data = 0) {
+        pos.inRange(this.size) && (this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] = data)
     }
 
-    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
-        const { camera, tilewidth, tileheight } = this
-        const { resolution } = this.game
-
-        let y = Math.floor(camera.pos.y % tileheight)
-        let _y = Math.floor(-camera.pos.y / tileheight)
-
-        while (y <= resolution.y) {
-            let x = Math.floor(camera.pos.x % tilewidth)
-            let _x = Math.floor(-camera.pos.x / tilewidth)
-            while (x <= resolution.x) {
-                const tileId = layer?.get(_x, _y)
-                tileId && fn(this.getTileObject(tileId), new Vector(x, y), getFlips(tileId))
-                x += tilewidth
-                _x++
-            }
-            y += tileheight
-            _y++
-        }
+    getTileCollisionData(pos: Vector) {
+        return pos.inRange(this.size) ? this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
     }
 
-    createSprite(id: string, width: number, height: number) {
-        return new Sprite(id, width, height, this.game)
+    getGridPos(pos: Vector) {
+        return vec2(Math.ceil(pos.x / this.tileSize.x) | 0, Math.ceil(pos.y / this.tileSize.y) | 0)
+    }
+
+    // @todo: rename
+    getRectGridPos(entity: Entity) {
+        return box(
+            entity.pos.x / this.tileSize.x,
+            entity.pos.y / this.tileSize.y,
+            entity.size.x / this.tileSize.x,
+            entity.size.y / this.tileSize.y
+        )
+    }
+
+    // @todo: rename
+    getRectWorldPos(entity: Entity) {
+        const { tileSize } = this
+        return box(
+            Math.round(entity.pos.x * tileSize.x - (entity.size.x * tileSize.x) / 2),
+            Math.round(entity.pos.y * tileSize.y - (entity.size.y * tileSize.y) / 2),
+            Math.round(entity.size.x * tileSize.x),
+            Math.round(entity.size.y * tileSize.y)
+        )
+    }
+
+    createSprite(id: string, size: Vector) {
+        return new Sprite(id, size, this.game)
     }
 
     getLayer(id: number) {
@@ -177,12 +253,8 @@ export class Scene {
         return this.layers.filter((layer: Layer) => isValidArray(layer.objects))
     }
 
-    getObjectGridPos(obj: Entity) {
-        return new Vector(Math.floor(obj.pos.x / this.tilewidth), Math.floor(obj.pos.y / this.tileheight))
-    }
-
-    getTile(x: number, y: number, layerId: number) {
-        return this.getTileObject(this.getLayer(layerId).get(x, y) || 0)
+    getTile(pos: Vector, layerId: number) {
+        return this.getTileObject(this.getLayer(layerId).get(pos) || 0)
     }
 
     getTileObject(id: number) {
@@ -200,5 +272,37 @@ export class Scene {
 
     hideLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(false)
+    }
+
+    forEachVisibleObject(cb: (obj: Entity) => void = noop) {
+        for (const obj of this.objects) {
+            obj.visible && cb(obj)
+        }
+    }
+
+    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
+        const { camera, tileSize } = this
+        const { resolution } = this.camera
+
+        let y = Math.floor(camera.pos.y % tileSize.y)
+        let _y = Math.floor(-camera.pos.y / tileSize.y)
+
+        while (y <= resolution.y) {
+            let x = Math.floor(camera.pos.x % tileSize.x)
+            let _x = Math.floor(-camera.pos.x / tileSize.x)
+            while (x <= resolution.x) {
+                const tileId = layer?.get(vec2(_x, _y))
+                tileId && fn(this.getTileObject(tileId), vec2(x, y), getFlips(tileId))
+                x += tileSize.x
+                _x++
+            }
+            y += tileSize.y
+            _y++
+        }
+    }
+
+    displayDebug() {
+        const { x, y } = this.camera.pos
+        this.game.draw.fillText(`Camera: ${Math.floor(x)},${Math.floor(y)}`, 4, 4, COLORS.WHITE)
     }
 }

@@ -1,4 +1,4 @@
-import { Game } from '../game'
+import { Camera } from '../camera'
 import { Vector, clamp } from './math'
 
 export class Shaker {
@@ -6,10 +6,11 @@ export class Shaker {
     duration = 0
     progress = 0
     elapsed = 0
+    delta = 1 / 60
     intensity = new Vector()
     offset = new Vector()
 
-    constructor(public game: Game) {}
+    constructor(public camera: Camera) {}
 
     start(duration: number, intensity: Vector) {
         this.isRunning = true
@@ -22,8 +23,8 @@ export class Shaker {
 
     update() {
         if (!this.isRunning) return
-        const { delta, resolution } = this.game
-        this.elapsed += delta * 1000
+        const { resolution } = this.camera
+        this.elapsed += this.delta * 1000
         this.progress = clamp(this.elapsed / this.duration, 0, 1)
 
         if (this.elapsed < this.duration) {

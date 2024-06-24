@@ -1,33 +1,21 @@
-import { Box, Vector } from './utils/math'
+import { Box, Vector, box, vec2 } from './utils/math'
 import { Shaker } from './utils/shaker'
 import { Entity } from './entity'
-import { Game } from './game'
 
 export class Camera {
-    pos = new Vector()
-    offset = new Vector()
-    anchor = new Vector()
-    speed = new Vector(1, 1)
+    pos = vec2()
+    speed = vec2(1)
+    resolution: Vector
     shaker: Shaker
     bounds?: Box
-    follow?: Entity
+    followEntity?: Entity
 
-    constructor(public game: Game) {
-        this.shaker = new Shaker(game)
-    }
-
-    moveTo(x: number, y: number) {
-        const bounds = this.getBounds()
-        const px = Math.max(bounds.pos.x, Math.min(x, bounds.w))
-        const py = Math.max(bounds.pos.y, Math.min(y, bounds.h))
-        this.pos = new Vector(-px + this.game.resolution.x / 2, -py + this.game.resolution.y / 2)
-        this.anchor = this.pos.clone()
-    }
-
-    center() {
-        this.follow
-            ? this.moveTo(this.follow.pos.x + this.follow.width / 2, this.follow.pos.y + this.follow.height / 2)
-            : this.moveTo(this.game.resolution.x / 2, this.game.resolution.y / 2)
+    constructor(
+        public size: Vector,
+        public scale = 1
+    ) {
+        this.shaker = new Shaker(this)
+        this.resolution = vec2(Math.round(size.x / scale), Math.round(size.y / scale))
     }
 
     getBounds() {
@@ -38,7 +26,94 @@ export class Camera {
     }
 
     setBounds(x: number, y: number, width: number, height: number) {
-        this.bounds = new Box(new Vector(x, y), width, height)
+        this.bounds = box(x, y, width, height)
+    }
+
+    setScale(scale: number) {
+        this.scale = scale
+        this.resolution = vec2(Math.round(this.size.x / scale), Math.round(this.size.y / scale))
+    }
+
+    setFollow(follow: Entity, center = true) {
+        this.followEntity = follow
+        center && this.center()
+    }
+
+    unfollow() {
+        this.followEntity = undefined
+    }
+
+    center() {
+        // this.follow
+        //     ? this.moveTo(this.follow.pos.x + this.follow.size.x / 2, this.follow.pos.y + this.follow.size.y / 2)
+        //     : this.moveTo(this.resolution.x / 2, this.resolution.y / 2)
+    }
+
+    shake(duration: number, intensity: Vector) {
+        this.shaker.start(duration, intensity)
+    }
+
+    update() {
+        const { x, y } = this.resolution
+        const { size } = this.getBounds()
+        const offset = this.shaker.offset.divide(vec2(this.scale))
+
+        if (this.followEntity) {
+            const followRect = this.followEntity.getTranslatedPositionRect()
+            // this.pos = this.pos.lerp(this.followEntity.pos, clamp(0.2))
+            const midPos = new Vector(
+                -x / 2 + followRect.pos.x + followRect.size.x / 2,
+                -y / 2 + followRect.pos.y + followRect.size.y / 2
+            )
+            const moveTo = new Vector((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
+            this.pos = this.pos.subtract(
+                new Vector(Math.round(moveTo.x / this.scale), Math.round(moveTo.y / this.scale)).add(offset)
+            )
+        }
+        // if (!this.shaker.offset.x) {
+        if (this.pos.x - x < -size.x) this.pos.x = -size.x + x
+        if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
+        if (this.pos.x > 0) this.pos.x = 0 //this.shaker.offset.x / this.scale
+        if (this.pos.y > 0) this.pos.y = 0 //this.shaker.offset.y / this.scale
+        // }
+        this.shaker.update()
+    }
+
+    /** /
+    moveTo(x: number, y: number) {
+        const bounds = this.getBounds()
+        const px = Math.max(bounds.pos.x, Math.min(x, bounds.size.x))
+        const py = Math.max(bounds.pos.y, Math.min(y, bounds.size.y))
+        this.pos = new Vector(-px + this.resolution.x / 2, -py + this.resolution.y / 2)
+        this.anchor = this.pos.copy()
+    }
+
+    center() {
+        this.follow
+            ? this.moveTo(this.follow.pos.x + this.follow.size.x / 2, this.follow.pos.y + this.follow.size.y / 2)
+            : this.moveTo(this.resolution.x / 2, this.resolution.y / 2)
+    }
+
+    getBounds() {
+        if (!this.bounds) {
+            this.setBounds(0, 0, Infinity, Infinity)
+        }
+        return this.bounds as Box
+    }
+
+    setBounds(x: number, y: number, width: number, height: number) {
+        this.bounds = new Box(vec2(x, y), vec2(width, height))
+    }
+
+    setScale(scale: number) {
+        this.scale = scale
+        this.setResolution()
+    }
+
+    setResolution(width = this.width, height = this.height, scale = this.scale) {
+        if (width && height && scale) {
+            this.resolution = new Vector(Math.round(width / scale), Math.round(height / scale))
+        }
     }
 
     setSpeed(x: number, y = x) {
@@ -65,21 +140,21 @@ export class Camera {
     update() {
         if (this.follow) {
             const { speed, follow } = this
-            const { x, y } = this.game.resolution
-            const { w, h } = this.getBounds()
+            const { x, y } = this.resolution
+            const { size } = this.getBounds()
             const midPos = new Vector(
-                -x / 2 + follow.pos.x + follow.force.x + follow.width / 2,
-                -y / 2 + follow.pos.y + follow.force.y + follow.height / 2
+                -x / 2 + follow.pos.x + follow.force.x + follow.size.x / 2,
+                -y / 2 + follow.pos.y + follow.force.y + follow.size.y / 2
             )
             const moveTo = new Vector(
                 (midPos.x + this.pos.x - this.offset.x - this.shaker.offset.x) * speed.x,
                 (midPos.y + this.pos.y - this.offset.y - this.shaker.offset.y) * speed.y
             )
-            this.pos = this.pos.sub(
-                new Vector(Math.round(moveTo.x / this.game.scale), Math.round(moveTo.y / this.game.scale))
+            this.pos = this.pos.subtract(
+                new Vector(Math.round(moveTo.x / this.scale), Math.round(moveTo.y / this.scale))
             )
-            if (this.pos.x - x < -w) this.pos.x = -w + x
-            if (this.pos.y - y < -h) this.pos.y = -h + y
+            if (this.pos.x - x < -size.x) this.pos.x = -size.x + x
+            if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
             if (this.pos.x > 0) this.pos.x = 0
             if (this.pos.y > 0) this.pos.y = 0
         } else {
@@ -88,4 +163,6 @@ export class Camera {
         }
         this.shaker.update()
     }
+
+    /**/
 }

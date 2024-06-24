@@ -1,93 +1,112 @@
 import * as dat from 'dat.gui'
 import { Howl, Howler } from 'howler'
 import { Scene } from './scene'
-import { Vector } from './utils/math'
-import { getPerformance } from './utils/helpers'
+import { lerp } from './utils/math'
 import { Constructable, GameConfig } from '../types'
 import { Draw } from './utils/draw'
 import { Entity } from './entity'
+import { Input } from './input'
 
-const MOUSE_BUTTONS = ['left', 'middle', 'right', 'back', 'forward']
+// const MOUSE_BUTTONS = ['left', 'middle', 'right', 'back', 'forward']
 
 export class Game {
-    resolution = new Vector()
-    then = getPerformance()
     ctx: CanvasRenderingContext2D
+    backgroundColor = '#000'
+    mainCanvas: HTMLCanvasElement
     gui?: dat.GUI
     draw: Draw
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
     soundFiles: Record<string, string> = {}
     sounds: Record<string, Howl> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
-    sceneClasses: Constructable<Scene>[] = []
-    scenes: Scene[] = []
-    colors: Record<string, string>
-    events: Record<string, any> = {}
-    mouseEvents: Record<string, any> = {}
-    keyStates: Record<string, any> = {}
+    sceneClasses: Record<string, Constructable<Scene>> = {}
+    scenes: Record<string, Scene> = {}
     timeouts: Record<string, any> = {}
     settings: Record<string, any> = {}
     animationFrame?: number
-    mouseStates: Record<string, any> = {}
-    mousePos = new Vector()
-    mouseDeltaPos = new Vector()
-    mouseStarted = false
-    isMouseMoved = false
     width = window.innerWidth
     height = window.innerHeight
-    scale = 1
     debug = false
-    paused = false
     loaded = false
-    stoped = true
-    currentScene = 0
-    lastFrameTime = 0
-    frameTime = 0
-    lastLoop = 0
-    delta = 0
-    fps = 60
+    paused = true
+    currentScene: Scene | null = null
 
-    constructor(config: GameConfig) {
-        this.ctx = config.canvas.getContext('2d') as CanvasRenderingContext2D
+    frameRate = 60
+    frame = 0
+    time = 0
+    timeReal = 0
+    frameTimeLastMS = 0
+    frameTimeBufferMS = 0
+    avgFPS = 0
+    delta = 1 / 60
+
+    input = new Input()
+
+    constructor(
+        config: GameConfig,
+        public preload: Record<string, string>
+    ) {
+        document.body.appendChild((this.mainCanvas = document.createElement('canvas')))
+        this.ctx = this.mainCanvas.getContext('2d') as CanvasRenderingContext2D
+        const canvasPixelated = true
+        const styleCanvas =
+            'position:absolute;' +
+            'top:50%;left:50%;transform:translate(-50%,-50%);' +
+            (canvasPixelated ? 'image-rendering:pixelated' : '')
+        this.mainCanvas.setAttribute('style', styleCanvas)
+
+        if (config?.fixedSize?.x) {
+            // clear canvas and set fixed size
+            this.mainCanvas.width = config.fixedSize.x
+            this.mainCanvas.height = config.fixedSize.y
+
+            // fit to window by adding space on top or bottom if necessary
+            const aspect = innerWidth / innerHeight
+            const fixedAspect = this.mainCanvas.width / this.mainCanvas.height
+            this.mainCanvas.style.width = aspect < fixedAspect ? '100%' : ''
+            this.mainCanvas.style.height = aspect < fixedAspect ? '' : '100%'
+        } else {
+            // clear canvas and set size to same as window
+            this.mainCanvas.width = this.width
+            this.mainCanvas.height = this.height
+        }
+        this.ctx.imageSmoothingEnabled = false
+
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
-        this.width = config?.width || config.canvas.width
-        this.height = config?.height || config.canvas.height
-        this.scale = config?.scale || 1
+        this.width = this.mainCanvas.width // config?.width || config.canvas.width
+        this.height = this.mainCanvas.height //config?.height || config.canvas.height
+
         this.debug = !!config.debug
-        this.colors = {
-            backgroundColor: config?.backgroundColor || '#000',
-            preloaderColor: config?.preloaderColor || '#222'
-        }
+
         this.draw = new Draw(this.ctx)
         this.debug && this.datGui()
-        document.addEventListener('keydown', e => this.onKey(true, e), false)
-        document.addEventListener('keyup', e => this.onKey(false, e), false)
-        document.addEventListener('mousedown', e => this.onMouseDown(e))
-        document.addEventListener('mousemove', e => this.onMouseMove(e))
-        document.addEventListener('mouseup', e => this.onMouseUp(e))
+
         if (!!config.global) window.Platfuse = this
     }
 
     async onLoad(loadedAssets: Record<string, HTMLImageElement | HTMLAudioElement>) {
         this.assets = loadedAssets
-        this.scenes = await Promise.all(
-            this.sceneClasses.map(async Model => {
+        await Promise.all(
+            Object.keys(this.sceneClasses).map(async sceneName => {
+                const Model = this.sceneClasses[sceneName]
                 const s: Scene = new Model(this)
                 await s.init()
+                this.scenes[sceneName] = s
                 return s
             })
         )
         this.loaded = true
+        this.update()
     }
 
-    async preload(assets: Record<string, string>) {
+    async init() {
         this.loaded = false
         let loadedCount = 0
-        const count = Object.keys(assets).length
-        const indicator = (p: number) => this.draw.preloader(p, this.resolution, this.scale, this.colors)
+        const count = Object.keys(this.preload).length
+        const indicator = (p: number) => this.draw.preloader(0, 0, p)
         const load = (key: string) => {
-            const src = assets[key]
+            const src = this.preload[key]
             return new Promise(res => {
                 if (/\.(gif|jpe?g|png|webp|bmp)$/i.test(src) || /(data:image\/[^;]+;base64[^"]+)$/i.test(src)) {
                     const img = new Image()
@@ -111,7 +130,7 @@ export class Game {
                 } else return Promise.resolve()
             })
         }
-        const promises = Object.keys(assets).map(async (key: string) => ({
+        const promises = Object.keys(this.preload).map(async (key: string) => ({
             [key]: await load(key)
         }))
         const loadedAssets = Object.assign({}, ...(await Promise.all(promises)))
@@ -120,58 +139,75 @@ export class Game {
         return Promise.resolve(loadedAssets)
     }
 
-    frame(time: number) {
-        if (this.loaded && !this.stoped) {
-            const now = getPerformance()
-            this.delta = (time - this.lastFrameTime) / 1000
-            this.frameTime += (now - this.lastLoop - this.frameTime) / 100
-            this.fps = 1000 / this.frameTime
-            this.lastLoop = now
-            if (!this.paused && this.delta < 0.2) {
-                this.loop()
-            }
-            this.lastFrameTime = time
-            this.animationFrame = requestAnimationFrame((time: number) => this.frame(time))
-        }
-    }
+    update(frameTimeMS = 0) {
+        // this.fireEvents()
+        const frameTimeDeltaMS = frameTimeMS - this.frameTimeLastMS
+        this.frameTimeLastMS = frameTimeMS
+        this.avgFPS = lerp(0.05, this.avgFPS, 1e3 / (frameTimeDeltaMS || 1))
+        // const debugSpeedUp   = debug && keyIsDown(107); // +
+        // const debugSpeedDown = debug && keyIsDown(109); // -
+        // if (debug) // +/- to speed/slow time
+        //     frameTimeDeltaMS *= debugSpeedUp ? 5 : debugSpeedDown ? .2 : 1;
+        this.timeReal += frameTimeDeltaMS / 1e3
+        this.frameTimeBufferMS += (this.paused ? 0 : 1) * frameTimeDeltaMS
+        // if (!debugSpeedUp)
+        // this.frameTimeBufferMS = Math.min(this.frameTimeBufferMS, 50) // clamp incase of slow framerate
 
-    loop() {
-        const scene = this.getCurrentScene()
-        if (scene instanceof Scene) {
-            this.fireEvents()
-            scene.update()
-            scene.draw()
-            // effects
+        const scene = this.currentScene
+        if (this.loaded && scene) {
+            if (this.paused) {
+            } else {
+                let deltaSmooth = 0
+                if (this.frameTimeBufferMS < 0 && this.frameTimeBufferMS > -9) {
+                    // force an update each frame if time is close enough (not just a fast refresh rate)
+                    deltaSmooth = this.frameTimeBufferMS
+                    this.frameTimeBufferMS = 0
+                }
+                // update multiple frames if necessary in case of slow framerate
+                for (; this.frameTimeBufferMS >= 0; this.frameTimeBufferMS -= 1e3 / this.frameRate) {
+                    // increment frame and update time
+                    this.time = this.frame++ / this.frameRate
+                    this.delta = 1 / this.avgFPS
+
+                    // update game and objects
+                    this.input.update()
+
+                    // scene
+                    scene.updateLayers()
+                    scene.updateObjects()
+                    scene.update()
+                    scene.updateCamera()
+
+                    //     gameUpdate()
+                    //     engineObjectsUpdate()
+
+                    // do post update
+                    //     debugUpdate()
+                    //     gameUpdatePost()
+                    this.input.postUpdate()
+                    //     inputUpdatePost()
+                }
+
+                // add the time smoothing back in
+                this.frameTimeBufferMS += deltaSmooth
+            }
+            scene.draw(/*this*/)
+            this.debug && this.draw.fillText(this.avgFPS.toFixed(1), 10, this.mainCanvas.height - 20, '#fff', 1)
         }
+        this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
 
     start() {
-        this.stoped = false
-        this.animationFrame = requestAnimationFrame((time: number) => this.frame(time))
+        this.paused = false
     }
 
-    stop() {
-        this.stoped = true
-        this.animationFrame && cancelAnimationFrame(this.animationFrame)
+    pause() {
+        this.paused = true
     }
 
     restart() {
-        this.stop()
+        this.pause()
         this.start()
-    }
-
-    fireEvents() {
-        Object.keys(this.keyStates).map((key: string) => {
-            if (typeof this.events[key] === 'function') {
-                this.events[key]()
-            }
-        })
-    }
-
-    fireMouseEvent(type: string) {
-        if (typeof this.mouseEvents[type] === 'function') {
-            this.mouseEvents[type](this.mousePos)
-        }
     }
 
     setSettings(value: any) {
@@ -186,60 +222,16 @@ export class Game {
         return this.settings[key]
     }
 
-    setMousePos(x: number, y: number) {
-        const mpos = new Vector(Math.floor(x / this.scale), Math.floor(y / this.scale))
-        if (this.mouseStarted) {
-            this.mouseDeltaPos = mpos.sub(this.mousePos)
-        }
-        this.mousePos = mpos
-        this.mouseStarted = true
-        this.isMouseMoved = true
-    }
-
-    onMouseDown(e: MouseEvent) {
-        const m = MOUSE_BUTTONS[e.button]
-        if (m) {
-            this.mouseStates[m] = 'pressed'
-            this.fireMouseEvent(e.type)
-        }
-    }
-
-    onMouseMove(e: MouseEvent) {
-        this.setMousePos(e.offsetX, e.offsetY)
-        this.fireMouseEvent(e.type)
-    }
-
-    onMouseUp(e: MouseEvent) {
-        const m = MOUSE_BUTTONS[e.button]
-        if (m) {
-            this.mouseStates[m] = 'released'
-            this.fireMouseEvent(e.type)
-        }
-    }
-
-    onKey(pressed: boolean, e: KeyboardEvent) {
-        pressed ? (this.keyStates[e.code] = pressed) : delete this.keyStates[e.code]
-        e.preventDefault && e.preventDefault()
-        e.stopPropagation && e.stopPropagation()
-    }
-
-    onKeyDown(k: string | string[], cb: () => void) {
-        this.events = Array.isArray(k)
-            ? Object.assign({}, this.events, ...k.map(key => ({ [key]: cb })))
-            : { ...this.events, [k]: cb }
-    }
-
-    onMouseEvent(k: string | string[], cb: (pos: Vector) => void) {
-        this.mouseEvents = Array.isArray(k)
-            ? Object.assign({}, this.mouseEvents, ...k.map(key => ({ [key]: cb })))
-            : { ...this.mouseEvents, [k]: cb }
-
-        console.info(this.mouseEvents)
+    playScene(idx: string) {
+        if (this.scenes[idx] instanceof Scene) {
+            this.currentScene = this.scenes[idx]
+            this.restart()
+        } else throw new Error('Scene not found!')
     }
 
     getCurrentScene() {
-        if (this.scenes[this.currentScene] instanceof Scene) {
-            return this.scenes[this.currentScene]
+        if (this.currentScene instanceof Scene) {
+            return this.currentScene
         } else throw new Error('No current scene!')
     }
 
@@ -247,23 +239,6 @@ export class Game {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
         } else throw new Error('Invalid image!')
-    }
-
-    playScene(idx: number) {
-        this.currentScene = idx
-        this.restart()
-    }
-
-    setScale(scale: number) {
-        this.scale = scale
-        this.resolution.x = Math.round(this.width / this.scale)
-        this.resolution.y = Math.round(this.height / this.scale)
-    }
-
-    setSize(width: number, height: number, scale?: number) {
-        this.width = width
-        this.height = height
-        this.setScale(scale || this.scale)
     }
 
     wait(id: string, fn: () => void, duration: number) {
@@ -285,7 +260,6 @@ export class Game {
     datGui() {
         if (this.gui) this.gui.destroy()
         this.gui = new dat.GUI()
-        this.gui.add(this, 'fps').listen()
     }
 
     setAudioVolume(volume: number) {
