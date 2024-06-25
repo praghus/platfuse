@@ -61,15 +61,11 @@ export class Scene {
     }
 
     draw() {
-        const { ctx, backgroundColor, width, height } = this.game
+        const { ctx, width, height } = this.game
         const { scale } = this.camera
         ctx.save()
         ctx.scale(scale, scale)
         ctx.clearRect(0, 0, width / scale, height / scale)
-        if (backgroundColor) {
-            ctx.fillStyle = backgroundColor
-            ctx.fillRect(0, 0, width / scale, height / scale)
-        }
         for (const layer of this.layers) {
             layer instanceof Layer && layer.draw()
         }
@@ -343,16 +339,18 @@ export class Scene {
         const { camera, tileSize } = this
         const { resolution } = camera
 
-        const startY = Math.floor(camera.pos.y % tileSize.y)
-        const startTileY = Math.floor(-camera.pos.y / tileSize.y)
+        const x = Math.min(camera.pos.x, 0)
+        const y = Math.min(camera.pos.y, 0)
+        const startY = Math.floor(y % tileSize.y)
+        const startTileY = Math.floor(-y / tileSize.y)
 
         for (
             let yOffset = startY, tileYIndex = startTileY;
             yOffset <= resolution.y;
             yOffset += tileSize.y, tileYIndex++
         ) {
-            const startX = Math.floor(camera.pos.x % tileSize.x)
-            const startTileX = Math.floor(-camera.pos.x / tileSize.x)
+            const startX = Math.floor(x % tileSize.x)
+            const startTileX = Math.floor(-x / tileSize.x)
 
             for (
                 let xOffset = startX, tileXIndex = startTileX;

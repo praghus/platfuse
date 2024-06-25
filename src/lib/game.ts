@@ -51,15 +51,17 @@ export class Game {
         public preload: Record<string, string>
     ) {
         document.body.appendChild((this.canvas = document.createElement('canvas')))
-        this.canvas.setAttribute('style', canvasStyle)
-        this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
 
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
         this.debug = !!config.debug
-
+        this.backgroundColor = config?.backgroundColor || this.backgroundColor
+        this.preloaderColor = config?.preloaderColor || this.preloaderColor
+        this.canvas.setAttribute('style', canvasStyle)
+        this.canvas.style.backgroundColor = this.backgroundColor
+        this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
         this.draw = new Draw(this)
         this.debug && this.enableDebugGUI()
 

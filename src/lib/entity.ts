@@ -30,7 +30,6 @@ export class Entity {
 
     collideTiles = true
     collideObjects = true
-    collideSolidObjects = true
     groundObject: Entity | boolean = false
     maxSpeed = 1
     renderOrder = 0
@@ -74,6 +73,15 @@ export class Entity {
 
     destroy() {
         this.dead = true
+    }
+
+    /**
+     * Applies a force to the entity (affected by mass)
+     *
+     * @param force - The force to be applied.
+     */
+    applyForce(force: Vector) {
+        if (this.mass) this.force = this.force.add(force.scale(1 / this.mass))
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -145,7 +153,7 @@ export class Entity {
      */
     update() {
         const { scene } = this
-        const collidingObjects = scene.objects.filter(o => o.visible && o.collideSolidObjects)
+        const collidingObjects = scene.objects.filter(o => o.visible && o.collideObjects)
 
         // limit max speed to prevent missing collisions
         this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
@@ -170,7 +178,7 @@ export class Entity {
             this.groundObject = false
         }
 
-        if (this.collideSolidObjects) {
+        if (this.collideObjects) {
             const epsilon = 0.001 // necessary to push slightly outside of the collision
             for (const o of collidingObjects) {
                 if ((!this.solid && !o.solid) || o.dead || o == this) continue

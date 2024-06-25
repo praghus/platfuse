@@ -65,19 +65,6 @@ export class Camera {
         const { size } = this.getBounds()
 
         // shake
-        if (this.isShaking) {
-            this.shakeElapsed += this.delta * 1000
-            // progress = clamp(this.shakeElapsed / this.shakeDuration, 0, 1)
-            if (this.shakeElapsed < this.shakeDuration) {
-                this.offset = new Vector(
-                    Math.random() * this.shakeIntensity.x * x * 2 - this.shakeIntensity.x * x,
-                    Math.random() * this.shakeIntensity.y * y * 2 - this.shakeIntensity.y * y
-                ).divide(vec2(this.scale))
-            } else {
-                this.isShaking = false
-                this.offset = new Vector(0, 0)
-            }
-        }
 
         if (this.followEntity) {
             const followRect = this.followEntity.getTranslatedPositionRect()
@@ -87,7 +74,7 @@ export class Camera {
             )
             const moveTo = new Vector((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
             this.pos = this.pos.subtract(
-                new Vector(Math.round(moveTo.x / this.scale), Math.round(moveTo.y / this.scale)).add(this.offset)
+                new Vector(Math.round(moveTo.x / this.scale), Math.round(moveTo.y / this.scale))
             )
         }
 
@@ -95,6 +82,21 @@ export class Camera {
         if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
         if (this.pos.x > 0) this.pos.x = 0
         if (this.pos.y > 0) this.pos.y = 0
+
+        if (this.isShaking) {
+            this.shakeElapsed += this.delta * 1000
+            // progress = clamp(this.shakeElapsed / this.shakeDuration, 0, 1)
+            if (this.shakeElapsed < this.shakeDuration) {
+                this.offset = vec2(
+                    Math.random() * this.shakeIntensity.x * x * 2 - this.shakeIntensity.x * x,
+                    Math.random() * this.shakeIntensity.y * y * 2 - this.shakeIntensity.y * y
+                ).divide(vec2(this.scale))
+            } else {
+                this.isShaking = false
+                this.offset = vec2(0)
+            }
+            this.pos = this.pos.add(this.offset)
+        }
     }
 
     /** /
