@@ -1,6 +1,6 @@
 import { Animation, Drawable, TMXFlips } from '../types'
 import { getPerformance } from './utils/helpers'
-import { normalize, vec2, Vector } from './utils/math'
+import { normalize, Vector } from './utils/math'
 import { Game } from './game'
 
 export class Sprite implements Drawable {
@@ -11,7 +11,7 @@ export class Sprite implements Drawable {
 
     constructor(
         public id: string,
-        public size: Vector,
+
         public game: Game
     ) {}
 
@@ -41,39 +41,6 @@ export class Sprite implements Drawable {
     }
 
     draw(pos: Vector, flips?: TMXFlips) {
-        const { id, animation, animFrame, size } = this
-        const { ctx } = this.game
-        const image = this.game.getImage(id)
-        const offset = animation?.offset ? vec2(...animation.offset) : vec2(0, 0)
-        const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
-        const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
-        const FX = flips?.H ? size.x * -1 : 0 // Set x position to -100% if flip horizontal
-        const FY = flips?.V ? size.y * -1 : 0 // Set y position to -100% if flip vertical
-        const flip = flips?.H || flips?.V
-        const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
-
-        ctx.save()
-        flip && ctx.scale(scaleH, scaleV)
-        if (animation) {
-            const { frames, strip } = animation
-            const frame = (frames && frames[animFrame]) || [0, 0]
-            const posX = strip ? strip.x + animFrame * animation.width : frame[0]
-            const posY = strip ? strip.y : frame[1]
-
-            ctx.drawImage(
-                image,
-                posX,
-                posY,
-                animation.width,
-                animation.height,
-                x1 - offset.x,
-                y1 - offset.y,
-                animation.width,
-                animation.height
-            )
-        } else if (image) {
-            ctx.drawImage(image, 0, 0, size.x, size.y, x1, y1, size.x, size.y)
-        }
-        ctx.restore()
+        this.game.draw.sprite(this, pos, flips)
     }
 }

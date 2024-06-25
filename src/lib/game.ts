@@ -1,36 +1,42 @@
 import * as dat from 'dat.gui'
-import { Howl, Howler } from 'howler'
-import { Scene } from './scene'
-import { lerp } from './utils/math'
+
 import { Constructable, GameConfig } from '../types'
+import { lerp } from './utils/math'
 import { Draw } from './utils/draw'
+import { Scene } from './scene'
 import { Entity } from './entity'
 import { Input } from './input'
+import { preloadAssets } from './utils/preload'
+import { Timer } from './timer'
 
-// const MOUSE_BUTTONS = ['left', 'middle', 'right', 'back', 'forward']
+const canvasStyle = `
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    image-rendering:pixelated
+`
 
 export class Game {
+    canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
     backgroundColor = '#000'
-    mainCanvas: HTMLCanvasElement
+    preloaderColor = '#fff'
     gui?: dat.GUI
     draw: Draw
+    input = new Input()
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
-    soundFiles: Record<string, string> = {}
-    sounds: Record<string, Howl> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}
+    currentScene: Scene | null = null
     scenes: Record<string, Scene> = {}
-    timeouts: Record<string, any> = {}
     settings: Record<string, any> = {}
     animationFrame?: number
     width = window.innerWidth
     height = window.innerHeight
     debug = false
-    loaded = false
+    ready = false
     paused = true
-    currentScene: Scene | null = null
-
     frameRate = 60
     frame = 0
     time = 0
@@ -40,53 +46,31 @@ export class Game {
     avgFPS = 0
     delta = 1 / 60
 
-    input = new Input()
-
     constructor(
-        config: GameConfig,
+        public config: GameConfig,
         public preload: Record<string, string>
     ) {
-        document.body.appendChild((this.mainCanvas = document.createElement('canvas')))
-        this.ctx = this.mainCanvas.getContext('2d') as CanvasRenderingContext2D
-        const canvasPixelated = true
-        const styleCanvas =
-            'position:absolute;' +
-            'top:50%;left:50%;transform:translate(-50%,-50%);' +
-            (canvasPixelated ? 'image-rendering:pixelated' : '')
-        this.mainCanvas.setAttribute('style', styleCanvas)
-
-        if (config?.fixedSize?.x) {
-            // clear canvas and set fixed size
-            this.mainCanvas.width = config.fixedSize.x
-            this.mainCanvas.height = config.fixedSize.y
-
-            // fit to window by adding space on top or bottom if necessary
-            const aspect = innerWidth / innerHeight
-            const fixedAspect = this.mainCanvas.width / this.mainCanvas.height
-            this.mainCanvas.style.width = aspect < fixedAspect ? '100%' : ''
-            this.mainCanvas.style.height = aspect < fixedAspect ? '' : '100%'
-        } else {
-            // clear canvas and set size to same as window
-            this.mainCanvas.width = this.width
-            this.mainCanvas.height = this.height
-        }
-        this.ctx.imageSmoothingEnabled = false
+        document.body.appendChild((this.canvas = document.createElement('canvas')))
+        this.canvas.setAttribute('style', canvasStyle)
+        this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
 
         this.sceneClasses = config.scenes
         this.objectClasses = config.entities
-        this.width = this.mainCanvas.width // config?.width || config.canvas.width
-        this.height = this.mainCanvas.height //config?.height || config.canvas.height
-
+        this.sceneClasses = config.scenes
+        this.objectClasses = config.entities
         this.debug = !!config.debug
 
-        this.draw = new Draw(this.ctx)
-        this.debug && this.datGui()
+        this.draw = new Draw(this)
+        this.debug && this.enableDebugGUI()
 
+        this.onResize()
+        window.addEventListener('resize', this.onResize.bind(this))
         if (!!config.global) window.Platfuse = this
     }
 
-    async onLoad(loadedAssets: Record<string, HTMLImageElement | HTMLAudioElement>) {
-        this.assets = loadedAssets
+    async init() {
+        this.ready = false
+        this.assets = await preloadAssets(this.preload, (p: number) => this.draw.preloader(p))
         await Promise.all(
             Object.keys(this.sceneClasses).map(async sceneName => {
                 const Model = this.sceneClasses[sceneName]
@@ -96,65 +80,52 @@ export class Game {
                 return s
             })
         )
-        this.loaded = true
+        this.ready = true
         this.update()
     }
 
-    async init() {
-        this.loaded = false
-        let loadedCount = 0
-        const count = Object.keys(this.preload).length
-        const indicator = (p: number) => this.draw.preloader(0, 0, p)
-        const load = (key: string) => {
-            const src = this.preload[key]
-            return new Promise(res => {
-                if (/\.(gif|jpe?g|png|webp|bmp)$/i.test(src) || /(data:image\/[^;]+;base64[^"]+)$/i.test(src)) {
-                    const img = new Image()
-                    img.src = src
-                    img.onload = () => {
-                        indicator(++loadedCount / count)
-                        return res(img)
-                    }
-                } else if (/\.(webm|mp3|wav)$/i.test(src) || /(data:audio\/[^;]+;base64[^"]+)$/i.test(src)) {
-                    const audio = new Audio()
-                    audio.addEventListener(
-                        'canplaythrough',
-                        () => {
-                            indicator(++loadedCount / count)
-                            this.soundFiles[key] = src
-                            return res(audio)
-                        },
-                        false
-                    )
-                    audio.src = src
-                } else return Promise.resolve()
-            })
-        }
-        const promises = Object.keys(this.preload).map(async (key: string) => ({
-            [key]: await load(key)
-        }))
-        const loadedAssets = Object.assign({}, ...(await Promise.all(promises)))
-        await this.onLoad(loadedAssets)
+    /**
+     * Handles the resize event of the game window.
+     */
+    onResize() {
+        this.width = window.innerWidth
+        this.height = window.innerHeight
+        if (this.config?.fixedSize?.x) {
+            // clear canvas and set fixed size
+            this.canvas.width = this.config.fixedSize.x
+            this.canvas.height = this.config.fixedSize.y
 
-        return Promise.resolve(loadedAssets)
+            // fit to window by adding space on top or bottom if necessary
+            const aspect = innerWidth / innerHeight
+            const fixedAspect = this.canvas.width / this.canvas.height
+            this.canvas.style.width = aspect < fixedAspect ? '100%' : ''
+            this.canvas.style.height = aspect < fixedAspect ? '' : '100%'
+        } else {
+            // clear canvas and set size to same as window
+            this.canvas.width = this.width
+            this.canvas.height = this.height
+        }
+        // Pixelated rendering
+        this.ctx.imageSmoothingEnabled = false
+        this.width = this.canvas.width
+        this.height = this.canvas.height
     }
 
+    /**
+     * Updates the game state and renders the scene.
+     * @param frameTimeMS The time elapsed since the last frame in milliseconds.
+     */
     update(frameTimeMS = 0) {
         // this.fireEvents()
+        const scene = this.currentScene
         const frameTimeDeltaMS = frameTimeMS - this.frameTimeLastMS
+
         this.frameTimeLastMS = frameTimeMS
         this.avgFPS = lerp(0.05, this.avgFPS, 1e3 / (frameTimeDeltaMS || 1))
-        // const debugSpeedUp   = debug && keyIsDown(107); // +
-        // const debugSpeedDown = debug && keyIsDown(109); // -
-        // if (debug) // +/- to speed/slow time
-        //     frameTimeDeltaMS *= debugSpeedUp ? 5 : debugSpeedDown ? .2 : 1;
         this.timeReal += frameTimeDeltaMS / 1e3
         this.frameTimeBufferMS += (this.paused ? 0 : 1) * frameTimeDeltaMS
-        // if (!debugSpeedUp)
-        // this.frameTimeBufferMS = Math.min(this.frameTimeBufferMS, 50) // clamp incase of slow framerate
 
-        const scene = this.currentScene
-        if (this.loaded && scene) {
+        if (this.ready && scene) {
             if (this.paused) {
             } else {
                 let deltaSmooth = 0
@@ -178,21 +149,16 @@ export class Game {
                     scene.update()
                     scene.updateCamera()
 
-                    //     gameUpdate()
-                    //     engineObjectsUpdate()
-
                     // do post update
-                    //     debugUpdate()
-                    //     gameUpdatePost()
+                    // scene.updatePost()
                     this.input.postUpdate()
-                    //     inputUpdatePost()
                 }
 
                 // add the time smoothing back in
                 this.frameTimeBufferMS += deltaSmooth
             }
             scene.draw(/*this*/)
-            this.debug && this.draw.fillText(this.avgFPS.toFixed(1), 10, this.mainCanvas.height - 20, '#fff', 1)
+            this.debug && this.draw.fillText(this.avgFPS.toFixed(1), 10, this.canvas.height - 20, '#fff', 1)
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
@@ -235,51 +201,20 @@ export class Game {
         } else throw new Error('No current scene!')
     }
 
+    // @todo: implement getter for audio files
     getImage(name: string) {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
         } else throw new Error('Invalid image!')
     }
 
-    wait(id: string, fn: () => void, duration: number) {
-        if (!this.timeouts[id]) {
-            this.timeouts[id] = setTimeout(() => {
-                this.cancelWait(id)
-                typeof fn === 'function' && fn()
-            }, duration)
-        }
+    createTimer(timeLeft?: number) {
+        return new Timer(this, timeLeft)
     }
 
-    cancelWait(id: string) {
-        if (this.timeouts[id]) {
-            clearTimeout(this.timeouts[id])
-            delete this.timeouts[id]
-        }
-    }
-
-    datGui() {
+    enableDebugGUI() {
         if (this.gui) this.gui.destroy()
         this.gui = new dat.GUI()
-    }
-
-    setAudioVolume(volume: number) {
-        Howler.volume(volume)
-    }
-
-    playSound(name: string) {
-        if (this.sounds[name] instanceof Howl) {
-            this.sounds[name].play()
-        } else if (this.soundFiles[name]) {
-            this.sounds[name] = new Howl({ src: this.soundFiles[name] })
-            this.sounds[name].play()
-        } else throw new Error('Invalid sound!')
-    }
-
-    loopSound(name: string, volume = 1) {
-        if (this.soundFiles[name]) {
-            this.sounds[name] = new Howl({ src: this.soundFiles[name], loop: true, volume })
-            this.sounds[name].play()
-        } else throw new Error('Invalid sound!')
     }
 }
 

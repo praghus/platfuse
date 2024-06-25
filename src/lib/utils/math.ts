@@ -131,12 +131,14 @@ class Box {
 
 const vec2 = (x = 0, y?: number) => new Vector(x, y === undefined ? x : y)
 const box = (x = 0, y = 0, w = 0, h = 0) => new Box(vec2(x, y), vec2(w, h))
+const rand = (valueA = 1, valueB = 0) => valueB + Math.random() * (valueA - valueB)
+const randVector = (length = 1) => new Vector().setAngle(rand(2 * PI), length)
 
-const boxOverlap = (a: Box, b: Box) =>
-    a.pos.x < b.pos.x + b.size.x &&
-    a.pos.x + a.size.x > b.pos.x &&
-    a.pos.y < b.pos.y + b.size.y &&
-    a.pos.y + a.size.y > b.pos.y
+const percent = (value: number, valueA: number, valueB: number) =>
+    valueB - valueA ? clamp((value - valueA) / (valueB - valueA)) : 0
+
+const isOverlapping = (pointA: Vector, sizeA: Vector, pointB: Vector, sizeB: Vector) =>
+    abs(pointA.x - pointB.x) * 2 < sizeA.x + sizeB.x && abs(pointA.y - pointB.y) * 2 < sizeA.y + sizeB.y
 
 function normalize(n: number, min: number, max: number) {
     while (n < min) n += max - min
@@ -144,42 +146,17 @@ function normalize(n: number, min: number, max: number) {
     return n
 }
 
-/**
- * Calculates the approach value between two numbers.
- *
- * @param start - The starting value.
- * @param end - The target value.
- * @param shift - The amount to shift the start value towards the target value.
- * @param delta - The delta value to multiply the shift by (default: 1).
- * @returns The approach value between the start and end values.
- */
-function approach(start: number, end: number, shift: number, delta = 1) {
-    return start < end ? Math.min(start + shift * delta, end * delta) : Math.max(start - shift * delta, end * delta)
-}
-function rand(valueA = 1, valueB = 0) {
-    return valueB + Math.random() * (valueA - valueB)
-}
-
-function randVector(length = 1) {
-    return new Vector().setAngle(rand(2 * PI), length)
-}
-
-function isOverlapping(pointA: Vector, sizeA: Vector, pointB: Vector, sizeB: Vector) {
-    return abs(pointA.x - pointB.x) * 2 < sizeA.x + sizeB.x && abs(pointA.y - pointB.y) * 2 < sizeA.y + sizeB.y
-}
-
 export {
     Box,
     Vector,
     box,
     vec2,
-    approach,
-    boxOverlap,
     clamp,
     isVector,
     isOverlapping,
     lerp,
     normalize,
+    percent,
     rad2deg,
     rand,
     random,

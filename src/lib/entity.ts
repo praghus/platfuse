@@ -1,7 +1,7 @@
 import { Box, Vector, vec2, clamp, box, lerp, randVector, isOverlapping } from './utils/math'
 import { Animation, Drawable, TMXFlips } from '../types'
 import { COLORS } from './utils/constants'
-import { uuid, noop } from './utils/helpers'
+import { uuid } from './utils/helpers'
 import { Game } from './game'
 import { Scene } from './scene'
 
@@ -10,7 +10,6 @@ export class Entity {
     pos = vec2()
     size = vec2()
     force = vec2()
-    // shape = SHAPE.BOX
     type: string
     color?: string
     gid?: number
@@ -34,6 +33,7 @@ export class Entity {
     collideSolidObjects = true
     groundObject: Entity | boolean = false
     maxSpeed = 1
+    renderOrder = 0
 
     mass = 1 // How heavy the object is, static if 0
     damping = 0.9 // How much to slow down force each frame (0-1)
@@ -43,8 +43,6 @@ export class Entity {
     angleVelocity = 0 // Angular force of the object
     angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
     angle = 0
-
-    c: Vector[] = []
 
     #sprite?: Drawable
 
@@ -78,10 +76,8 @@ export class Entity {
         this.dead = true
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     collideWithTile(tileId: number, pos: Vector) {
-        if (tileId > 0 && this.scene.debug) {
-            this.c.push(pos)
-        }
         return tileId > 0
     }
 
@@ -99,9 +95,9 @@ export class Entity {
         if (this.visible && this.onScreen()) {
             const { draw } = this.game
             const { debug } = this.scene
-            const rect = this.scene.getRectWorldPos(this)
+            const rect = this.scene.getRectWorldPos(this).move(this.scene.camera.pos)
             if (this.#sprite) {
-                this.#sprite.draw(rect.pos.add(this.scene.camera.pos), this.flips)
+                this.#sprite.draw(rect.pos, this.flips)
             } else if (this.color) {
                 draw.fillRect(rect, this.color)
             }
@@ -113,13 +109,17 @@ export class Entity {
         this.#sprite = sprite
     }
 
-    animate(animation = this.animation, flips?: TMXFlips, cb: (frame: number) => void = noop) {
+    animate() {
+        if (this.animation && this.#sprite && this.#sprite.animate) {
+            this.#sprite.animate(this.animation)
+        }
+    }
+
+    setAnimation(animation: Animation, flips?: TMXFlips) {
         if (this.#sprite && this.#sprite.animate) {
             this.flips = flips
-            this.#sprite.animate(animation)
-            cb(this.#sprite.animFrame)
+            this.animation = animation
         }
-        this.animation = animation
     }
 
     getAnimationFrame() {
@@ -130,14 +130,22 @@ export class Entity {
         if (this.#sprite) this.#sprite.animFrame = frame
     }
 
+    /**
+     * Returns the translated position rectangle of the entity.
+     * The translated position rectangle is calculated based on the entity's position in the scene.
+     * @returns The translated position rectangle of the entity.
+     */
     getTranslatedPositionRect() {
         return this.scene.getRectWorldPos(this)
     }
 
+    /**
+     * Updates the entity's position, velocity, and handles collisions with other objects and tiles.
+     * This method applies physics, friction, and collision resolution to the entity.
+     */
     update() {
         const { scene } = this
-
-        const engineObjectsCollide = scene.objects.filter(o => o.collideSolidObjects)
+        const collidingObjects = scene.objects.filter(o => o.visible && o.collideSolidObjects)
 
         // limit max speed to prevent missing collisions
         this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
@@ -157,22 +165,19 @@ export class Entity {
 
         if (this.groundObject) {
             // apply friction in local space of ground object
-            const groundSpeed = 0 //this.groundObject.force ? this.groundObject.force.x : 0;
+            const groundSpeed = this.groundObject instanceof Entity ? this.groundObject.force.x : 0
             this.force.x = groundSpeed + (this.force.x - groundSpeed) * this.friction
             this.groundObject = false
         }
 
         if (this.collideSolidObjects) {
-            // check collisions against solid objects
             const epsilon = 0.001 // necessary to push slightly outside of the collision
-            for (const o of engineObjectsCollide) {
-                // non solid objects don't collide with eachother
+            for (const o of collidingObjects) {
                 if ((!this.solid && !o.solid) || o.dead || o == this) continue
 
-                // check collision
+                // @todo: change to use bounding box
                 if (!isOverlapping(this.pos, this.size, o.pos, o.size)) continue
 
-                // notify objects of collision and check if should be resolved
                 const collide1 = this.collideWithObject(o)
                 const collide2 = o.collideWithObject(this)
                 if (!collide1 || !collide2) continue
@@ -184,11 +189,7 @@ export class Entity {
                     const pushAwayAccel = 0.001 // push away if already overlapping
                     const force = length < 0.01 ? randVector(pushAwayAccel) : deltaPos.scale(pushAwayAccel / length)
                     this.force = this.force.add(force)
-                    if (o.mass)
-                        // push away if not fixed
-                        o.force = o.force.subtract(force)
-
-                    // debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f00')
+                    if (o.mass) o.force = o.force.subtract(force)
                     continue
                 }
 
@@ -248,7 +249,6 @@ export class Entity {
                     } // bounce if other object is fixed
                     else this.force.x *= -elasticity
                 }
-                // debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f0f');
             }
         }
 
@@ -284,6 +284,10 @@ export class Entity {
         this.animate()
     }
 
+    /**
+     * Checks if the entity is currently on the screen.
+     * @returns {boolean} True if the entity is on the screen, false otherwise.
+     */
     onScreen() {
         const scene = this.scene
         const { camera, tileSize } = scene
@@ -299,11 +303,6 @@ export class Entity {
         )
     }
 
-    // onGround = () => this.pos.y < this.expectedPos.y
-    // onCeiling = () => this.pos.y > this.expectedPos.y
-    // onRightWall = () => this.pos.x < this.expectedPos.x
-    // onLeftWall = () => this.pos.x > this.expectedPos.x
-
     displayDebug() {
         const scene = this.scene
         const { draw } = this.game
@@ -312,20 +311,11 @@ export class Entity {
         const rect = this.getTranslatedPositionRect().move(scene.camera.pos)
 
         draw.outline(rect, visible ? COLORS.PURPLE : COLORS.WHITE_50, 0.5)
-        draw.fillText(`${type}`, rect.pos.x, rect.pos.y - 10, COLORS.WHITE)
-        draw.fillText(`x:${this.pos.x.toFixed(1)}`, rect.pos.x, rect.pos.y - 5, COLORS.WHITE)
-        draw.fillText(`y:${this.pos.y.toFixed(1)}`, rect.pos.x, rect.pos.y, COLORS.WHITE)
+        draw.fillText(`${type}`, rect.pos.x, rect.pos.y - 6, COLORS.WHITE)
+        draw.fillText(`x:${this.pos.x.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y, COLORS.WHITE_50)
+        draw.fillText(`y:${this.pos.y.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y + 5, COLORS.WHITE_50)
 
-        // force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, x, y - 2, COLORS.LIGHT_RED)
-        // force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, x, y + 2, COLORS.LIGHT_RED)
-
-        if (this.type === 'player' && this.c.length > 0) {
-            this.c.forEach(pos => {
-                const pp = vec2(pos.x * scene.tileSize.x, pos.y * scene.tileSize.y).add(this.scene.camera.pos)
-                draw.outline(new Box(pp, scene.tileSize), '#f00')
-            })
-        }
-
-        this.c = []
+        // force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, rect.pos.x, rect.pos.y - 2, COLORS.LIGHT_RED)
+        // force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, rect.pos.x, rect.pos.y + 2, COLORS.LIGHT_RED)
     }
 }

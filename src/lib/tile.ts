@@ -24,10 +24,10 @@ export class Tile implements Drawable {
         this.terrain = this.getTerrain()
     }
 
+    // @todo: remove this
     isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
     isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
     isLadder = (): boolean => this.type === TILE_TYPE.LADDER
-    isInvisible = (): boolean => this.type === TILE_TYPE.INVISIBLE
 
     getTileProperties(gid: number, tileset: TMXTileset) {
         const { firstgid, tiles } = tileset
@@ -71,38 +71,10 @@ export class Tile implements Drawable {
      * @param {TMXFlips} flips Flips
      */
     draw(pos: Vector, flips?: TMXFlips) {
-        if (!this.isInvisible()) {
-            const { ctx, draw } = this.game
-            const { image, columns, firstgid, tilewidth, tileheight } = this.tileset
-            const tileGid = this.getNextGid()
-            const posX = ((tileGid - firstgid) % columns) * tilewidth
-            const posY = (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
-            const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
-            const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
-            const FX = flips?.H ? tilewidth * -1 : 0 // Set x position to -100% if flip horizontal
-            const FY = flips?.V ? tileheight * -1 : 0 // Set y position to -100% if flip vertical
-            const flip = flips?.H || flips?.V
-            const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
-
-            ctx.save()
-            flip && ctx.scale(scaleH, scaleV)
-            ctx.translate(0.5, 0.5)
-            ctx.drawImage(
-                this.game.getImage(image.source),
-                posX,
-                posY,
-                tilewidth,
-                tileheight,
-                x1 - 0.5,
-                y1 - 0.5,
-                tilewidth,
-                tileheight
-            )
-            ctx.restore()
-            if (this.game.currentScene?.debug) {
-                // draw.fillText(`${pos.x / 16},${pos.y / 16}`, pos.x + 2, pos.y + 6, COLORS.WHITE_50)
-                draw.outline(new Box(pos, this.size), COLORS.WHITE_25, 1)
-            }
+        const { draw } = this.game
+        draw.tile(this, pos, flips)
+        if (this.game.currentScene?.debug) {
+            draw.outline(new Box(pos, this.size), COLORS.WHITE_25, 1)
         }
     }
 }

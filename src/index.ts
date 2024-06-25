@@ -1,14 +1,15 @@
-export { Game } from './lib/game'
+export { Draw } from './lib/utils/draw'
 export { Camera } from './lib/camera'
 export { Entity } from './lib/entity'
+export { Game } from './lib/game'
+export { Input } from './lib/input'
 export { Layer } from './lib/layer'
 export { Scene } from './lib/scene'
 export { Sprite } from './lib/sprite'
 export { Tile } from './lib/tile'
+export { Timer } from './lib/timer'
 
-export { approach, clamp, vec2, Vector, Box } from './lib/utils/math'
-export { Draw } from './lib/utils/draw'
-export { Shaker } from './lib/utils/shaker'
+export { box, clamp, vec2, Vector, Box } from './lib/utils/math'
 
 export { NODE_TYPE, TILE_TYPE, COLORS, SHAPE, FLIPPED } from './lib/utils/constants'
 

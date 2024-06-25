@@ -73,12 +73,16 @@ export class Scene {
         for (const layer of this.layers) {
             layer instanceof Layer && layer.draw()
         }
-        if (this.debug) {
-            this.displayDebug()
-        }
+        this.debug && this.displayDebug()
         ctx.restore()
     }
 
+    /**
+     * Sets the dimensions of the scene.
+     * @param size - The size of the scene.
+     * @param tileSize - The size of each tile in the scene.
+     * @param scale - The scale of the camera (default is 1).
+     */
     setDimensions(size: Vector, tileSize: Vector, scale = 1) {
         this.size = size
         this.tileSize = tileSize
@@ -86,6 +90,11 @@ export class Scene {
         this.camera.setBounds(0, 0, size.x * tileSize.x, size.y * tileSize.y)
     }
 
+    /**
+     * Sets the tile collision layer for the scene.
+     *
+     * @param layerIndex - The index of the layer to set as the collision layer.
+     */
     setTileCollisionLayer(layerIndex: number) {
         const layer = this.layers[layerIndex]
         if (layer) {
@@ -97,6 +106,14 @@ export class Scene {
         }
     }
 
+    /**
+     * Performs a tile collision test for the given position and size.
+     *
+     * @param pos - The position of the entity.
+     * @param size - The size of the entity.
+     * @param entity - The entity to perform the collision test for (optional).
+     * @returns `true` if a collision is detected, `false` otherwise.
+     */
     tileCollisionTest(pos: Vector, size: Vector, entity?: Entity) {
         const minX = Math.max((pos.x - size.x / 2) | 0, 0)
         const minY = Math.max((pos.y - size.y / 2) | 0, 0)
@@ -112,6 +129,13 @@ export class Scene {
         return false
     }
 
+    /**
+     * Performs a raycast to check for tile collisions between two positions.
+     * @param posStart The starting position of the raycast.
+     * @param posEnd The ending position of the raycast.
+     * @param entity An optional entity to check for collisions with tiles.
+     * @returns The position of the first tile hit by the raycast, or null if no collision occurred.
+     */
     tileCollisionRaycast(posStart: Vector, posEnd: Vector, entity?: Entity) {
         // test if a ray collides with tiles from start to end
         // todo: a way to get the exact hit point, it must still be inside the hit tile
@@ -145,12 +169,21 @@ export class Scene {
         // debugRaycast && debugLine(posStart, posEnd, '#00f', 0.02)
     }
 
+    /**
+     * Creates layers and adds them to the scene.
+     * @param layers - An array of layer constructors or TMXLayer instances.
+     */
     createLayers(layers: (Constructable<Layer> | TMXLayer)[]) {
         this.layers = []
         layers.forEach(l => this.addLayer(l))
     }
 
+    /**
+     * Adds a layer to the scene.
+     * @param l - The layer to add. It can be a constructor function or an instance of TMXLayer.
+     */
     addLayer(l: Constructable<Layer> | TMXLayer) {
+        // @todo: add index to position layer in array
         if (typeof l === 'function') {
             this.layers.push(new l(null, this.game))
         } else {
@@ -159,11 +192,19 @@ export class Scene {
         }
     }
 
+    /**
+     * Adds an object to the scene.
+     *
+     * @param type - The type of the object.
+     * @param props - The properties of the object.
+     * @param index - The optional index at which to insert the object in the objects array.
+     * @returns The newly created entity.
+     */
     addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(props, this, this.game) : new Entity(props, this, this.game)
         if (entity.image) {
-            entity.addSprite(this.createSprite(entity.image, entity.size))
+            entity.addSprite(this.createSprite(entity.image))
         } else if (entity.gid) {
             entity.addSprite(this.tiles[entity.gid])
         }
@@ -172,10 +213,21 @@ export class Scene {
         return entity
     }
 
+    /**
+     * Removes an object from the scene.
+     *
+     * @param obj - The object to be removed.
+     */
     removeObject(obj: Entity) {
         this.objects.splice(this.objects.indexOf(obj), 1)
     }
 
+    /**
+     * Adds a tileset to the scene.
+     *
+     * @param tileset - The tileset to add.
+     * @param source - The source of the tileset image.
+     */
     addTileset(tileset: TMXTileset, source: string) {
         const newTileset = { ...tileset, image: { ...tileset.image, source } }
         for (let i = 0; i < newTileset.tilecount; i++) {
@@ -183,6 +235,11 @@ export class Scene {
         }
     }
 
+    /**
+     * Creates tilesets for the scene.
+     *
+     * @param tilesets - An array of TMXTileset objects representing the tilesets to be created.
+     */
     createTilesets(tilesets: TMXTileset[]) {
         tilesets.map((tileset: TMXTileset) => {
             const asset = getFilename(tileset.image.source)
@@ -206,11 +263,12 @@ export class Scene {
 
     // @todo: rename
     getRectGridPos(entity: Entity) {
+        const { tileSize } = this
         return box(
-            entity.pos.x / this.tileSize.x,
-            entity.pos.y / this.tileSize.y,
-            entity.size.x / this.tileSize.x,
-            entity.size.y / this.tileSize.y
+            entity.pos.x / tileSize.x,
+            entity.pos.y / tileSize.y,
+            entity.size.x / tileSize.x,
+            entity.size.y / tileSize.y
         )
     }
 
@@ -225,8 +283,8 @@ export class Scene {
         )
     }
 
-    createSprite(id: string, size: Vector) {
-        return new Sprite(id, size, this.game)
+    createSprite(id: string) {
+        return new Sprite(id, this.game)
     }
 
     getLayer(id: number) {
@@ -275,6 +333,7 @@ export class Scene {
     }
 
     forEachVisibleObject(cb: (obj: Entity) => void = noop) {
+        this.objects.sort((a, b) => a.renderOrder - b.renderOrder)
         for (const obj of this.objects) {
             obj.visible && cb(obj)
         }
@@ -282,22 +341,34 @@ export class Scene {
 
     forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
         const { camera, tileSize } = this
-        const { resolution } = this.camera
+        const { resolution } = camera
 
-        let y = Math.floor(camera.pos.y % tileSize.y)
-        let _y = Math.floor(-camera.pos.y / tileSize.y)
+        const startY = Math.floor(camera.pos.y % tileSize.y)
+        const startTileY = Math.floor(-camera.pos.y / tileSize.y)
 
-        while (y <= resolution.y) {
-            let x = Math.floor(camera.pos.x % tileSize.x)
-            let _x = Math.floor(-camera.pos.x / tileSize.x)
-            while (x <= resolution.x) {
-                const tileId = layer?.get(vec2(_x, _y))
-                tileId && fn(this.getTileObject(tileId), vec2(x, y), getFlips(tileId))
-                x += tileSize.x
-                _x++
+        for (
+            let yOffset = startY, tileYIndex = startTileY;
+            yOffset <= resolution.y;
+            yOffset += tileSize.y, tileYIndex++
+        ) {
+            const startX = Math.floor(camera.pos.x % tileSize.x)
+            const startTileX = Math.floor(-camera.pos.x / tileSize.x)
+
+            for (
+                let xOffset = startX, tileXIndex = startTileX;
+                xOffset <= resolution.x;
+                xOffset += tileSize.x, tileXIndex++
+            ) {
+                const tileId = layer?.get(vec2(tileXIndex, tileYIndex))
+
+                if (tileId) {
+                    const tile = this.getTileObject(tileId)
+                    const position = vec2(xOffset, yOffset)
+                    const flips = getFlips(tileId)
+
+                    fn(tile, position, flips)
+                }
             }
-            y += tileSize.y
-            _y++
         }
     }
 
