@@ -1,4 +1,4 @@
-export { Draw } from './lib/utils/draw'
+export { Draw } from './lib/draw'
 export { Camera } from './lib/camera'
 export { Entity } from './lib/entity'
 export { Game } from './lib/game'
@@ -11,7 +11,7 @@ export { Timer } from './lib/timer'
 
 export { box, clamp, vec2, Vector, Box } from './lib/utils/math'
 
-export { NODE_TYPE, TILE_TYPE, COLORS, SHAPE, FLIPPED } from './lib/utils/constants'
+export { NODE_TYPE, COLORS, FLIPPED } from './lib/utils/constants'
 
 export {
     Constructable,

@@ -1,6 +1,6 @@
 import { Animation, Drawable, TMXFlips } from '../types'
 import { getPerformance } from './utils/helpers'
-import { normalize, Vector } from './utils/math'
+import { normalize, vec2, Vector } from './utils/math'
 import { Game } from './game'
 
 export class Sprite implements Drawable {
@@ -10,11 +10,19 @@ export class Sprite implements Drawable {
     frameStart = getPerformance()
 
     constructor(
-        public id: string,
-
-        public game: Game
+        public game: Game,
+        public image: HTMLImageElement,
+        public size = vec2(image.width, image.height)
     ) {}
 
+    setSize(size: Vector) {
+        this.size = size
+    }
+
+    /**
+     * Animates the sprite using the specified animation.
+     * @param animation - The animation to be played.
+     */
     animate(animation = this.animation) {
         if (animation) {
             this.animFrame = this.animFrame || 0
@@ -40,6 +48,12 @@ export class Sprite implements Drawable {
         }
     }
 
+    /**
+     * Draws the sprite at the specified position with optional flips.
+     *
+     * @param pos - The position where the sprite should be drawn.
+     * @param flips - Optional flips to apply to the sprite.
+     */
     draw(pos: Vector, flips?: TMXFlips) {
         this.game.draw.sprite(this, pos, flips)
     }

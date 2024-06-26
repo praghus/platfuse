@@ -1,7 +1,6 @@
 import { Drawable, TMXFlips, TMXTileset } from '../types'
-import { COLORS, TILE_TYPE } from './utils/constants'
 import { getPerformance, isValidArray } from './utils/helpers'
-import { normalize, Box, Vector, vec2 } from './utils/math'
+import { normalize, Vector, vec2 } from './utils/math'
 import { Game } from './game'
 
 export class Tile implements Drawable {
@@ -11,45 +10,33 @@ export class Tile implements Drawable {
     animFrame = 0
     then = getPerformance()
     frameStart = getPerformance()
-    terrain: number[]
 
     constructor(
+        public game: Game,
         public id: number,
-        public tileset: TMXTileset,
-        public game: Game
+        public tileset: TMXTileset
     ) {
         this.properties = this.getTileProperties(id, this.tileset)
         this.type = (this.properties && this.properties.type) || null
         this.size = vec2(this.tileset.tilewidth, this.tileset.tileheight)
-        this.terrain = this.getTerrain()
     }
 
-    // @todo: remove this
-    isSolid = (): boolean => this.type !== TILE_TYPE.NON_COLLIDING
-    isOneWay = (): boolean => this.type === TILE_TYPE.ONE_WAY
-    isLadder = (): boolean => this.type === TILE_TYPE.LADDER
-
+    /**
+     * Retrieves the properties of a tile based on its global ID (gid) and the tileset.
+     * @param gid - The global ID of the tile.
+     * @param tileset - The tileset containing the tile.
+     * @returns The properties of the tile, or an empty object if no properties are found.
+     */
     getTileProperties(gid: number, tileset: TMXTileset) {
         const { firstgid, tiles } = tileset
         return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
     }
 
-    // getBounds(x: number, y: number) {
-    //     return new Box(new Vector(x * this.width, y * this.height), this.width, this.height)
-    // }
-
     /**
-     * Get terrain
-     * @returns {number[]} Array of terrain gid's
-     */
-    getTerrain() {
-        const { terrain } = this.properties
-        return terrain && terrain.split(',').map((id: string) => (id ? parseInt(id) : null))
-    }
-
-    /**
-     * Gets next tile gid for animation
-     * @returns {number} Tile gid
+     * Gets the next GID (Global ID) for the tile.
+     * If the tile has an animation, it calculates the next frame based on the animation frames and durations.
+     * If the tile does not have an animation, it returns the tile's ID.
+     * @returns The next GID for the tile.
      */
     getNextGid() {
         if (this.properties && this.properties.animation) {
@@ -66,15 +53,16 @@ export class Tile implements Drawable {
     }
 
     /**
-     * Draw tile image
-     * @param {Vector} pos Position
-     * @param {TMXFlips} flips Flips
+     * Draws the tile at the specified position with optional flips.
+     *
+     * @param pos - The position at which to draw the tile.
+     * @param flips - Optional flips to apply to the tile.
      */
     draw(pos: Vector, flips?: TMXFlips) {
         const { draw } = this.game
         draw.tile(this, pos, flips)
-        if (this.game.currentScene?.debug) {
-            draw.outline(new Box(pos, this.size), COLORS.WHITE_25, 1)
-        }
+        // if (this.game.currentScene?.debug) {
+        //     draw.outline(new Box(pos, this.size), COLORS.WHITE, 0.05)
+        // }
     }
 }

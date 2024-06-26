@@ -1,6 +1,6 @@
 import { Constructable, TMXTileset, TMXLayer, TMXFlips } from '../types'
 import { isValidArray, getFlips, noop, getFilename } from './utils/helpers'
-import { Vector, box, vec2 } from './utils/math'
+import { Box, Vector, vec2 } from './utils/math'
 import { Game } from './game'
 import { Camera } from './camera'
 import { Entity } from './entity'
@@ -30,6 +30,12 @@ export class Scene {
         }
     }
 
+    /**
+     * Initializes the scene.
+     *
+     * @param map - Optional parameter specifying the Tiled map (.tmx) to load.
+     * @returns A promise that resolves when the initialization is complete.
+     */
     async init(map?: string): Promise<void> {
         if (map) {
             const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
@@ -39,18 +45,30 @@ export class Scene {
         }
     }
 
+    /**
+     * Updates the scene.
+     */
     update() {}
 
+    /**
+     * Updates the camera in the scene.
+     */
     updateCamera() {
         this.camera.update()
     }
 
+    /**
+     * Updates all the layers in the scene.
+     */
     updateLayers() {
         for (const layer of this.layers) {
             layer instanceof Layer && layer.update()
         }
     }
 
+    /**
+     * Updates all the active objects in the scene.
+     */
     updateObjects() {
         for (const obj of this.objects) {
             if (obj.active) {
@@ -60,9 +78,13 @@ export class Scene {
         }
     }
 
+    /**
+     * Draws the scene on the canvas.
+     */
     draw() {
         const { ctx, width, height } = this.game
         const { scale } = this.camera
+        ctx.imageSmoothingEnabled = false
         ctx.save()
         ctx.scale(scale, scale)
         ctx.clearRect(0, 0, width / scale, height / scale)
@@ -91,13 +113,12 @@ export class Scene {
      *
      * @param layerIndex - The index of the layer to set as the collision layer.
      */
-    setTileCollisionLayer(layerIndex: number) {
+    setTileCollisionLayer(layerIndex: number, exclude = [] as number[]) {
         const layer = this.layers[layerIndex]
         if (layer) {
             this.tileCollision =
                 layer?.data?.map((id): number => {
-                    const t = id && this.getTileObject(id)
-                    return t && t.isSolid() ? 1 : 0
+                    return id && !exclude.includes(id) ? id : 0
                 }) || []
         }
     }
@@ -198,13 +219,14 @@ export class Scene {
      */
     addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
-        const entity: Entity = Model ? new Model(props, this, this.game) : new Entity(props, this, this.game)
-        if (entity.image) {
-            entity.addSprite(this.createSprite(entity.image))
-        } else if (entity.gid) {
-            entity.addSprite(this.tiles[entity.gid])
-        }
+        const entity: Entity = Model ? new Model(props, this) : new Entity(props, this)
+
         entity.init()
+
+        const sprite =
+            (entity.image && this.createSprite(entity.image, entity.size)) || (entity.gid && this.tiles[entity.gid])
+        if (sprite) entity.addSprite(sprite)
+
         index !== undefined ? this.objects.splice(index, 0, entity) : this.objects.push(entity)
         return entity
     }
@@ -227,7 +249,7 @@ export class Scene {
     addTileset(tileset: TMXTileset, source: string) {
         const newTileset = { ...tileset, image: { ...tileset.image, source } }
         for (let i = 0; i < newTileset.tilecount; i++) {
-            this.tiles[i + newTileset.firstgid] = new Tile(i + newTileset.firstgid, newTileset, this.game)
+            this.tiles[i + newTileset.firstgid] = new Tile(this.game, i + newTileset.firstgid, newTileset)
         }
     }
 
@@ -245,42 +267,68 @@ export class Scene {
         })
     }
 
+    /**
+     * Sets the collision data for a tile at the specified position.
+     *
+     * @param pos - The position of the tile.
+     * @param data - The collision data to set for the tile. Defaults to 0.
+     */
     setTileCollisionData(pos: Vector, data = 0) {
         pos.inRange(this.size) && (this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] = data)
     }
 
+    /**
+     * Retrieves the tile collision data at the specified position.
+     *
+     * @param pos - The position to retrieve the tile collision data from.
+     * @returns The tile collision data at the specified position.
+     */
     getTileCollisionData(pos: Vector) {
         return pos.inRange(this.size) ? this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
     }
 
+    /**
+     * Returns position in grid for a given vector position.
+     * @param pos - The vector position.
+     * @returns The grid position as a vector.
+     */
     getGridPos(pos: Vector) {
         return vec2(Math.ceil(pos.x / this.tileSize.x) | 0, Math.ceil(pos.y / this.tileSize.y) | 0)
     }
 
-    // @todo: rename
-    getRectGridPos(entity: Entity) {
-        const { tileSize } = this
-        return box(
-            entity.pos.x / tileSize.x,
-            entity.pos.y / tileSize.y,
-            entity.size.x / tileSize.x,
-            entity.size.y / tileSize.y
-        )
+    /**
+     * Calculates position on screen based on the given position and size.
+     * @param pos - The position vector.
+     * @param size - The size vector (optional).
+     * @returns The calculated screen position.
+     */
+    getScreenPos(pos: Vector, size?: Vector) {
+        return pos.multiply(this.tileSize).subtract(size ? size.multiply(this.tileSize).divide(vec2(2)) : vec2())
     }
 
-    // @todo: rename
-    getRectWorldPos(entity: Entity) {
-        const { tileSize } = this
-        return box(
-            Math.round(entity.pos.x * tileSize.x - (entity.size.x * tileSize.x) / 2),
-            Math.round(entity.pos.y * tileSize.y - (entity.size.y * tileSize.y) / 2),
-            Math.round(entity.size.x * tileSize.x),
-            Math.round(entity.size.y * tileSize.y)
-        )
+    /**
+     * Calculates the grid position rectangle for the given entity or box.
+     * @param entity - The entity or box for which to calculate the grid position rectangle.
+     * @returns The grid position rectangle as a new Box object.
+     */
+    getGridPosRect(entity: Entity | Box) {
+        return new Box(this.getGridPos(entity.pos), entity.size.divide(this.tileSize))
     }
 
-    createSprite(id: string) {
-        return new Sprite(id, this.game)
+    /**
+     * Calculates the screen position rectangle for the given entity or box.
+     * @param entity - The entity or box for which to calculate the screen position rectangle.
+     * @returns The screen position rectangle.
+     */
+    getScreenPosRect(entity: Entity | Box) {
+        return new Box(this.getScreenPos(entity.pos, entity.size), entity.size.multiply(this.tileSize))
+    }
+
+    createSprite(imageId: string, size = vec2()) {
+        const image = this.game.getImage(imageId)
+        if (image instanceof HTMLImageElement) {
+            return new Sprite(this.game, image, size.multiply(this.tileSize))
+        }
     }
 
     getLayer(id: number) {
@@ -335,6 +383,14 @@ export class Scene {
         }
     }
 
+    /**
+     * Iterates over each visible tile in the specified layer and executes the provided callback function.
+     *
+     * @param layer - The layer containing the tiles.
+     * @param fn    - The callback function to execute for each visible tile.
+     *                It receives the tile object, position, and flips as parameters.
+     * @returns void
+     */
     forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
         const { camera, tileSize } = this
         const { resolution } = camera
@@ -371,7 +427,7 @@ export class Scene {
     }
 
     displayDebug() {
-        const { x, y } = this.camera.pos
-        this.game.draw.fillText(`Camera: ${Math.floor(x)},${Math.floor(y)}`, 4, 4, COLORS.WHITE)
+        const { x, y } = this.getGridPos(this.camera.pos)
+        this.game.draw.fillText(`Camera: ${Math.floor(-x)},${Math.floor(-y)}`, 4, 4, COLORS.WHITE)
     }
 }

@@ -1,4 +1,4 @@
-export enum NODE_TYPE {
+enum NODE_TYPE {
     CUSTOM = 'custom',
     IMAGE_LAYER = 'imagelayer',
     LAYER = 'layer',
@@ -6,33 +6,31 @@ export enum NODE_TYPE {
     PROPERTIES = 'properties',
     TILESET = 'tileset'
 }
-export enum TILE_TYPE {
-    NON_COLLIDING = 'noCollide',
-    INVISIBLE = 'invisible',
-    LADDER = 'ladder',
-    ONE_WAY = 'oneWay'
+
+// DawnBringer 16 color palette
+enum COLORS {
+    BLACK = '#140C1C',
+    DARK_RED = '#442434',
+    DARK_BLUE = '#30346D',
+    DARK_GRAY = '#4E4A4F',
+    BROWN = '#854C30',
+    DARK_GREEN = '#346524',
+    RED = '#D04648',
+    LIGHT_GRAY = '#757161',
+    LIGHT_BLUE = '#597DCE',
+    ORANGE = '#D27D2C',
+    BLUE_GRAY = '#8595A1',
+    LIGHT_GREEN = '#6DAA2C',
+    PEACH = '#D2AA99',
+    CYAN = '#6DC2CA',
+    YELLOW = '#DAD45E',
+    WHITE = '#DEEED6'
 }
-export enum COLORS {
-    BLACK = '#000',
-    BLACK1 = '#000000FF',
-    BLACK0 = '#00000000',
-    LIGHT = '#FADC96CC',
-    BLUE = '#7CF',
-    DARK_GREY = '#222',
-    DARK_RED = '#D00',
-    GREEN = '#0F0',
-    LIGHT_RED = '#F00',
-    PURPLE = '#F0F',
-    WHITE = '#FFF',
-    WHITE_25 = '#FFFFFF19',
-    WHITE_50 = '#FFFFFF80'
-}
-export enum SHAPE {
-    BOX = 'box',
-    POLYGON = 'polygon'
-}
-export enum FLIPPED {
+
+enum FLIPPED {
     DIAGONALLY = 0x20000000,
     HORIZONTALLY = 0x80000000,
     VERTICALLY = 0x40000000
 }
+
+export { NODE_TYPE, COLORS, FLIPPED }

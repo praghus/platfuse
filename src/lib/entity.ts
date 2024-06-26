@@ -2,12 +2,12 @@ import { Box, Vector, vec2, clamp, box, lerp, randVector, isOverlapping } from '
 import { Animation, Drawable, TMXFlips } from '../types'
 import { COLORS } from './utils/constants'
 import { uuid } from './utils/helpers'
-import { Game } from './game'
 import { Scene } from './scene'
 
 export class Entity {
     id: string
     pos = vec2()
+    lastPos = vec2()
     size = vec2()
     force = vec2()
     type: string
@@ -41,14 +41,13 @@ export class Entity {
     gravityScale = 1 // How much to scale gravity by for this object
     angleVelocity = 0 // Angular force of the object
     angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
-    angle = 0
+    angle = 0 // @todo: implement rotation
 
     #sprite?: Drawable
 
     constructor(
         obj: Record<string, any>,
-        public scene: Scene,
-        public game: Game
+        public scene: Scene
     ) {
         this.id = (obj.id && `${obj.id}`) || uuid()
         this.gid = obj.gid
@@ -101,13 +100,12 @@ export class Entity {
 
     draw() {
         if (this.visible && this.onScreen()) {
-            const { draw } = this.game
-            const { debug } = this.scene
-            const rect = this.scene.getRectWorldPos(this).move(this.scene.camera.pos)
+            const { debug, game } = this.scene
+            const rect = this.scene.getScreenPosRect(this).move(this.scene.camera.pos)
             if (this.#sprite) {
                 this.#sprite.draw(rect.pos, this.flips)
             } else if (this.color) {
-                draw.fillRect(rect, this.color)
+                game.draw.fillRect(rect, this.color)
             }
             if (debug) this.displayDebug()
         }
@@ -144,7 +142,7 @@ export class Entity {
      * @returns The translated position rectangle of the entity.
      */
     getTranslatedPositionRect() {
-        return this.scene.getRectWorldPos(this)
+        return this.scene.getScreenPosRect(this)
     }
 
     /**
@@ -163,13 +161,13 @@ export class Entity {
         if (!this.mass) return
 
         // apply physics
-        const oldPos = this.pos.copy()
+        this.lastPos = this.pos.copy()
         this.force.y += scene.gravity * this.gravityScale
         this.pos.x += this.force.x *= this.damping
         this.pos.y += this.force.y *= this.damping
         this.angle += this.angleVelocity *= this.angleDamping
 
-        const wasMovingDown = this.force.y < 0
+        const wasMovingDown = this.force.y >= 0
 
         if (this.groundObject) {
             // apply friction in local space of ground object
@@ -190,9 +188,9 @@ export class Entity {
                 const collide2 = o.collideWithObject(this)
                 if (!collide1 || !collide2) continue
 
-                if (isOverlapping(oldPos, this.size, o.pos, o.size)) {
+                if (isOverlapping(this.lastPos, this.size, o.pos, o.size)) {
                     // if already was touching, try to push away
-                    const deltaPos = oldPos.subtract(o.pos)
+                    const deltaPos = this.lastPos.subtract(o.pos)
                     const length = deltaPos.length()
                     const pushAwayAccel = 0.001 // push away if already overlapping
                     const force = length < 0.01 ? randVector(pushAwayAccel) : deltaPos.scale(pushAwayAccel / length)
@@ -203,25 +201,23 @@ export class Entity {
 
                 // check for collision
                 const sizeBoth = this.size.add(o.size)
-                const smallStepUp = (oldPos.y - o.pos.y) * 2 > sizeBoth.y + scene.gravity // prefer to push up if small delta
-                const isBlockedX = Math.abs(oldPos.y - o.pos.y) * 2 < sizeBoth.y
-                const isBlockedY = Math.abs(oldPos.x - o.pos.x) * 2 < sizeBoth.x
+                const smallStepUp = (this.lastPos.y - o.pos.y) * 2 > sizeBoth.y + scene.gravity // prefer to push up if small delta
+                const isBlockedX = Math.abs(this.lastPos.y - o.pos.y) * 2 < sizeBoth.y
+                const isBlockedY = Math.abs(this.lastPos.x - o.pos.x) * 2 < sizeBoth.x
                 const elasticity = Math.max(this.elasticity, o.elasticity)
 
                 if (smallStepUp || isBlockedY || !isBlockedX) {
                     // resolve y collision
                     // push outside object collision
-                    this.pos.y = o.pos.y + (sizeBoth.y / 2 + epsilon) * Math.sign(oldPos.y - o.pos.y)
+                    this.pos.y = o.pos.y + (sizeBoth.y / 2 + epsilon) * Math.sign(this.lastPos.y - o.pos.y)
                     if ((o.groundObject && wasMovingDown) || !o.mass) {
                         // set ground object if landed on something
                         if (wasMovingDown) this.groundObject = o
-
                         // bounce if other object is fixed or grounded
                         this.force.y *= -elasticity
                     } else if (o.mass) {
                         // inelastic collision
                         const inelastic = (this.mass * this.force.y + o.mass * o.force.y) / (this.mass + o.mass)
-
                         // elastic collision
                         const elastic0 =
                             (this.force.y * (this.mass - o.mass)) / (this.mass + o.mass) +
@@ -238,11 +234,10 @@ export class Entity {
                 if (!smallStepUp && isBlockedX) {
                     // resolve x collision
                     // push outside collision
-                    this.pos.x = o.pos.x + (sizeBoth.x / 2 + epsilon) * Math.sign(oldPos.x - o.pos.x)
+                    this.pos.x = o.pos.x + (sizeBoth.x / 2 + epsilon) * Math.sign(this.lastPos.x - o.pos.x)
                     if (o.mass) {
                         // inelastic collision
                         const inelastic = (this.mass * this.force.x + o.mass * o.force.x) / (this.mass + o.mass)
-
                         // elastic collision
                         const elastic0 =
                             (this.force.x * (this.mass - o.mass)) / (this.mass + o.mass) +
@@ -250,7 +245,6 @@ export class Entity {
                         const elastic1 =
                             (o.force.x * (o.mass - this.mass)) / (this.mass + o.mass) +
                             (this.force.x * 2 * this.mass) / (this.mass + o.mass)
-
                         // lerp betwen elastic or inelastic based on elasticity
                         this.force.x = lerp(elasticity, inelastic, elastic0)
                         o.force.x = lerp(elasticity, inelastic, elastic1)
@@ -265,25 +259,23 @@ export class Entity {
             if (scene.tileCollisionTest(this.pos, this.size, this)) {
                 // if already was stuck in collision, don't do anything
                 // this should not happen unless something starts in collision
-                if (!scene.tileCollisionTest(oldPos, this.size, this)) {
+                if (!scene.tileCollisionTest(this.lastPos, this.size, this)) {
                     // test which side we bounced off (or both if a corner)
-                    const isBlockedY = scene.tileCollisionTest(vec2(oldPos.x, this.pos.y), this.size, this)
-                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, oldPos.y), this.size, this)
+                    const isBlockedY = scene.tileCollisionTest(vec2(this.lastPos.x, this.pos.y), this.size, this)
+                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, this.lastPos.y), this.size, this)
                     if (isBlockedY || !isBlockedX) {
                         this.groundObject = wasMovingDown // set if landed on ground
                         this.force.y *= -this.elasticity // bounce force
-
                         // adjust next force to settle on ground
-                        const o = ((oldPos.y - this.size.y / 2) | 0) - (oldPos.y - this.size.y / 2)
+                        const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
                         if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
                             this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
-
                         // move to previous position
-                        this.pos.y = oldPos.y
+                        this.pos.y = this.lastPos.y
                     }
                     if (isBlockedX) {
                         // move to previous position and bounce
-                        this.pos.x = oldPos.x
+                        this.pos.x = this.lastPos.x
                         this.force.x *= -this.elasticity
                     }
                 }
@@ -313,15 +305,16 @@ export class Entity {
 
     displayDebug() {
         const scene = this.scene
-        const { draw } = this.game
+        const { draw } = this.scene.game
         const { type, visible } = this
 
         const rect = this.getTranslatedPositionRect().move(scene.camera.pos)
 
-        draw.outline(rect, visible ? COLORS.PURPLE : COLORS.WHITE_50, 0.5)
+        draw.outline(rect, visible ? COLORS.LIGHT_GREEN : COLORS.CYAN, 1)
+        // draw.fillRect(box(rect.pos.x + rect.size.x / 2, rect.pos.y + rect.size.y / 2, 1, 1), COLORS.DARK_RED)
         draw.fillText(`${type}`, rect.pos.x, rect.pos.y - 6, COLORS.WHITE)
-        draw.fillText(`x:${this.pos.x.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y, COLORS.WHITE_50)
-        draw.fillText(`y:${this.pos.y.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y + 5, COLORS.WHITE_50)
+        draw.fillText(`x:${this.pos.x.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y, COLORS.WHITE)
+        draw.fillText(`y:${this.pos.y.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y + 5, COLORS.WHITE)
 
         // force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, rect.pos.x, rect.pos.y - 2, COLORS.LIGHT_RED)
         // force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, rect.pos.x, rect.pos.y + 2, COLORS.LIGHT_RED)

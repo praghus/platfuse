@@ -2,12 +2,13 @@ import * as dat from 'dat.gui'
 
 import { Constructable, GameConfig } from '../types'
 import { lerp } from './utils/math'
-import { Draw } from './utils/draw'
+import { Draw } from './draw'
 import { Scene } from './scene'
 import { Entity } from './entity'
 import { Input } from './input'
 import { preloadAssets } from './utils/preload'
 import { Timer } from './timer'
+import { COLORS } from './utils/constants'
 
 const canvasStyle = `
     position:absolute;
@@ -20,8 +21,6 @@ const canvasStyle = `
 export class Game {
     canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
-    backgroundColor = '#000'
-    preloaderColor = '#fff'
     gui?: dat.GUI
     draw: Draw
     input = new Input()
@@ -45,6 +44,9 @@ export class Game {
     frameTimeBufferMS = 0
     avgFPS = 0
     delta = 1 / 60
+
+    backgroundColor: string = COLORS.BLACK
+    preloaderColor: string = COLORS.WHITE
 
     constructor(
         public config: GameConfig,
@@ -108,7 +110,6 @@ export class Game {
             this.canvas.height = this.height
         }
         // Pixelated rendering
-        this.ctx.imageSmoothingEnabled = false
         this.width = this.canvas.width
         this.height = this.canvas.height
     }
@@ -210,7 +211,7 @@ export class Game {
         } else throw new Error('Invalid image!')
     }
 
-    createTimer(timeLeft?: number) {
+    timer(timeLeft?: number) {
         return new Timer(this, timeLeft)
     }
 
@@ -220,6 +221,9 @@ export class Game {
     }
 }
 
+/**
+ * Global declaration for the Platfuse window object.
+ */
 declare global {
     interface Window {
         Platfuse: any

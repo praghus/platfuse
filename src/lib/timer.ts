@@ -3,19 +3,19 @@ import { percent } from './utils/math'
 
 export class Timer {
     time?: number
-    setTime?: number
+    ts?: number
 
     constructor(
         public game: Game,
-        timeLeft?: number
+        t?: number
     ) {
-        this.time = timeLeft === undefined ? undefined : game.time + timeLeft
-        this.setTime = timeLeft
+        this.time = t === undefined ? undefined : game.time + t
+        this.ts = t
     }
 
-    set(timeLeft = 0) {
-        this.time = this.game.time + timeLeft
-        this.setTime = timeLeft
+    set(t = 0) {
+        this.time = this.game.time + t
+        this.ts = t
     }
 
     get() {
@@ -30,21 +30,15 @@ export class Timer {
         return this.time !== undefined
     }
 
-    active() {
+    isActive() {
         return this.time !== undefined && this.game.time <= this.time
     }
 
-    elapsed() {
+    getElapsed() {
         return this.time !== undefined && this.game.time > this.time
     }
 
     getPercent() {
-        return this.time !== undefined && this.setTime !== undefined
-            ? percent(this.time - this.game.time, this.setTime, 0)
-            : 0
-    }
-
-    valueOf() {
-        return this.get()
+        return this.time !== undefined && this.ts !== undefined ? percent(this.time - this.game.time, this.ts, 0) : 0
     }
 }

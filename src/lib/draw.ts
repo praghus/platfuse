@@ -1,8 +1,8 @@
-import { TMXFlips } from '../../types'
-import { Box, Vector, box, vec2 } from '../utils/math'
-import { Game } from '../game'
-import { Tile } from '../tile'
-import { Sprite } from '../sprite'
+import { TMXFlips } from '../types'
+import { Box, Vector, box, vec2 } from './utils/math'
+import { Game } from './game'
+import { Tile } from './tile'
+import { Sprite } from './sprite'
 
 export class Draw {
     constructor(public game: Game) {}
@@ -75,69 +75,45 @@ export class Draw {
     }
 
     tile(tile: Tile, pos: Vector, flips?: TMXFlips) {
-        const { ctx } = this.game
         const { image, columns, firstgid, tilewidth, tileheight } = tile.tileset
         const tileGid = tile.getNextGid()
-        const posX = ((tileGid - firstgid) % columns) * tilewidth
-        const posY = (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
-        const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
-        const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
-        const FX = flips?.H ? tilewidth * -1 : 0 // Set x position to -100% if flip horizontal
-        const FY = flips?.V ? tileheight * -1 : 0 // Set y position to -100% if flip vertical
-        const flip = flips?.H || flips?.V
-        const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
-
-        ctx.save()
-        flip && ctx.scale(scaleH, scaleV)
-        ctx.translate(0.5, 0.5)
-        ctx.drawImage(
-            this.game.getImage(image.source),
-            posX,
-            posY,
-            tilewidth,
-            tileheight,
-            x1 - 0.5,
-            y1 - 0.5,
-            tilewidth,
-            tileheight
+        const clip = vec2(
+            ((tileGid - firstgid) % columns) * tilewidth,
+            (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
         )
-        ctx.restore()
+
+        this.draw2d(this.game.getImage(image.source), new Box(pos, vec2(tilewidth, tileheight)), clip, flips)
     }
 
     sprite(sprite: Sprite, pos: Vector, flips?: TMXFlips) {
-        const { ctx } = this.game
-        const { id, animation, animFrame } = sprite
-        const image = this.game.getImage(id)
-
+        const { image, animation, animFrame, size } = sprite
         if (animation) {
-            const { frames, strip } = animation
+            const { frames, strip, width, height } = animation
             const frame = (frames && frames[animFrame]) || [0, 0]
-            const posX = strip ? strip.x + animFrame * animation.width : frame[0]
-            const posY = strip ? strip.y : frame[1]
+            const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
             const offset = animation?.offset ? vec2(...animation.offset) : vec2(0, 0)
-            const scaleH = flips?.H ? -1 : 1 // Set horizontal scale to -1 if flip horizontal
-            const scaleV = flips?.V ? -1 : 1 // Set verical scale to -1 if flip vertical
-            const FX = flips?.H ? -animation.width + offset.x : offset.x // Set x position to -100% if flip horizontal
-            const FY = flips?.V ? -animation.height + offset.y : offset.y // Set y position to -100% if flip vertical
-            const flip = flips?.H || flips?.V
-            const [x1, y1] = [(pos.x - FX) * scaleH, (pos.y - FY) * scaleV]
 
-            ctx.save()
-            flip && ctx.scale(scaleH, scaleV)
-            ctx.drawImage(
-                image,
-                posX,
-                posY,
-                animation.width,
-                animation.height,
-                x1,
-                y1,
-                animation.width,
-                animation.height
-            )
-            ctx.restore()
+            this.draw2d(image, new Box(pos.subtract(offset), vec2(width, height)), clip, flips)
         } else if (image) {
-            ctx.drawImage(image, pos.x, pos.y)
+            this.draw2d(image, new Box(pos, size))
         }
+    }
+
+    draw2d(image: HTMLImageElement, rect: Box, clip?: Vector, flips?: TMXFlips) {
+        const { ctx } = this.game
+        const { pos, size } = rect
+
+        const flip = flips?.H || flips?.V
+        const scale = vec2(flips?.H ? -1 : 1, flips?.V ? -1 : 1)
+        const f = vec2(flips?.H ? size.x * -1 : 0, flips?.V ? size.y * -1 : 0)
+        const fpos = pos.subtract(f).multiply(scale)
+
+        ctx.save()
+        flip && ctx.scale(scale.x, scale.y)
+        ctx.translate(0.5, 0.5)
+        clip
+            ? ctx.drawImage(image, clip.x, clip.y, size.x, size.y, fpos.x - 0.5, fpos.y - 0.5, size.x, size.y)
+            : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
+        ctx.restore()
     }
 }
