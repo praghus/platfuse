@@ -1,4 +1,4 @@
-import { TMXLayer, TMXFlips } from '../types'
+import { TMXLayer, TMXFlips } from 'tmx-map-parser'
 import { NODE_TYPE } from './utils/constants'
 import { Entity } from './entity'
 import { Game } from './game'
@@ -12,6 +12,7 @@ export class Layer {
     data?: (number | null)[]
     objects?: Entity[]
     visible = true
+    renderOrder = 0
 
     constructor(
         layerData: TMXLayer | null,
@@ -65,8 +66,5 @@ export class Layer {
                     break
             }
         }
-        // if (scene.debug) {
-        //     scene.forEachVisibleTile(scene.tileCollision, (tile, pos, flips) => tile?.draw(pos, flips as TMXFlips))
-        // }
     }
 }

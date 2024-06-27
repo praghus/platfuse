@@ -9,6 +9,7 @@ import { Input } from './input'
 import { preloadAssets } from './utils/preload'
 import { Timer } from './timer'
 import { COLORS } from './utils/constants'
+import { glInit, glRenderPostProcess } from './utils/webgl'
 
 const canvasStyle = `
     position:absolute;
@@ -44,9 +45,10 @@ export class Game {
     frameTimeBufferMS = 0
     avgFPS = 0
     delta = 1 / 60
+    useWebGL = true
 
-    backgroundColor: string = COLORS.BLACK
-    preloaderColor: string = COLORS.WHITE
+    backgroundColor = COLORS.BLACK
+    accentColor = COLORS.WHITE
 
     constructor(
         public config: GameConfig,
@@ -60,15 +62,16 @@ export class Game {
         this.objectClasses = config.entities
         this.debug = !!config.debug
         this.backgroundColor = config?.backgroundColor || this.backgroundColor
-        this.preloaderColor = config?.preloaderColor || this.preloaderColor
+        this.accentColor = config?.preloaderColor || this.accentColor
         this.canvas.setAttribute('style', canvasStyle)
-        this.canvas.style.backgroundColor = this.backgroundColor
+        this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
         this.draw = new Draw(this)
         this.debug && this.enableDebugGUI()
 
         this.onResize()
         window.addEventListener('resize', this.onResize.bind(this))
+
         if (!!config.global) window.Platfuse = this
     }
 
@@ -84,6 +87,7 @@ export class Game {
                 return s
             })
         )
+        this.useWebGL && glInit(this)
         this.ready = true
         this.update()
     }
@@ -160,8 +164,8 @@ export class Game {
                 // add the time smoothing back in
                 this.frameTimeBufferMS += deltaSmooth
             }
-            scene.draw(/*this*/)
-            this.debug && this.draw.fillText(this.avgFPS.toFixed(1), 10, this.canvas.height - 20, '#fff', 1)
+            scene.draw()
+            this.useWebGL && glRenderPostProcess(this.time)
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }

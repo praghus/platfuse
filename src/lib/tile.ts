@@ -1,4 +1,5 @@
-import { Drawable, TMXFlips, TMXTileset } from '../types'
+import { TMXFlips, TMXTileset } from 'tmx-map-parser'
+import { Drawable } from '../types'
 import { getPerformance, isValidArray } from './utils/helpers'
 import { normalize, Vector, vec2 } from './utils/math'
 import { Game } from './game'

@@ -1,5 +1,6 @@
-import { Constructable, TMXTileset, TMXLayer, TMXFlips } from '../types'
-import { isValidArray, getFlips, noop, getFilename } from './utils/helpers'
+import { tmx, getFlips, TMXTileset, TMXLayer, TMXFlips } from 'tmx-map-parser'
+import { Constructable } from '../types'
+import { isValidArray, noop, getFilename } from './utils/helpers'
 import { Box, Vector, vec2 } from './utils/math'
 import { Game } from './game'
 import { Camera } from './camera'
@@ -7,8 +8,8 @@ import { Entity } from './entity'
 import { Layer } from './layer'
 import { Sprite } from './sprite'
 import { Tile } from './tile'
-import { COLORS, FLIPPED } from './utils/constants'
-import { tmx } from 'tmx-map-parser'
+import { FLIPPED } from './utils/constants'
+import { glCopyToContext, glPreRender } from './utils/webgl'
 
 export class Scene {
     game: Game
@@ -39,7 +40,7 @@ export class Scene {
     async init(map?: string): Promise<void> {
         if (map) {
             const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
-            this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight), 2)
+            this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
         }
@@ -47,6 +48,7 @@ export class Scene {
 
     /**
      * Updates the scene.
+     *
      */
     update() {}
 
@@ -82,8 +84,10 @@ export class Scene {
      * Draws the scene on the canvas.
      */
     draw() {
-        const { ctx, width, height } = this.game
+        const { ctx, width, height, useWebGL } = this.game
         const { scale } = this.camera
+
+        useWebGL && glPreRender(this)
         ctx.imageSmoothingEnabled = false
         ctx.save()
         ctx.scale(scale, scale)
@@ -91,21 +95,28 @@ export class Scene {
         for (const layer of this.layers) {
             layer instanceof Layer && layer.draw()
         }
-        this.debug && this.displayDebug()
         ctx.restore()
+        useWebGL && glCopyToContext(ctx, true)
+        this.debug && this.displayDebug()
     }
 
     /**
      * Sets the dimensions of the scene.
      * @param size - The size of the scene.
      * @param tileSize - The size of each tile in the scene.
-     * @param scale - The scale of the camera (default is 1).
      */
-    setDimensions(size: Vector, tileSize: Vector, scale = 1) {
+    setDimensions(size: Vector, tileSize: Vector) {
         this.size = size
         this.tileSize = tileSize
+        // this.camera.setBounds(-16, -16, size.x * tileSize.x, size.y * tileSize.y)
+    }
+
+    /**
+     * Sets the scale of the scene.
+     * @param scale - The scale value to set.
+     */
+    setScale(scale: number) {
         this.camera.setScale(scale)
-        this.camera.setBounds(0, 0, size.x * tileSize.x, size.y * tileSize.y)
     }
 
     /**
@@ -335,10 +346,6 @@ export class Scene {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
     }
 
-    getObjects() {
-        return this.objects
-    }
-
     getObjectById(id: string) {
         return this.objects.find(object => object.id === id)
     }
@@ -376,6 +383,12 @@ export class Scene {
         this.getLayer(layerId).toggleVisibility(false)
     }
 
+    /**
+     * Iterates over each visible object in the scene and invokes the provided callback function.
+     * The objects are sorted based on their render order before iteration.
+     *
+     * @param cb - The callback function to be invoked for each visible object.
+     */
     forEachVisibleObject(cb: (obj: Entity) => void = noop) {
         this.objects.sort((a, b) => a.renderOrder - b.renderOrder)
         for (const obj of this.objects) {
@@ -427,7 +440,10 @@ export class Scene {
     }
 
     displayDebug() {
+        const { avgFPS, canvas, draw, accentColor } = this.game
         const { x, y } = this.getGridPos(this.camera.pos)
-        this.game.draw.fillText(`Camera: ${Math.floor(-x)},${Math.floor(-y)}`, 4, 4, COLORS.WHITE)
+
+        draw.text(`Camera: ${Math.floor(-x)},${Math.floor(-y)}`, 4, 4, accentColor)
+        draw.text(avgFPS.toFixed(1), canvas.width - 4, canvas.height - 4, accentColor, 1, 'right', 'bottom')
     }
 }

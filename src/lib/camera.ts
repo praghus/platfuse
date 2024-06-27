@@ -1,4 +1,4 @@
-import { Box, Vector, box, vec2 } from './utils/math'
+import { Vector, vec2 } from './utils/math'
 import { Entity } from './entity'
 
 export class Camera {
@@ -6,7 +6,6 @@ export class Camera {
     speed = vec2(1)
     offset = vec2()
     resolution: Vector
-    bounds?: Box
     followEntity?: Entity
     delta = 1 / 60
     isShaking = false
@@ -21,39 +20,21 @@ export class Camera {
         this.resolution = vec2(Math.round(size.x / scale), Math.round(size.y / scale))
     }
 
-    getBounds() {
-        if (!this.bounds) {
-            this.setBounds(0, 0, Infinity, Infinity)
-        }
-        return this.bounds as Box
-    }
-
-    setBounds(x: number, y: number, width: number, height: number) {
-        this.bounds = box(x, y, width, height)
-    }
-
     setScale(scale: number) {
         this.scale = scale
         this.resolution = vec2(Math.round(this.size.x / scale), Math.round(this.size.y / scale))
-    }
-
-    setFollow(follow: Entity, center = true) {
-        this.followEntity = follow
-        center && this.center()
     }
 
     setSpeed(speed: Vector) {
         this.speed = speed
     }
 
-    unfollow() {
-        this.followEntity = undefined
+    follow(follow: Entity) {
+        this.followEntity = follow
     }
 
-    center() {
-        // this.follow
-        //     ? this.moveTo(this.follow.pos.x + this.follow.size.x / 2, this.follow.pos.y + this.follow.size.y / 2)
-        //     : this.moveTo(this.resolution.x / 2, this.resolution.y / 2)
+    unfollow() {
+        this.followEntity = undefined
     }
 
     shake(duration: number, intensity: Vector) {
@@ -66,10 +47,6 @@ export class Camera {
 
     update() {
         const { x, y } = this.resolution
-        const { size } = this.getBounds()
-
-        // shake
-
         if (this.followEntity) {
             const followRect = this.followEntity.getTranslatedPositionRect()
             const midPos = vec2(
@@ -77,14 +54,15 @@ export class Camera {
                 -y / 2 + followRect.pos.y + followRect.size.y / 2
             )
             const moveTo = vec2((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
-            this.pos = this.pos.subtract(vec2(Math.round(moveTo.x / this.scale), Math.round(moveTo.y / this.scale)))
+            this.pos = this.pos.subtract(vec2(moveTo.x / this.scale, moveTo.y / this.scale))
         }
 
-        if (this.pos.x - x < -size.x) this.pos.x = -size.x + x
-        if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
+        // if (this.pos.x - x < -size.x) this.pos.x = -size.x + x
+        // if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
         if (this.pos.x > 0) this.pos.x = 0
         if (this.pos.y > 0) this.pos.y = 0
 
+        // shake
         if (this.isShaking) {
             this.shakeElapsed += this.delta * 1000
             // progress = clamp(this.shakeElapsed / this.shakeDuration, 0, 1)

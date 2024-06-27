@@ -1,40 +1,47 @@
-import { TMXFlips } from '../types'
+import { TMXFlips } from 'tmx-map-parser'
 import { Box, Vector, box, vec2 } from './utils/math'
 import { Game } from './game'
 import { Tile } from './tile'
 import { Sprite } from './sprite'
+import { Color } from './color'
+// import { COLORS } from './utils/constants'
+// import { glDraw, glDrawPoints } from './utils/webgl'
 
 export class Draw {
     constructor(public game: Game) {}
 
-    preloader(p: number, size = vec2(this.game.canvas.width / 2, 16)) {
-        const { canvas, backgroundColor, preloaderColor } = this.game
+    preloader(p: number, size = vec2(this.game.canvas.width / 2, this.game.canvas.width * 0.03)) {
+        const { canvas, backgroundColor, accentColor } = this.game
         const { width, height } = canvas
         this.fillRect(box(0, 0, width, height), backgroundColor)
-        this.outline(box(size.x / 2, height / 2, size.x, size.y), preloaderColor, 1)
-        this.fillRect(box(4 + size.x / 2, 4 + height / 2, -8 + size.x * p, size.y - 8), preloaderColor)
+        this.outline(box(size.x / 2, height / 2, size.x, size.y), accentColor, 2)
+        this.fillRect(box(8 + size.x / 2, 8 + height / 2, -16 + size.x * p, size.y - 16), accentColor)
     }
 
-    outline(rect: Box, color: string, lineWidth = 1) {
+    outline(rect: Box, color: Color, lineWidth = 1) {
         const { ctx } = this.game
         const { pos, size } = rect
-        ctx.strokeStyle = color
+        // if (useWebGL) {
+        //     glDraw(1, 1, 1, 1, 0, 0, 0, 0, 0, 0, COLORS.RED.rgbaInt())
+        // } else {
+        ctx.strokeStyle = color.toString()
         ctx.lineWidth = lineWidth
         ctx.beginPath()
-        ctx.rect(Math.round(pos.x), Math.round(pos.y), Math.round(size.x), Math.round(size.y))
+        ctx.rect(pos.x, pos.y, size.x, size.y)
         ctx.stroke()
+        // }
     }
 
-    fillRect(rect: Box, color: string) {
+    fillRect(rect: Box, color: Color) {
         const { ctx } = this.game
         const { pos, size } = rect
-        ctx.fillStyle = color
-        ctx.fillRect(Math.round(pos.x), Math.round(pos.y), Math.round(size.x), Math.round(size.y))
+        ctx.fillStyle = color.toString()
+        ctx.fillRect(pos.x, pos.y, size.x, size.y)
     }
 
-    stroke(x: number, y: number, points: Vector[], color: string) {
+    stroke(x: number, y: number, points: Vector[], color: Color) {
         const { ctx } = this.game
-        ctx.strokeStyle = color
+        ctx.strokeStyle = color.toString()
         ctx.beginPath()
         ctx.moveTo(points[0].x + x, points[0].y + y)
         points.map((v: Vector) => ctx.lineTo(x + v.x, y + v.y))
@@ -42,36 +49,22 @@ export class Draw {
         ctx.stroke()
     }
 
-    fillText(text: string, x: number, y: number, color: string, size = 0.4) {
-        const { ctx } = this.game
+    // eslint-disable-next-line max-params
+    text(
+        text: string,
+        x: number,
+        y: number,
+        color?: Color,
+        size = 1,
+        textAlign: CanvasTextAlign = 'left',
+        textBaseline: CanvasTextBaseline = 'top'
+    ) {
+        const { ctx, accentColor } = this.game
         ctx.font = `${size}em monospace`
-        ctx.textBaseline = 'top'
-        ctx.textAlign = 'left'
-        ctx.fillStyle = color
+        ctx.textBaseline = textBaseline
+        ctx.textAlign = textAlign
+        ctx.fillStyle = (color || accentColor).toString()
         ctx.fillText(text, x, y)
-    }
-
-    createPixelFontRenderer(image: HTMLImageElement, fontSize: number, rows: number) {
-        return (text: string, x: number, y: number) => {
-            text.split('\n')
-                .reverse()
-                .map((output, index) => {
-                    for (let i = 0; i < output.length; i++) {
-                        const chr = output.charCodeAt(i)
-                        this.game.ctx.drawImage(
-                            image,
-                            (chr % rows) * fontSize,
-                            Math.ceil((chr + 1) / rows - 1) * fontSize,
-                            fontSize,
-                            fontSize,
-                            Math.floor(x + i * fontSize),
-                            Math.floor(y - index * (fontSize + 1)),
-                            fontSize,
-                            fontSize
-                        )
-                    }
-                })
-        }
     }
 
     tile(tile: Tile, pos: Vector, flips?: TMXFlips) {

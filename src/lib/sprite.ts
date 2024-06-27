@@ -1,4 +1,5 @@
-import { Animation, Drawable, TMXFlips } from '../types'
+import { TMXFlips } from 'tmx-map-parser'
+import { Animation, Drawable } from '../types'
 import { getPerformance } from './utils/helpers'
 import { normalize, vec2, Vector } from './utils/math'
 import { Game } from './game'

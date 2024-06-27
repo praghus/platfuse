@@ -1,8 +1,10 @@
+import { TMXFlips } from 'tmx-map-parser'
 import { Box, Vector, vec2, clamp, box, lerp, randVector, isOverlapping } from './utils/math'
-import { Animation, Drawable, TMXFlips } from '../types'
+import { Animation, Drawable } from '../types'
 import { COLORS } from './utils/constants'
 import { uuid } from './utils/helpers'
 import { Scene } from './scene'
+import { Color } from '../../dist/@types'
 
 export class Entity {
     id: string
@@ -11,7 +13,7 @@ export class Entity {
     size = vec2()
     force = vec2()
     type: string
-    color?: string
+    color?: Color
     gid?: number
     name?: string
     image?: string
@@ -304,19 +306,49 @@ export class Entity {
     }
 
     displayDebug() {
-        const scene = this.scene
-        const { draw } = this.scene.game
-        const { type, visible } = this
+        const { game, camera } = this.scene
+        const { draw } = game
+        const { type, visible, force, pos } = this
 
-        const rect = this.getTranslatedPositionRect().move(scene.camera.pos)
-
-        draw.outline(rect, visible ? COLORS.LIGHT_GREEN : COLORS.CYAN, 1)
+        const rect = this.getTranslatedPositionRect().move(camera.pos)
+        const fontSize = 1.2 / camera.scale
+        draw.outline(rect, visible ? COLORS.LIGHT_GREEN : COLORS.CYAN, 0.5)
         // draw.fillRect(box(rect.pos.x + rect.size.x / 2, rect.pos.y + rect.size.y / 2, 1, 1), COLORS.DARK_RED)
-        draw.fillText(`${type}`, rect.pos.x, rect.pos.y - 6, COLORS.WHITE)
-        draw.fillText(`x:${this.pos.x.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y, COLORS.WHITE)
-        draw.fillText(`y:${this.pos.y.toFixed(1)}`, 2 + rect.pos.x + rect.size.x, rect.pos.y + 5, COLORS.WHITE)
+        draw.text(`${type}`, rect.pos.x + rect.size.x / 2, rect.pos.y - 5, COLORS.WHITE, fontSize, 'center')
+        draw.text(
+            `x:${pos.x.toFixed(1)}`,
+            rect.pos.x + rect.size.x / 2 - rect.size.x / 2 - 2,
+            rect.pos.y,
+            COLORS.WHITE,
+            fontSize,
+            'right'
+        )
+        draw.text(
+            `y:${pos.y.toFixed(1)}`,
+            rect.pos.x + rect.size.x / 2 - rect.size.x / 2 - 2,
+            rect.pos.y + 5,
+            COLORS.WHITE,
+            fontSize,
+            'right'
+        )
 
-        // force.x !== 0 && draw.fillText(`${force.x.toFixed(2)}`, rect.pos.x, rect.pos.y - 2, COLORS.LIGHT_RED)
-        // force.y !== 0 && draw.fillText(`${force.y.toFixed(2)}`, rect.pos.x, rect.pos.y + 2, COLORS.LIGHT_RED)
+        Math.abs(force.x) > 0.012 &&
+            draw.text(
+                `x:${force.x.toFixed(3)}`,
+                rect.pos.x + rect.size.x / 2 + rect.size.x / 2 + 2,
+                rect.pos.y,
+                COLORS.RED,
+                fontSize,
+                'left'
+            )
+        Math.abs(force.y) > 0.012 &&
+            draw.text(
+                `y:${force.y.toFixed(3)}`,
+                rect.pos.x + rect.size.x / 2 + rect.size.x / 2 + 2,
+                rect.pos.y + 5,
+                COLORS.RED,
+                fontSize,
+                'left'
+            )
     }
 }
