@@ -1,19 +1,16 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "strict": true,
-    "esModuleInterop": true,
-    "declaration": true,
-    "outDir": "@types",
-    "importHelpers": true,
-    "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
-    "typeRoots": [
-        "node_modules/@types"
-    ]
-  }
+    "compilerOptions": {
+        "target": "es6",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "declaration": true,
+        "outDir": "@types",
+        "importHelpers": true,
+        "skipLibCheck": true,
+        "types": ["node"],
+        "typeRoots": ["node_modules/@types"]
+    }
 }

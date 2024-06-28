@@ -9,12 +9,17 @@ import { Color } from './color'
 export class Draw {
     constructor(public game: Game) {}
 
-    preloader(p: number, size = vec2(this.game.canvas.width / 2, this.game.canvas.width * 0.03)) {
+    preloader(p: number) {
         const { canvas, backgroundColor, accentColor } = this.game
         const { width, height } = canvas
+        const logoSize = vec2(height * 0.2, height * 0.2)
+        const logoPos = vec2(width / 2 - logoSize.x, height / 2 - logoSize.y)
+
         this.fillRect(box(0, 0, width, height), backgroundColor)
-        this.outline(box(size.x / 2, height / 2, size.x, size.y), accentColor, 2)
-        this.fillRect(box(8 + size.x / 2, 8 + height / 2, -16 + size.x * p, size.y - 16), accentColor)
+        this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [10], accentColor)
+        this.text('plat', width / 2, height / 2 - 50, backgroundColor, 4, 'right', 'middle')
+        this.text('fuse', width / 2, height / 2 - 50, accentColor, 4, 'left', 'middle')
+        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), accentColor)
     }
 
     outline(rect: Box, color: Color, lineWidth = 1) {
@@ -38,6 +43,25 @@ export class Draw {
         ctx.fillRect(pos.x, pos.y, size.x, size.y)
     }
 
+    fillRectRound(rect: Box, radius: number[], color: Color) {
+        const { ctx } = this.game
+        const { pos, size } = rect
+        ctx.fillStyle = color.toString()
+        ctx.beginPath()
+        ctx.roundRect(pos.x, pos.y, size.x, size.y, radius)
+        ctx.fill()
+    }
+
+    roundRect(rect: Box, radius: number[], color: Color, lineWidth = 1) {
+        const { ctx } = this.game
+        const { pos, size } = rect
+        ctx.strokeStyle = color.toString()
+        ctx.lineWidth = lineWidth
+        ctx.beginPath()
+        ctx.roundRect(pos.x, pos.y, size.x, size.y, radius)
+        ctx.stroke()
+    }
+
     stroke(x: number, y: number, points: Vector[], color: Color) {
         const { ctx } = this.game
         ctx.strokeStyle = color.toString()
@@ -58,11 +82,13 @@ export class Draw {
         textAlign: CanvasTextAlign = 'left',
         textBaseline: CanvasTextBaseline = 'top'
     ) {
-        const { ctx, accentColor } = this.game
+        const { ctx, accentColor, backgroundColor } = this.game
         ctx.font = `${size}em monospace`
         ctx.textBaseline = textBaseline
         ctx.textAlign = textAlign
+        ctx.strokeStyle = backgroundColor.toString()
         ctx.fillStyle = (color || accentColor).toString()
+        ctx.strokeText(text, x, y)
         ctx.fillText(text, x, y)
     }
 

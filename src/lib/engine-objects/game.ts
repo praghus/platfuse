@@ -66,8 +66,10 @@ export class Game {
         this.draw = new Draw(this)
         this.debug && this.enableDebugGUI()
 
-        this.onResize()
+        document.body.style.background = this.backgroundColor.toString()
         window.addEventListener('resize', this.onResize.bind(this))
+
+        this.onResize()
 
         if (!!config.global) window.Platfuse = this
     }
@@ -86,7 +88,7 @@ export class Game {
         )
         this.useWebGL && glInit(this)
         this.ready = true
-        this.update()
+        setTimeout(() => this.update(), 500)
     }
 
     /**

@@ -424,9 +424,26 @@ export class Scene {
 
     displayDebug() {
         const { avgFPS, canvas, draw, accentColor } = this.game
-        const { x, y } = this.getGridPos(this.camera.pos)
+        const { pos } = this.camera
+        const { x, y } = this.getGridPos(pos)
 
-        draw.text(`Camera: ${Math.floor(-x)},${Math.floor(-y)}`, 4, 4, accentColor)
-        draw.text(avgFPS.toFixed(1), canvas.width - 4, canvas.height - 4, accentColor, 1, 'right', 'bottom')
+        draw.text(
+            `[${-x},${-y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}]`,
+            4,
+            canvas.height - 4,
+            accentColor,
+            1,
+            'left',
+            'bottom'
+        )
+        draw.text(
+            `[${this.objects.length}] ${avgFPS.toFixed(1)}`,
+            canvas.width - 4,
+            canvas.height - 4,
+            accentColor,
+            1,
+            'right',
+            'bottom'
+        )
     }
 }

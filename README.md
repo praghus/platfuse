@@ -6,4 +6,4 @@ Fast simple and minimalist HTML5 game engine based on Tiled map editor.
 
 ## License
 
-[MIT licensed](./LICENSE).
+[MIT licensed](https://github.com/praghus/platfuse/blob/main/LICENSE).
