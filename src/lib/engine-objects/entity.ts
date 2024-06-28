@@ -1,13 +1,11 @@
-import { TMXFlips } from 'tmx-map-parser'
-import { Box, Vector, vec2, clamp, box, lerp, randVector, isOverlapping } from './utils/math'
-import { Animation, Drawable } from '../types'
-import { COLORS } from './utils/constants'
-import { uuid } from './utils/helpers'
+import { Animation, Drawable } from '../../types'
+import { Box, Color, Vector, box, vec2, randVector } from '../engine-helpers'
+import { DefaultColors } from '../constants'
+import { clamp, lerp } from '../utils/helpers'
 import { Scene } from './scene'
-import { Color } from '../../dist/@types'
 
 export class Entity {
-    id: string
+    id: number
     pos = vec2()
     lastPos = vec2()
     size = vec2()
@@ -17,9 +15,9 @@ export class Entity {
     gid?: number
     name?: string
     image?: string
-    redius?: number
-    flips?: TMXFlips
-    rotatation?: number
+    flipH = false
+    flipV = false
+    tmxRect: Box | null // Rectangle from Tiled map
     animation?: Animation
     properties: Record<string, any>
 
@@ -27,14 +25,9 @@ export class Entity {
     visible = true
     active = true
     dead = false
-
-    tmxRect: Box | null
-
     collideTiles = true
     collideObjects = true
     groundObject: Entity | boolean = false
-    maxSpeed = 1
-    renderOrder = 0
 
     mass = 1 // How heavy the object is, static if 0
     damping = 0.9 // How much to slow down force each frame (0-1)
@@ -44,20 +37,22 @@ export class Entity {
     angleVelocity = 0 // Angular force of the object
     angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
     angle = 0 // @todo: implement rotation
+    maxSpeed = 1
+    renderOrder = 0
 
     #sprite?: Drawable
 
     constructor(
-        obj: Record<string, any>,
-        public scene: Scene
+        public scene: Scene,
+        obj: Record<string, any>
     ) {
-        this.id = (obj.id && `${obj.id}`) || uuid()
+        this.id = obj.id
         this.gid = obj.gid
         this.type = obj.type
         this.name = obj.name
         this.tmxRect = obj.x && obj.y ? box(obj.x, obj.y, obj.width, obj.height) : null
         this.properties = obj.properties
-        this.rotatation = obj.rotation
+        this.angle = obj.rotation
         this.visible = obj.visible !== undefined ? obj.visible : true
     }
 
@@ -105,7 +100,7 @@ export class Entity {
             const { debug, game } = this.scene
             const rect = this.scene.getScreenPosRect(this).move(this.scene.camera.pos)
             if (this.#sprite) {
-                this.#sprite.draw(rect.pos, this.flips)
+                this.#sprite.draw(rect.pos, this.flipH, this.flipV)
             } else if (this.color) {
                 game.draw.fillRect(rect, this.color)
             }
@@ -123,17 +118,35 @@ export class Entity {
         }
     }
 
-    setAnimation(animation: Animation, flips?: TMXFlips) {
+    /**
+     * Sets the animation for the entity.
+     * @param animation - The animation to set.
+     * @param flipH - (Optional) Whether to flip the animation horizontally. Default is false.
+     * @param flipV - (Optional) Whether to flip the animation vertically. Default is false.
+     */
+    setAnimation(animation: Animation, flipH = false, flipV = false) {
         if (this.#sprite && this.#sprite.animate) {
-            this.flips = flips
+            this.flipH = flipH
+            this.flipV = flipV
             this.animation = animation
         }
     }
 
+    /**
+     * Gets the current animation frame of the entity.
+     * If the sprite is defined, it returns the animation frame of the sprite.
+     * Otherwise, it returns 0.
+     *
+     * @returns The current animation frame.
+     */
     getAnimationFrame() {
         return this.#sprite?.animFrame || 0
     }
 
+    /**
+     * Sets the animation frame for the entity's sprite.
+     * @param frame - The frame number to set.
+     */
     setAnimationFrame(frame: number) {
         if (this.#sprite) this.#sprite.animFrame = frame
     }
@@ -148,21 +161,30 @@ export class Entity {
     }
 
     /**
+     * Checks if the entity is overlapping with a given position and size.
+     * @param pos - The position vector of the other object.
+     * @param size - The size vector of the other object.
+     * @returns True if the entity is overlapping with the other object, false otherwise.
+     */
+    isOverlapping(pos: Vector, size: Vector) {
+        return (
+            Math.abs(this.pos.x - pos.x) * 2 < this.size.x + size.x &&
+            Math.abs(this.pos.y - pos.y) * 2 < this.size.y + size.y
+        )
+    }
+
+    /**
      * Updates the entity's position, velocity, and handles collisions with other objects and tiles.
      * This method applies physics, friction, and collision resolution to the entity.
      */
     update() {
         const { scene } = this
-        const collidingObjects = scene.objects.filter(o => o.visible && o.collideObjects)
 
-        // limit max speed to prevent missing collisions
         this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
         this.force.y = clamp(this.force.y, -this.maxSpeed, this.maxSpeed)
 
-        // do not update collision for fixed objects
         if (!this.mass) return
 
-        // apply physics
         this.lastPos = this.pos.copy()
         this.force.y += scene.gravity * this.gravityScale
         this.pos.x += this.force.x *= this.damping
@@ -172,25 +194,46 @@ export class Entity {
         const wasMovingDown = this.force.y >= 0
 
         if (this.groundObject) {
-            // apply friction in local space of ground object
             const groundSpeed = this.groundObject instanceof Entity ? this.groundObject.force.x : 0
             this.force.x = groundSpeed + (this.force.x - groundSpeed) * this.friction
             this.groundObject = false
         }
 
+        if (this.collideTiles) {
+            if (scene.tileCollisionTest(this.pos, this.size, this)) {
+                if (!scene.tileCollisionTest(this.lastPos, this.size, this)) {
+                    const isBlockedY = scene.tileCollisionTest(vec2(this.lastPos.x, this.pos.y), this.size, this)
+                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, this.lastPos.y), this.size, this)
+                    if (isBlockedY || !isBlockedX) {
+                        this.groundObject = wasMovingDown
+                        this.force.y *= -this.elasticity
+                        const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
+                        if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
+                            this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
+                        this.pos.y = this.lastPos.y
+                    }
+                    if (isBlockedX) {
+                        this.pos.x = this.lastPos.x
+                        this.force.x *= -this.elasticity
+                    }
+                }
+            }
+        }
+
         if (this.collideObjects) {
             const epsilon = 0.001 // necessary to push slightly outside of the collision
+            const collidingObjects = scene.objects.filter(o => o.visible && o.collideObjects)
             for (const o of collidingObjects) {
                 if ((!this.solid && !o.solid) || o.dead || o == this) continue
 
                 // @todo: change to use bounding box
-                if (!isOverlapping(this.pos, this.size, o.pos, o.size)) continue
+                if (!o.isOverlapping(this.pos, this.size)) continue
 
                 const collide1 = this.collideWithObject(o)
                 const collide2 = o.collideWithObject(this)
                 if (!collide1 || !collide2) continue
 
-                if (isOverlapping(this.lastPos, this.size, o.pos, o.size)) {
+                if (o.isOverlapping(this.lastPos, this.size)) {
                     // if already was touching, try to push away
                     const deltaPos = this.lastPos.subtract(o.pos)
                     const length = deltaPos.length()
@@ -201,21 +244,16 @@ export class Entity {
                     continue
                 }
 
-                // check for collision
                 const sizeBoth = this.size.add(o.size)
-                const smallStepUp = (this.lastPos.y - o.pos.y) * 2 > sizeBoth.y + scene.gravity // prefer to push up if small delta
+                const smallStepUp = (this.lastPos.y - o.pos.y) * 2 > sizeBoth.y + scene.gravity
                 const isBlockedX = Math.abs(this.lastPos.y - o.pos.y) * 2 < sizeBoth.y
                 const isBlockedY = Math.abs(this.lastPos.x - o.pos.x) * 2 < sizeBoth.x
                 const elasticity = Math.max(this.elasticity, o.elasticity)
 
                 if (smallStepUp || isBlockedY || !isBlockedX) {
-                    // resolve y collision
-                    // push outside object collision
                     this.pos.y = o.pos.y + (sizeBoth.y / 2 + epsilon) * Math.sign(this.lastPos.y - o.pos.y)
                     if ((o.groundObject && wasMovingDown) || !o.mass) {
-                        // set ground object if landed on something
                         if (wasMovingDown) this.groundObject = o
-                        // bounce if other object is fixed or grounded
                         this.force.y *= -elasticity
                     } else if (o.mass) {
                         // inelastic collision
@@ -234,8 +272,6 @@ export class Entity {
                     }
                 }
                 if (!smallStepUp && isBlockedX) {
-                    // resolve x collision
-                    // push outside collision
                     this.pos.x = o.pos.x + (sizeBoth.x / 2 + epsilon) * Math.sign(this.lastPos.x - o.pos.x)
                     if (o.mass) {
                         // inelastic collision
@@ -256,33 +292,6 @@ export class Entity {
             }
         }
 
-        if (this.collideTiles) {
-            // check collision against tiles
-            if (scene.tileCollisionTest(this.pos, this.size, this)) {
-                // if already was stuck in collision, don't do anything
-                // this should not happen unless something starts in collision
-                if (!scene.tileCollisionTest(this.lastPos, this.size, this)) {
-                    // test which side we bounced off (or both if a corner)
-                    const isBlockedY = scene.tileCollisionTest(vec2(this.lastPos.x, this.pos.y), this.size, this)
-                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, this.lastPos.y), this.size, this)
-                    if (isBlockedY || !isBlockedX) {
-                        this.groundObject = wasMovingDown // set if landed on ground
-                        this.force.y *= -this.elasticity // bounce force
-                        // adjust next force to settle on ground
-                        const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
-                        if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
-                            this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
-                        // move to previous position
-                        this.pos.y = this.lastPos.y
-                    }
-                    if (isBlockedX) {
-                        // move to previous position and bounce
-                        this.pos.x = this.lastPos.x
-                        this.force.x *= -this.elasticity
-                    }
-                }
-            }
-        }
         this.animate()
     }
 
@@ -309,46 +318,24 @@ export class Entity {
         const { game, camera } = this.scene
         const { draw } = game
         const { type, visible, force, pos } = this
+        const { Cyan, LightGreen, Red, White } = DefaultColors
 
-        const rect = this.getTranslatedPositionRect().move(camera.pos)
         const fontSize = 1.2 / camera.scale
-        draw.outline(rect, visible ? COLORS.LIGHT_GREEN : COLORS.CYAN, 0.5)
-        // draw.fillRect(box(rect.pos.x + rect.size.x / 2, rect.pos.y + rect.size.y / 2, 1, 1), COLORS.DARK_RED)
-        draw.text(`${type}`, rect.pos.x + rect.size.x / 2, rect.pos.y - 5, COLORS.WHITE, fontSize, 'center')
-        draw.text(
-            `x:${pos.x.toFixed(1)}`,
-            rect.pos.x + rect.size.x / 2 - rect.size.x / 2 - 2,
-            rect.pos.y,
-            COLORS.WHITE,
-            fontSize,
-            'right'
-        )
-        draw.text(
-            `y:${pos.y.toFixed(1)}`,
-            rect.pos.x + rect.size.x / 2 - rect.size.x / 2 - 2,
-            rect.pos.y + 5,
-            COLORS.WHITE,
-            fontSize,
-            'right'
-        )
+        const rect = this.getTranslatedPositionRect().move(camera.pos)
+        const {
+            pos: { x, y },
+            size
+        } = rect
+
+        draw.outline(rect, visible ? LightGreen : Cyan, 0.5)
+
+        draw.text(`${type}`, x + size.x / 2, y - 5, White, fontSize, 'center')
+        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, White, fontSize, 'right')
+        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 5, White, fontSize, 'right')
 
         Math.abs(force.x) > 0.012 &&
-            draw.text(
-                `x:${force.x.toFixed(3)}`,
-                rect.pos.x + rect.size.x / 2 + rect.size.x / 2 + 2,
-                rect.pos.y,
-                COLORS.RED,
-                fontSize,
-                'left'
-            )
+            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fontSize, 'left')
         Math.abs(force.y) > 0.012 &&
-            draw.text(
-                `y:${force.y.toFixed(3)}`,
-                rect.pos.x + rect.size.x / 2 + rect.size.x / 2 + 2,
-                rect.pos.y + 5,
-                COLORS.RED,
-                fontSize,
-                'left'
-            )
+            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 5, Red, fontSize, 'left')
     }
 }

@@ -1,8 +1,8 @@
-import { TMXFlips, TMXTileset } from 'tmx-map-parser'
-import { Drawable } from '../types'
-import { getPerformance, isValidArray } from './utils/helpers'
-import { normalize, Vector, vec2 } from './utils/math'
+import { TMXTileset } from 'tmx-map-parser'
+import { Drawable } from '../../types'
+import { getPerformance, isValidArray, normalize } from '../utils/helpers'
 import { Game } from './game'
+import { Vector, vec2 } from '../engine-helpers/vector'
 
 export class Tile implements Drawable {
     properties: Record<string, any>
@@ -54,16 +54,13 @@ export class Tile implements Drawable {
     }
 
     /**
-     * Draws the tile at the specified position with optional flips.
+     * Draws the tile at the specified position.
      *
-     * @param pos - The position at which to draw the tile.
-     * @param flips - Optional flips to apply to the tile.
+     * @param pos - The position where the tile should be drawn.
+     * @param flipH - (Optional) Whether to flip the tile horizontally. Default is false.
+     * @param flipV - (Optional) Whether to flip the tile vertically. Default is false.
      */
-    draw(pos: Vector, flips?: TMXFlips) {
-        const { draw } = this.game
-        draw.tile(this, pos, flips)
-        // if (this.game.currentScene?.debug) {
-        //     draw.outline(new Box(pos, this.size), COLORS.WHITE, 0.05)
-        // }
+    draw(pos: Vector, flipH = false, flipV = false) {
+        this.game.draw.tile(this, pos, flipH, flipV)
     }
 }

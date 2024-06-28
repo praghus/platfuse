@@ -1,5 +1,5 @@
-import { Game } from './game'
-import { percent } from './utils/math'
+import { Game } from '../engine-objects/game'
+import { percent } from '../utils/helpers'
 
 export class Timer {
     time?: number

@@ -1,15 +1,13 @@
 import * as dat from 'dat.gui'
 
-import { Constructable, GameConfig } from '../types'
-import { lerp } from './utils/math'
-import { Draw } from './draw'
-import { Scene } from './scene'
+import { Constructable, GameConfig } from '../../types'
+import { glInit, glRenderPostProcess } from '../utils/webgl'
+import { preload } from '../utils/preload'
+import { lerp } from '../utils/helpers'
+import { Draw, Input, Timer } from '../engine-helpers'
+import { DefaultColors } from '../constants'
 import { Entity } from './entity'
-import { Input } from './input'
-import { preloadAssets } from './utils/preload'
-import { Timer } from './timer'
-import { COLORS } from './utils/constants'
-import { glInit, glRenderPostProcess } from './utils/webgl'
+import { Scene } from './scene'
 
 const canvasStyle = `
     position:absolute;
@@ -20,11 +18,14 @@ const canvasStyle = `
 `
 
 export class Game {
+    useWebGL = false
     canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
     gui?: dat.GUI
     draw: Draw
     input = new Input()
+    backgroundColor = DefaultColors.Black
+    accentColor = DefaultColors.White
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}
@@ -45,10 +46,6 @@ export class Game {
     frameTimeBufferMS = 0
     avgFPS = 0
     delta = 1 / 60
-    useWebGL = true
-
-    backgroundColor = COLORS.BLACK
-    accentColor = COLORS.WHITE
 
     constructor(
         public config: GameConfig,
@@ -77,7 +74,7 @@ export class Game {
 
     async init() {
         this.ready = false
-        this.assets = await preloadAssets(this.preload, (p: number) => this.draw.preloader(p))
+        this.assets = await preload(this.preload, (p: number) => this.draw.preloader(p))
         await Promise.all(
             Object.keys(this.sceneClasses).map(async sceneName => {
                 const Model = this.sceneClasses[sceneName]
@@ -99,21 +96,18 @@ export class Game {
         this.width = window.innerWidth
         this.height = window.innerHeight
         if (this.config?.fixedSize?.x) {
-            // clear canvas and set fixed size
             this.canvas.width = this.config.fixedSize.x
             this.canvas.height = this.config.fixedSize.y
 
-            // fit to window by adding space on top or bottom if necessary
             const aspect = innerWidth / innerHeight
             const fixedAspect = this.canvas.width / this.canvas.height
+
             this.canvas.style.width = aspect < fixedAspect ? '100%' : ''
             this.canvas.style.height = aspect < fixedAspect ? '' : '100%'
         } else {
-            // clear canvas and set size to same as window
             this.canvas.width = this.width
             this.canvas.height = this.height
         }
-        // Pixelated rendering
         this.width = this.canvas.width
         this.height = this.canvas.height
     }
@@ -123,7 +117,6 @@ export class Game {
      * @param frameTimeMS The time elapsed since the last frame in milliseconds.
      */
     update(frameTimeMS = 0) {
-        // this.fireEvents()
         const scene = this.currentScene
         const frameTimeDeltaMS = frameTimeMS - this.frameTimeLastMS
 
@@ -137,31 +130,23 @@ export class Game {
             } else {
                 let deltaSmooth = 0
                 if (this.frameTimeBufferMS < 0 && this.frameTimeBufferMS > -9) {
-                    // force an update each frame if time is close enough (not just a fast refresh rate)
                     deltaSmooth = this.frameTimeBufferMS
                     this.frameTimeBufferMS = 0
                 }
-                // update multiple frames if necessary in case of slow framerate
                 for (; this.frameTimeBufferMS >= 0; this.frameTimeBufferMS -= 1e3 / this.frameRate) {
-                    // increment frame and update time
                     this.time = this.frame++ / this.frameRate
                     this.delta = 1 / this.avgFPS
-
-                    // update game and objects
+                    // update input
                     this.input.update()
-
-                    // scene
+                    // update scene
                     scene.updateLayers()
                     scene.updateObjects()
                     scene.update()
                     scene.updateCamera()
-
                     // do post update
                     // scene.updatePost()
                     this.input.postUpdate()
                 }
-
-                // add the time smoothing back in
                 this.frameTimeBufferMS += deltaSmooth
             }
             scene.draw()

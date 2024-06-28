@@ -1,30 +1,28 @@
-import { tmx, getFlips, TMXTileset, TMXLayer, TMXFlips } from 'tmx-map-parser'
-import { Constructable } from '../types'
-import { isValidArray, noop, getFilename } from './utils/helpers'
-import { Box, Vector, vec2 } from './utils/math'
-import { Game } from './game'
+import { tmx, getFlips, TMXTileset, TMXLayer } from 'tmx-map-parser'
+import { Constructable } from '../../types'
+import { glPreRender, glCopyToContext } from '../utils/webgl'
+import { isValidArray, noop, getFilename } from '../utils/helpers'
+import { Box, Vector, vec2 } from '../engine-helpers'
+import { Flipped } from '../constants'
 import { Camera } from './camera'
 import { Entity } from './entity'
+import { Game } from './game'
 import { Layer } from './layer'
 import { Sprite } from './sprite'
 import { Tile } from './tile'
-import { FLIPPED } from './utils/constants'
-import { glCopyToContext, glPreRender } from './utils/webgl'
 
 export class Scene {
-    game: Game
+    size = vec2()
+    tileSize = vec2()
     camera: Camera
-    layers: Layer[] = []
-    size: Vector = vec2()
-    tileSize: Vector = vec2()
     tiles: Record<string, Tile> = {}
     tileCollision: number[] = []
     objects: Entity[] = []
+    layers: Layer[] = []
     gravity = 0
     debug = false
 
-    constructor(game: Game) {
-        this.game = game
+    constructor(public game: Game) {
         this.camera = new Camera(vec2(game.width, game.height))
         if (game.debug && game.gui) {
             game.gui.add(this, 'debug').listen()
@@ -33,7 +31,6 @@ export class Scene {
 
     /**
      * Initializes the scene.
-     *
      * @param map - Optional parameter specifying the Tiled map (.tmx) to load.
      * @returns A promise that resolves when the initialization is complete.
      */
@@ -48,7 +45,6 @@ export class Scene {
 
     /**
      * Updates the scene.
-     *
      */
     update() {}
 
@@ -96,7 +92,7 @@ export class Scene {
             layer instanceof Layer && layer.draw()
         }
         ctx.restore()
-        useWebGL && glCopyToContext(ctx, true)
+        useWebGL && glCopyToContext(ctx)
         this.debug && this.displayDebug()
     }
 
@@ -136,7 +132,6 @@ export class Scene {
 
     /**
      * Performs a tile collision test for the given position and size.
-     *
      * @param pos - The position of the entity.
      * @param size - The size of the entity.
      * @param entity - The entity to perform the collision test for (optional).
@@ -159,42 +154,30 @@ export class Scene {
 
     /**
      * Performs a raycast to check for tile collisions between two positions.
-     * @param posStart The starting position of the raycast.
-     * @param posEnd The ending position of the raycast.
+     * @param start The starting position of the raycast.
+     * @param end The ending position of the raycast.
      * @param entity An optional entity to check for collisions with tiles.
      * @returns The position of the first tile hit by the raycast, or null if no collision occurred.
      */
-    tileCollisionRaycast(posStart: Vector, posEnd: Vector, entity?: Entity) {
-        // test if a ray collides with tiles from start to end
-        // todo: a way to get the exact hit point, it must still be inside the hit tile
-        const delta = posEnd.subtract(posStart)
+    tileCollisionRaycast(start: Vector, end: Vector, entity?: Entity) {
+        const delta = end.subtract(start)
         const totalLength = delta.length()
         const normalizedDelta = delta.normalize()
         const unit = vec2(Math.abs(1 / normalizedDelta.x), Math.abs(1 / normalizedDelta.y))
-        const flooredPosStart = posStart.floor()
-
-        // setup iteration variables
+        const flooredPosStart = start.floor()
         const pos = flooredPosStart
-        let xi = unit.x * (delta.x < 0 ? posStart.x - pos.x : pos.x - posStart.x + 1)
-        let yi = unit.y * (delta.y < 0 ? posStart.y - pos.y : pos.y - posStart.y + 1)
+        let xi = unit.x * (delta.x < 0 ? start.x - pos.x : pos.x - start.x + 1)
+        let yi = unit.y * (delta.y < 0 ? start.y - pos.y : pos.y - start.y + 1)
 
         while (1) {
-            // check for tile collision
             const tileData = this.getTileCollisionData(pos)
             if (tileData && (!entity || entity.collideWithTile(tileData, pos))) {
-                // debugRaycast && debugLine(posStart, posEnd, '#f00', .02);
-                // debugRaycast && debugPoint(pos.add(vec2(.5)), '#ff0');
                 return pos.add(vec2(0.5))
             }
-
-            // check if past the end
             if (xi > totalLength && yi > totalLength) break
-
-            // get coordinates of the next tile to check
             if (xi > yi) (pos.y += Math.sign(delta.y)), (yi += unit.y)
             else (pos.x += Math.sign(delta.x)), (xi += unit.x)
         }
-        // debugRaycast && debugLine(posStart, posEnd, '#00f', 0.02)
     }
 
     /**
@@ -213,9 +196,9 @@ export class Scene {
     addLayer(l: Constructable<Layer> | TMXLayer) {
         // @todo: add index to position layer in array
         if (typeof l === 'function') {
-            this.layers.push(new l(null, this.game))
+            this.layers.push(new l(this))
         } else {
-            this.layers.push(new Layer(l, this.game))
+            this.layers.push(new Layer(this, l))
             l.objects && l.objects.forEach(obj => this.addObject(obj.type, { ...obj, layerId: l.id }))
         }
     }
@@ -230,7 +213,7 @@ export class Scene {
      */
     addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
-        const entity: Entity = Model ? new Model(props, this) : new Entity(props, this)
+        const entity: Entity = Model ? new Model(this, props) : new Entity(this, props)
 
         entity.init()
 
@@ -346,7 +329,7 @@ export class Scene {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
     }
 
-    getObjectById(id: string) {
+    getObjectById(id: number) {
         return this.objects.find(object => object.id === id)
     }
 
@@ -363,11 +346,11 @@ export class Scene {
     }
 
     getTile(pos: Vector, layerId: number) {
-        return this.getTileObject(this.getLayer(layerId).get(pos) || 0)
+        return this.getTileObject(this.getLayer(layerId).getTile(pos) || 0)
     }
 
     getTileObject(id: number) {
-        const gid: number = (id &= ~(FLIPPED.HORIZONTALLY | FLIPPED.VERTICALLY | FLIPPED.DIAGONALLY))
+        const gid: number = (id &= ~(Flipped.Horizontally | Flipped.Vertically | Flipped.Diagonally))
         return this.tiles[gid]
     }
 
@@ -404,7 +387,7 @@ export class Scene {
      *                It receives the tile object, position, and flips as parameters.
      * @returns void
      */
-    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flips?: TMXFlips) => void = noop) {
+    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void = noop) {
         const { camera, tileSize } = this
         const { resolution } = camera
 
@@ -426,14 +409,14 @@ export class Scene {
                 xOffset <= resolution.x;
                 xOffset += tileSize.x, tileXIndex++
             ) {
-                const tileId = layer?.get(vec2(tileXIndex, tileYIndex))
+                const tileId = layer?.getTile(vec2(tileXIndex, tileYIndex))
 
                 if (tileId) {
                     const tile = this.getTileObject(tileId)
                     const position = vec2(xOffset, yOffset)
                     const flips = getFlips(tileId)
-
-                    fn(tile, position, flips)
+                    const { H, V } = flips || { H: false, V: false }
+                    fn(tile, position, H, V)
                 }
             }
         }

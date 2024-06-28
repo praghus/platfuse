@@ -1,11 +1,11 @@
-import { Vector, vec2 } from './utils/math'
 import { Entity } from './entity'
+import { Vector, vec2 } from '../engine-helpers'
 
 export class Camera {
     pos = vec2()
     speed = vec2(1)
     offset = vec2()
-    resolution: Vector
+    resolution = vec2()
     followEntity?: Entity
     delta = 1 / 60
     isShaking = false

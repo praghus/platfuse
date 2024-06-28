@@ -1,8 +1,7 @@
-import { TMXFlips } from 'tmx-map-parser'
-import { Animation, Drawable } from '../types'
-import { getPerformance } from './utils/helpers'
-import { normalize, vec2, Vector } from './utils/math'
+import { Animation, Drawable } from '../../types'
+import { normalize, getPerformance } from '../utils/helpers'
 import { Game } from './game'
+import { Vector, vec2 } from '../engine-helpers/vector'
 
 export class Sprite implements Drawable {
     animation?: Animation
@@ -50,12 +49,13 @@ export class Sprite implements Drawable {
     }
 
     /**
-     * Draws the sprite at the specified position with optional flips.
+     * Draws the sprite at the specified position.
      *
      * @param pos - The position where the sprite should be drawn.
-     * @param flips - Optional flips to apply to the sprite.
+     * @param flipH - (Optional) Whether to flip the sprite horizontally. Default is `false`.
+     * @param flipV - (Optional) Whether to flip the sprite vertically. Default is `false`.
      */
-    draw(pos: Vector, flips?: TMXFlips) {
-        this.game.draw.sprite(this, pos, flips)
+    draw(pos: Vector, flipH = false, flipV = false) {
+        this.game.draw.sprite(this, pos, flipH, flipV)
     }
 }

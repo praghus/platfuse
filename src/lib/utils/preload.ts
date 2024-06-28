@@ -1,4 +1,4 @@
-async function preloadAssets(assets: Record<string, string>, indicator: (p: number) => void) {
+async function preload(assets: Record<string, string>, indicator: (p: number) => void) {
     const count = Object.keys(assets).length
     let loadedCount = 0
 
@@ -34,4 +34,4 @@ async function preloadAssets(assets: Record<string, string>, indicator: (p: numb
     return Promise.resolve(loadedAssets)
 }
 
-export { preloadAssets }
+export { preload }

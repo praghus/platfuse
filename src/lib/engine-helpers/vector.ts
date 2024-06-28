@@ -1,13 +1,4 @@
-const PI = Math.PI
-
-const isVector = (v: Vector) => !isNaN(v.x) && !isNaN(v.y)
-const abs = (value: number) => Math.abs(value)
-const random = (min: number, max: number) => min + Math.random() * (max - min)
-const randomInt = (min: number, max: number) => Math.round(random(min, max))
-const randomChoice = <T>(choices: T[]): T => choices[randomInt(0, choices.length - 1)]
-const rad2deg = (rad: number) => (rad * 180) / Math.PI
-const clamp = (value: number, min = 0, max = 1) => Math.max(min, Math.min(max, value))
-const lerp = (percent: number, valueA: number, valueB: number) => valueA + clamp(percent) * (valueB - valueA)
+import { clamp, rand } from '../utils/helpers'
 
 class Vector {
     constructor(
@@ -90,7 +81,7 @@ class Vector {
     }
 
     direction() {
-        return abs(this.x) > abs(this.y) ? (this.x < 0 ? 3 : 1) : this.y < 0 ? 2 : 0
+        return Math.abs(this.x) > Math.abs(this.y) ? (this.x < 0 ? 3 : 1) : this.y < 0 ? 2 : 0
     }
 
     invert() {
@@ -102,7 +93,7 @@ class Vector {
     }
 
     area() {
-        return abs(this.x * this.y)
+        return Math.abs(this.x * this.y)
     }
 
     lerp(v: Vector, percent: number) {
@@ -114,53 +105,8 @@ class Vector {
     }
 }
 
-class Box {
-    constructor(
-        public pos: Vector,
-        public size: Vector
-    ) {}
-
-    move(v: Vector) {
-        return new Box(this.pos.add(v), this.size)
-    }
-
-    scale(s: number) {
-        return new Box(this.pos.scale(s), this.size.scale(s))
-    }
-}
-
 const vec2 = (x = 0, y?: number) => new Vector(x, y === undefined ? x : y)
-const box = (x = 0, y = 0, w = 0, h = 0) => new Box(vec2(x, y), vec2(w, h))
-const rand = (valueA = 1, valueB = 0) => valueB + Math.random() * (valueA - valueB)
-const randVector = (length = 1) => new Vector().setAngle(rand(2 * PI), length)
+const isVector = (v: Vector) => !isNaN(v.x) && !isNaN(v.y)
+const randVector = (length = 1) => new Vector().setAngle(rand(2 * Math.PI), length)
 
-const percent = (value: number, valueA: number, valueB: number) =>
-    valueB - valueA ? clamp((value - valueA) / (valueB - valueA)) : 0
-
-const isOverlapping = (pointA: Vector, sizeA: Vector, pointB: Vector, sizeB: Vector) =>
-    abs(pointA.x - pointB.x) * 2 < sizeA.x + sizeB.x && abs(pointA.y - pointB.y) * 2 < sizeA.y + sizeB.y
-
-function normalize(n: number, min: number, max: number) {
-    while (n < min) n += max - min
-    while (n >= max) n -= max - min
-    return n
-}
-
-export {
-    Box,
-    Vector,
-    box,
-    vec2,
-    clamp,
-    isVector,
-    isOverlapping,
-    lerp,
-    normalize,
-    percent,
-    rad2deg,
-    rand,
-    random,
-    randomChoice,
-    randomInt,
-    randVector
-}
+export { Vector, vec2, isVector, randVector }

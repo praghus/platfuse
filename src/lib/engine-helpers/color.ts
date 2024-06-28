@@ -1,12 +1,21 @@
-import { clamp, rand } from './utils/math'
+import { clamp, rand } from '../utils/helpers'
 
 export class Color {
-    constructor(
-        public r = 0,
-        public g = 0,
-        public b = 0,
-        public a = 1
-    ) {}
+    r = 0
+    g = 0
+    b = 0
+    a = 1
+
+    constructor(rOrHex: number | string = 0, g: number = 0, b: number = 0, a: number = 1) {
+        if (typeof rOrHex === 'string') {
+            this.setHex(rOrHex)
+        } else {
+            this.r = rOrHex
+            this.g = g
+            this.b = b
+            this.a = a
+        }
+    }
 
     copy() {
         return new Color(this.r, this.g, this.b, this.a)

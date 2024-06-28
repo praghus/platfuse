@@ -43,13 +43,6 @@ export class Input {
     update() {
         // clear input when lost focus (prevent stuck keys)
         isTouchDevice || document.hasFocus() || this.clearInput()
-
-        // // update mouse world space position
-        // mousePos = screenToWorld(mousePosScreen)
-
-        // // update gamepads if enabled
-        // gamepadsUpdate()
-        // console.info(this.inputData)
     }
 
     postUpdate() {
@@ -60,33 +53,3 @@ export class Input {
         this.mouseWheel = 0
     }
 }
-/*
-{
-    onkeydown = (e) =>
-    {
-        if (debug && e.target != document.body) return
-        if (!e.repeat)
-        {
-            inputData[isUsingGamepad = 0][e.which] = 3
-            if (inputWASDEmulateDirection)
-                inputData[0][remapKey(e.which)] = 3
-        }
-        preventDefaultInput && e.preventDefault()
-    }
-
-    onkeyup = (e) =>
-    {
-        if (debug && e.target != document.body) return
-        inputData[0][e.which] = 4
-        if (inputWASDEmulateDirection)
-            inputData[0][remapKey(e.which)] = 4
-    }
-
-    // handle remapping wasd keys to directions
-    function remapKey(c)
-    { 
-        return inputWASDEmulateDirection ? 
-            c == 87 ? 38 : c == 83 ? 40 : c == 65 ? 37 : c == 68 ? 39 : c : c 
-    }
-}
-    */

@@ -1,6 +1,4 @@
-import { Vector } from './lib/utils/math'
-import { Color, Entity, Scene } from './index'
-import { TMXFlips } from 'tmx-map-parser'
+import { Color, Entity, Scene, Vector } from './index'
 
 export interface Constructable<T> {
     new (...args: any[]): T
@@ -30,7 +28,7 @@ export interface Drawable {
 
     animate?(animation?: Animation): void
     getNextGid?(): number
-    draw(pos: Vector, flips?: TMXFlips): void
+    draw(pos: Vector, flipH: boolean, flipV: boolean): void
 }
 
 export interface GameConfig {
