@@ -1,5 +1,4 @@
-import { Vector } from '../../../dist/@types'
-import { vec2 } from './vector'
+import { Vector, vec2 } from './vector'
 
 class Box {
     constructor(
