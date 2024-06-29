@@ -1,5 +1,5 @@
 export { NodeType, Flipped } from './lib/constants'
-export { Camera, Entity, Game, Layer, Scene, Sprite, Tile, Tileset } from './lib/engine-objects'
+export { Camera, Entity, Game, Layer, Scene, Sprite, Tile } from './lib/engine-objects'
 export { Box, Color, Draw, Input, Timer, Vector, box, vec2, isVector, randVector } from './lib/engine-helpers'
 export { clamp, rad2deg, lerp, rand, percent, normalize } from './lib/utils/helpers'
 export { Constructable, Animation, AnimationStrip, Drawable, GameConfig } from './types'
