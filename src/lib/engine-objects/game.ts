@@ -25,7 +25,8 @@ export class Game {
     draw: Draw
     input = new Input()
     backgroundColor = DefaultColors.Black
-    accentColor = DefaultColors.White
+    primaryColor = DefaultColors.White
+    secondaryColor = DefaultColors.LightGray
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}
@@ -59,7 +60,7 @@ export class Game {
         this.objectClasses = config.entities
         this.debug = !!config.debug
         this.backgroundColor = config?.backgroundColor || this.backgroundColor
-        this.accentColor = config?.preloaderColor || this.accentColor
+        this.primaryColor = config?.preloaderColor || this.primaryColor
         this.canvas.setAttribute('style', canvasStyle)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D

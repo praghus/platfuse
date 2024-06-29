@@ -10,16 +10,17 @@ export class Draw {
     constructor(public game: Game) {}
 
     preloader(p: number) {
-        const { canvas, backgroundColor, accentColor } = this.game
+        const { canvas, backgroundColor, primaryColor, secondaryColor } = this.game
         const { width, height } = canvas
-        const logoSize = vec2(height * 0.2, height * 0.2)
-        const logoPos = vec2(width / 2 - logoSize.x, height / 2 - logoSize.y)
-
+        const logoSize = vec2(height * 0.2)
+        const logoPos = vec2(width / 2 - logoSize.x, height / 2 - logoSize.y / 2)
+        const textPos = vec2(width / 2, height / 2 + logoSize.x / 4.5)
+        const fontSize = `${logoSize.x / 2.5}px`
         this.fillRect(box(0, 0, width, height), backgroundColor)
-        this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [10], accentColor)
-        this.text('plat', width / 2, height / 2 - 50, backgroundColor, 4, 'right', 'middle')
-        this.text('fuse', width / 2, height / 2 - 50, accentColor, 4, 'left', 'middle')
-        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), accentColor)
+        this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [logoSize.x / 12], secondaryColor)
+        this.text('plat', textPos.x, textPos.y, backgroundColor, fontSize, 'right', 'middle')
+        this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle')
+        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), primaryColor)
     }
 
     outline(rect: Box, color: Color, lineWidth = 1) {
@@ -78,16 +79,17 @@ export class Draw {
         x: number,
         y: number,
         color?: Color,
-        size = 1,
+        size = '1em',
         textAlign: CanvasTextAlign = 'left',
         textBaseline: CanvasTextBaseline = 'top'
     ) {
-        const { ctx, accentColor, backgroundColor } = this.game
-        ctx.font = `${size}em monospace`
+        const { ctx, primaryColor, backgroundColor } = this.game
+        ctx.font = `${size} monospace`
         ctx.textBaseline = textBaseline
         ctx.textAlign = textAlign
+        ctx.fillStyle = (color || primaryColor).toString()
+        ctx.lineWidth = 1
         ctx.strokeStyle = backgroundColor.toString()
-        ctx.fillStyle = (color || accentColor).toString()
         ctx.strokeText(text, x, y)
         ctx.fillText(text, x, y)
     }
@@ -109,7 +111,6 @@ export class Draw {
             const frame = (frames && frames[animFrame]) || [0, 0]
             const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
             const offset = animation?.offset ? vec2(...animation.offset) : vec2(0, 0)
-
             this.draw2d(image, new Box(pos.subtract(offset), vec2(width, height)), flipH, flipV, clip)
         } else if (image) {
             this.draw2d(image, new Box(pos, size))

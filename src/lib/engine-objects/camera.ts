@@ -17,12 +17,12 @@ export class Camera {
         public size: Vector,
         public scale = 1
     ) {
-        this.resolution = vec2(Math.round(size.x / scale), Math.round(size.y / scale))
+        this.resolution = vec2(size.x / scale, size.y / scale)
     }
 
     setScale(scale: number) {
         this.scale = scale
-        this.resolution = vec2(Math.round(this.size.x / scale), Math.round(this.size.y / scale))
+        this.resolution = vec2(this.size.x / scale, this.size.y / scale)
     }
 
     setSpeed(speed: Vector) {
@@ -54,7 +54,7 @@ export class Camera {
                 -y / 2 + followRect.pos.y + followRect.size.y / 2
             )
             const moveTo = vec2((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
-            this.pos = this.pos.subtract(vec2(moveTo.x / this.scale, moveTo.y / this.scale))
+            this.pos = this.pos.subtract(vec2(moveTo.x / this.scale, moveTo.y / this.scale)).floor()
         }
 
         // if (this.pos.x - x < -size.x) this.pos.x = -size.x + x

@@ -104,7 +104,6 @@ export class Scene {
     setDimensions(size: Vector, tileSize: Vector) {
         this.size = size
         this.tileSize = tileSize
-        // this.camera.setBounds(-16, -16, size.x * tileSize.x, size.y * tileSize.y)
     }
 
     /**
@@ -423,7 +422,7 @@ export class Scene {
     }
 
     displayDebug() {
-        const { avgFPS, canvas, draw, accentColor } = this.game
+        const { avgFPS, canvas, draw, primaryColor } = this.game
         const { pos } = this.camera
         const { x, y } = this.getGridPos(pos)
 
@@ -431,17 +430,17 @@ export class Scene {
             `[${-x},${-y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}]`,
             4,
             canvas.height - 4,
-            accentColor,
-            1,
+            primaryColor,
+            '1em',
             'left',
             'bottom'
         )
         draw.text(
-            `[${this.objects.length}] ${avgFPS.toFixed(1)}`,
+            `[${this.objects.length}] FPS:${avgFPS.toFixed(1)}`,
             canvas.width - 4,
             canvas.height - 4,
-            accentColor,
-            1,
+            primaryColor,
+            '1em',
             'right',
             'bottom'
         )

@@ -316,11 +316,11 @@ export class Entity {
 
     displayDebug() {
         const { game, camera } = this.scene
-        const { draw, accentColor } = game
+        const { draw, primaryColor } = game
         const { type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
 
-        const fontSize = 1.2 / camera.scale
+        const fontSize = `${1.2 / camera.scale}em`
         const rect = this.getTranslatedPositionRect().move(camera.pos)
         const {
             pos: { x, y },
@@ -329,9 +329,9 @@ export class Entity {
 
         draw.outline(rect, visible ? LightGreen : Cyan, 0.5)
 
-        draw.text(`${type}`, x + size.x / 2, y - 5, accentColor, fontSize, 'center')
-        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, accentColor, fontSize, 'right')
-        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 5, accentColor, fontSize, 'right')
+        draw.text(`${type}`, x + size.x / 2, y - 5, primaryColor, fontSize, 'center')
+        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fontSize, 'right')
+        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 5, primaryColor, fontSize, 'right')
 
         Math.abs(force.x) > 0.012 &&
             draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fontSize, 'left')
