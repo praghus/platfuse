@@ -8,6 +8,7 @@ export class Tile implements Drawable {
     properties: Record<string, any>
     type: string
     size = vec2()
+    animated = false
     animFrame = 0
     then = getPerformance()
     frameStart = getPerformance()
@@ -20,6 +21,7 @@ export class Tile implements Drawable {
         this.properties = this.getTileProperties(id, this.tileset)
         this.type = (this.properties && this.properties.type) || null
         this.size = vec2(this.tileset.tilewidth, this.tileset.tileheight)
+        this.animated = this.properties && this.properties.animation
     }
 
     /**
@@ -40,7 +42,7 @@ export class Tile implements Drawable {
      * @returns The next GID for the tile.
      */
     getNextGid() {
-        if (this.properties && this.properties.animation) {
+        if (this.animated) {
             this.frameStart = getPerformance()
             const { frames } = this.properties.animation
             if (this.frameStart - this.then > frames[this.animFrame].duration) {
@@ -54,13 +56,15 @@ export class Tile implements Drawable {
     }
 
     /**
-     * Draws the tile at the specified position.
+     * Draws the tile at the specified position on the canvas.
      *
      * @param pos - The position where the tile should be drawn.
-     * @param flipH - (Optional) Whether to flip the tile horizontally. Default is false.
-     * @param flipV - (Optional) Whether to flip the tile vertically. Default is false.
+     * @param flipH - Optional. Specifies whether the tile should be flipped horizontally. Default is false.
+     * @param flipV - Optional. Specifies whether the tile should be flipped vertically. Default is false.
+     * @param context - Optional. The canvas rendering context to use for drawing.
+     *                  If not provided, the default context will be used.
      */
-    draw(pos: Vector, flipH = false, flipV = false) {
-        this.game.draw.tile(this, pos, flipH, flipV)
+    draw(pos: Vector, flipH = false, flipV = false, context?: CanvasRenderingContext2D) {
+        this.game.draw.tile(this, pos, flipH, flipV, context)
     }
 }

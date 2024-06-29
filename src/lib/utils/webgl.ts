@@ -71,7 +71,7 @@ function glPreRender(scene: Scene) {
     glContext.useProgram(glShader)
     glContext.activeTexture(gl.TEXTURE0)
 
-    // @todo: dodac tekstury ------------------------------------------------------------------------------------------
+    // @todo: implement textures --------------------------------------------------------------------------------------
     // glContext.bindTexture(gl.TEXTURE_2D, (glActiveTexture = textureInfos[0].glTexture))
     // ----------------------------------------------------------------------------------------------------------------
 

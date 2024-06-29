@@ -15,6 +15,7 @@ export class Entity {
     gid?: number
     name?: string
     image?: string
+    layerId?: number
     flipH = false
     flipV = false
     tmxRect: Box | null // Rectangle from Tiled map
@@ -50,6 +51,7 @@ export class Entity {
         this.gid = obj.gid
         this.type = obj.type
         this.name = obj.name
+        this.layerId = obj.layerId
         this.tmxRect = obj.x && obj.y ? box(obj.x, obj.y, obj.width, obj.height) : null
         this.properties = obj.properties
         this.angle = obj.rotation
@@ -87,7 +89,7 @@ export class Entity {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     collideWithObject(entity: Entity) {
-        return 1
+        return true
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -225,12 +227,11 @@ export class Entity {
             const collidingObjects = scene.objects.filter(o => o.visible && o.collideObjects)
             for (const o of collidingObjects) {
                 if ((!this.solid && !o.solid) || o.dead || o == this) continue
-
-                // @todo: change to use bounding box
                 if (!o.isOverlapping(this.pos, this.size)) continue
 
                 const collide1 = this.collideWithObject(o)
                 const collide2 = o.collideWithObject(this)
+
                 if (!collide1 || !collide2) continue
 
                 if (o.isOverlapping(this.lastPos, this.size)) {
@@ -328,7 +329,6 @@ export class Entity {
         } = rect
 
         draw.outline(rect, visible ? LightGreen : Cyan, 0.5)
-
         draw.text(`${type}`, x + size.x / 2, y - 5, primaryColor, fontSize, 'center')
         draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fontSize, 'right')
         draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 5, primaryColor, fontSize, 'right')

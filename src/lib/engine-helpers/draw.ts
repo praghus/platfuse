@@ -20,7 +20,7 @@ export class Draw {
         this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [logoSize.x / 12], secondaryColor)
         this.text('plat', textPos.x, textPos.y, backgroundColor, fontSize, 'right', 'middle')
         this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle')
-        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), primaryColor)
+        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), secondaryColor)
     }
 
     outline(rect: Box, color: Color, lineWidth = 1) {
@@ -94,14 +94,21 @@ export class Draw {
         ctx.fillText(text, x, y)
     }
 
-    tile(tile: Tile, pos: Vector, flipH = false, flipV = false) {
+    tile(tile: Tile, pos: Vector, flipH = false, flipV = false, context?: CanvasRenderingContext2D) {
         const { image, columns, firstgid, tilewidth, tileheight } = tile.tileset
         const tileGid = tile.getNextGid()
         const clip = vec2(
             ((tileGid - firstgid) % columns) * tilewidth,
             (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
         )
-        this.draw2d(this.game.getImage(image.source), new Box(pos, vec2(tilewidth, tileheight)), flipH, flipV, clip)
+        this.draw2d(
+            this.game.getImage(image.source),
+            new Box(pos, vec2(tilewidth, tileheight)),
+            flipH,
+            flipV,
+            clip,
+            context
+        )
     }
 
     sprite(sprite: Sprite, pos: Vector, flipH = false, flipV = false) {
@@ -117,8 +124,16 @@ export class Draw {
         }
     }
 
-    draw2d(image: HTMLImageElement, rect: Box, flipH = false, flipV = false, clip?: Vector) {
-        const { ctx } = this.game
+    // eslint-disable-next-line max-params
+    draw2d(
+        image: HTMLImageElement,
+        rect: Box,
+        flipH = false,
+        flipV = false,
+        clip?: Vector,
+        context?: CanvasRenderingContext2D
+    ) {
+        const ctx = context || this.game.ctx
         const { pos, size } = rect
 
         const flip = flipH || flipV

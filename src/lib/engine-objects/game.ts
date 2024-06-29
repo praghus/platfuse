@@ -26,7 +26,7 @@ export class Game {
     input = new Input()
     backgroundColor = DefaultColors.Black
     primaryColor = DefaultColors.White
-    secondaryColor = DefaultColors.LightGray
+    secondaryColor = DefaultColors.DarkRed
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}

@@ -1,7 +1,7 @@
-import { tmx, getFlips, TMXTileset, TMXLayer } from 'tmx-map-parser'
+import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
 import { glPreRender, glCopyToContext } from '../utils/webgl'
-import { isValidArray, noop, getFilename } from '../utils/helpers'
+import { isValidArray, getFilename } from '../utils/helpers'
 import { Box, Vector, vec2 } from '../engine-helpers'
 import { Flipped } from '../constants'
 import { Camera } from './camera'
@@ -68,6 +68,7 @@ export class Scene {
      * Updates all the active objects in the scene.
      */
     updateObjects() {
+        // move to layer and ad layerId to each Entity
         for (const obj of this.objects) {
             if (obj.active) {
                 obj.update()
@@ -363,62 +364,6 @@ export class Scene {
 
     hideLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(false)
-    }
-
-    /**
-     * Iterates over each visible object in the scene and invokes the provided callback function.
-     * The objects are sorted based on their render order before iteration.
-     *
-     * @param cb - The callback function to be invoked for each visible object.
-     */
-    forEachVisibleObject(cb: (obj: Entity) => void = noop) {
-        this.objects.sort((a, b) => a.renderOrder - b.renderOrder)
-        for (const obj of this.objects) {
-            obj.visible && cb(obj)
-        }
-    }
-
-    /**
-     * Iterates over each visible tile in the specified layer and executes the provided callback function.
-     *
-     * @param layer - The layer containing the tiles.
-     * @param fn    - The callback function to execute for each visible tile.
-     *                It receives the tile object, position, and flips as parameters.
-     * @returns void
-     */
-    forEachVisibleTile(layer: Layer, fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void = noop) {
-        const { camera, tileSize } = this
-        const { resolution } = camera
-
-        const x = Math.min(camera.pos.x, 0)
-        const y = Math.min(camera.pos.y, 0)
-        const startY = Math.floor(y % tileSize.y)
-        const startTileY = Math.floor(-y / tileSize.y)
-
-        for (
-            let yOffset = startY, tileYIndex = startTileY;
-            yOffset <= resolution.y;
-            yOffset += tileSize.y, tileYIndex++
-        ) {
-            const startX = Math.floor(x % tileSize.x)
-            const startTileX = Math.floor(-x / tileSize.x)
-
-            for (
-                let xOffset = startX, tileXIndex = startTileX;
-                xOffset <= resolution.x;
-                xOffset += tileSize.x, tileXIndex++
-            ) {
-                const tileId = layer?.getTile(vec2(tileXIndex, tileYIndex))
-
-                if (tileId) {
-                    const tile = this.getTileObject(tileId)
-                    const position = vec2(xOffset, yOffset)
-                    const flips = getFlips(tileId)
-                    const { H, V } = flips || { H: false, V: false }
-                    fn(tile, position, H, V)
-                }
-            }
-        }
     }
 
     displayDebug() {
