@@ -1,8 +1,9 @@
 import { TMXTileset } from 'tmx-map-parser'
-import { Drawable } from '../../types'
 import { getPerformance, isValidArray, normalize } from '../utils/helpers'
-import { Game } from './game'
+import { Drawable } from '../../types'
 import { Vector, vec2 } from '../engine-helpers/vector'
+import { Scene } from './scene'
+import { Box } from '../engine-helpers'
 
 export class Tile implements Drawable {
     properties: Record<string, any>
@@ -14,7 +15,7 @@ export class Tile implements Drawable {
     frameStart = getPerformance()
 
     constructor(
-        public game: Game,
+        public scene: Scene,
         public id: number,
         public tileset: TMXTileset
     ) {
@@ -56,15 +57,36 @@ export class Tile implements Drawable {
     }
 
     /**
-     * Draws the tile at the specified position on the canvas.
-     *
-     * @param pos - The position where the tile should be drawn.
-     * @param flipH - Optional. Specifies whether the tile should be flipped horizontally. Default is false.
-     * @param flipV - Optional. Specifies whether the tile should be flipped vertically. Default is false.
-     * @param context - Optional. The canvas rendering context to use for drawing.
-     *                  If not provided, the default context will be used.
+     * Retrieves the sprite clip position for the current tile.
+     * @returns The sprite clip position as a `vec2` object.
      */
-    draw(pos: Vector, flipH = false, flipV = false, context?: CanvasRenderingContext2D) {
-        this.game.draw.tile(this, pos, flipH, flipV, context)
+    getSpriteClip() {
+        const { columns, firstgid, tilewidth, tileheight } = this.tileset
+        const tileGid = this.getNextGid()
+        return vec2(
+            ((tileGid - firstgid) % columns) * tilewidth,
+            (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
+        )
+    }
+
+    /**
+     * Draws the tile at the specified position.
+     *
+     * @param pos - The position to draw the tile at.
+     * @param flipH - Whether to flip the tile horizontally (default: false).
+     * @param flipV - Whether to flip the tile vertically (default: false).
+     */
+    draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
+        const { image, tilewidth, tileheight } = this.tileset
+        const { game, camera } = this.scene
+        game.draw.draw2d(
+            game.getImage(image.source),
+            new Box(pos.add(camera.pos), vec2(tilewidth, tileheight)),
+            camera.scale,
+            angle,
+            flipH,
+            flipV,
+            this.getSpriteClip()
+        )
     }
 }

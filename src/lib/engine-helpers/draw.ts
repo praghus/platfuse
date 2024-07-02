@@ -1,7 +1,4 @@
 import { Game } from '../engine-objects/game'
-import { Sprite } from '../engine-objects/sprite'
-import { Tile } from '../engine-objects/tile'
-import { glDraw } from '../utils/webgl'
 import { Vector, vec2 } from './vector'
 import { Box, box } from './box'
 import { Color } from './color'
@@ -20,21 +17,17 @@ export class Draw {
         this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [logoSize.x / 12], secondaryColor)
         this.text('plat', textPos.x, textPos.y, backgroundColor, fontSize, 'right', 'middle')
         this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle')
-        this.fillRect(box(0, height - height * 0.02, width * p, height * 0.02), secondaryColor)
+        this.fillRect(box(0, height - height * 0.015, width * p, height * 0.015), secondaryColor)
     }
 
     outline(rect: Box, color: Color, lineWidth = 1) {
-        const { ctx, useWebGL } = this.game
+        const { ctx } = this.game
         const { pos, size } = rect
-        if (useWebGL) {
-            glDraw(pos.x + size.x / 2, -(pos.y + size.y / 2), size.x, size.y, 0, 0, 0, 0, 0, 0, color.rgbaInt())
-        } else {
-            ctx.strokeStyle = color.toString()
-            ctx.lineWidth = lineWidth
-            ctx.beginPath()
-            ctx.rect(pos.x, pos.y, size.x, size.y)
-            ctx.stroke()
-        }
+        ctx.strokeStyle = color.toString()
+        ctx.lineWidth = lineWidth
+        ctx.beginPath()
+        ctx.rect(pos.x, pos.y, size.x, size.y)
+        ctx.stroke()
     }
 
     fillRect(rect: Box, color: Color) {
@@ -94,40 +87,12 @@ export class Draw {
         ctx.fillText(text, x, y)
     }
 
-    tile(tile: Tile, pos: Vector, flipH = false, flipV = false, context?: CanvasRenderingContext2D) {
-        const { image, columns, firstgid, tilewidth, tileheight } = tile.tileset
-        const tileGid = tile.getNextGid()
-        const clip = vec2(
-            ((tileGid - firstgid) % columns) * tilewidth,
-            (Math.ceil((tileGid - firstgid + 1) / columns) - 1) * tileheight
-        )
-        this.draw2d(
-            this.game.getImage(image.source),
-            new Box(pos, vec2(tilewidth, tileheight)),
-            flipH,
-            flipV,
-            clip,
-            context
-        )
-    }
-
-    sprite(sprite: Sprite, pos: Vector, flipH = false, flipV = false) {
-        const { image, animation, animFrame, size } = sprite
-        if (animation) {
-            const { frames, strip, width, height } = animation
-            const frame = (frames && frames[animFrame]) || [0, 0]
-            const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
-            const offset = animation?.offset ? vec2(...animation.offset) : vec2(0, 0)
-            this.draw2d(image, new Box(pos.subtract(offset), vec2(width, height)), flipH, flipV, clip)
-        } else if (image) {
-            this.draw2d(image, new Box(pos, size))
-        }
-    }
-
     // eslint-disable-next-line max-params
     draw2d(
         image: HTMLImageElement,
         rect: Box,
+        scale = 1,
+        angle = 0,
         flipH = false,
         flipV = false,
         clip?: Vector,
@@ -137,15 +102,32 @@ export class Draw {
         const { pos, size } = rect
 
         const flip = flipH || flipV
-        const scale = vec2(flipH ? -1 : 1, flipV ? -1 : 1)
-        const f = vec2(flipH ? size.x * -1 : 0, flipV ? size.y * -1 : 0)
-        const fpos = pos.subtract(f).multiply(scale)
+        const s = vec2(flipH ? -1 : 1, flipV ? -1 : 1)
+        const f = vec2(flipH ? -size.x * scale : 0, flipV ? -size.y * scale : 0)
+        const fpos = pos.subtract(f).multiply(s)
 
         ctx.save()
-        flip && ctx.scale(scale.x, scale.y)
-        ctx.translate(0.5, 0.5)
+
+        // rotation
+        const TO_RADIANS = Math.PI / 180
+        if (angle) {
+            ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
+            ctx.rotate(angle * TO_RADIANS)
+            ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
+        }
+        flip && ctx.scale(s.x, s.y)
         clip
-            ? ctx.drawImage(image, clip.x, clip.y, size.x, size.y, fpos.x - 0.5, fpos.y - 0.5, size.x, size.y)
+            ? ctx.drawImage(
+                  image,
+                  clip.x,
+                  clip.y,
+                  size.x,
+                  size.y,
+                  fpos.x, // - 0.5,
+                  fpos.y, // - 0.5,
+                  size.x * scale,
+                  size.y * scale
+              )
             : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
         ctx.restore()
     }

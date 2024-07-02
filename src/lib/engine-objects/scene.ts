@@ -2,7 +2,7 @@ import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
 import { glPreRender, glCopyToContext } from '../utils/webgl'
 import { isValidArray, getFilename } from '../utils/helpers'
-import { Box, Vector, vec2 } from '../engine-helpers'
+import { Vector, vec2 } from '../engine-helpers'
 import { Flipped } from '../constants'
 import { Camera } from './camera'
 import { Entity } from './entity'
@@ -35,11 +35,21 @@ export class Scene {
      * @returns A promise that resolves when the initialization is complete.
      */
     async init(map?: string): Promise<void> {
+        const { debug, gui } = this.game
         if (map) {
             const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
             this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
+        }
+        if (debug && gui) {
+            const f1 = gui.addFolder('Scene')
+            const f2 = f1.addFolder('Layers')
+            f1.add(this, 'gravity').name('Gravity').step(0.01).min(0.01).max(1)
+            f1.add(this.camera, 'scale').name('Scale').step(0.1).min(1).max(10).listen()
+            this.layers.map(layer => {
+                f2.add(layer, 'visible').name(layer.name || `Layer#${layer.id}`)
+            })
         }
     }
 
@@ -68,7 +78,6 @@ export class Scene {
      * Updates all the active objects in the scene.
      */
     updateObjects() {
-        // move to layer and ad layerId to each Entity
         for (const obj of this.objects) {
             if (obj.active) {
                 obj.update()
@@ -78,20 +87,26 @@ export class Scene {
     }
 
     /**
+     * Performs post-update operations for the scene.
+     */
+    postUpdate() {}
+
+    /**
      * Draws the scene on the canvas.
      */
     draw() {
         const { ctx, width, height, useWebGL } = this.game
-        const { scale } = this.camera
-
         useWebGL && glPreRender(this)
         ctx.imageSmoothingEnabled = false
         ctx.save()
-        ctx.scale(scale, scale)
-        ctx.clearRect(0, 0, width / scale, height / scale)
-        for (const layer of this.layers) {
-            layer instanceof Layer && layer.draw()
-        }
+        // ctx.scale(scale, scale)
+        ctx.clearRect(0, 0, width, height)
+        // renders layers and contained objects
+        for (const layer of this.layers) layer instanceof Layer && layer.draw()
+        // renders object not attached to any layer
+        const objects = this.objects.filter(({ layerId }) => !layerId)
+        objects.sort((a, b) => a.renderOrder - b.renderOrder)
+        for (const obj of objects) obj.visible && obj.draw()
         ctx.restore()
         useWebGL && glCopyToContext(ctx)
         this.debug && this.displayDebug()
@@ -160,23 +175,23 @@ export class Scene {
      * @returns The position of the first tile hit by the raycast, or null if no collision occurred.
      */
     tileCollisionRaycast(start: Vector, end: Vector, entity?: Entity) {
+        const pos = start.floor()
         const delta = end.subtract(start)
-        const totalLength = delta.length()
-        const normalizedDelta = delta.normalize()
-        const unit = vec2(Math.abs(1 / normalizedDelta.x), Math.abs(1 / normalizedDelta.y))
-        const flooredPosStart = start.floor()
-        const pos = flooredPosStart
-        let xi = unit.x * (delta.x < 0 ? start.x - pos.x : pos.x - start.x + 1)
-        let yi = unit.y * (delta.y < 0 ? start.y - pos.y : pos.y - start.y + 1)
+        const length = delta.length()
+        const norm = delta.normalize()
+        const unit = vec2(Math.abs(1 / norm.x), Math.abs(1 / norm.y))
+
+        let x1 = unit.x * (delta.x < 0 ? start.x - pos.x : pos.x - start.x + 1)
+        let y1 = unit.y * (delta.y < 0 ? start.y - pos.y : pos.y - start.y + 1)
 
         while (1) {
             const tileData = this.getTileCollisionData(pos)
             if (tileData && (!entity || entity.collideWithTile(tileData, pos))) {
                 return pos.add(vec2(0.5))
             }
-            if (xi > totalLength && yi > totalLength) break
-            if (xi > yi) (pos.y += Math.sign(delta.y)), (yi += unit.y)
-            else (pos.x += Math.sign(delta.x)), (xi += unit.x)
+            if (x1 > length && y1 > length) break
+            if (x1 > y1) (pos.y += Math.sign(delta.y)), (y1 += unit.y)
+            else (pos.x += Math.sign(delta.x)), (x1 += unit.x)
         }
     }
 
@@ -214,9 +229,6 @@ export class Scene {
     addObject(type: string, props: Record<string, any>, index?: number) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(this, props) : new Entity(this, props)
-
-        entity.init()
-
         const sprite =
             (entity.image && this.createSprite(entity.image, entity.size)) || (entity.gid && this.tiles[entity.gid])
         if (sprite) entity.addSprite(sprite)
@@ -241,9 +253,9 @@ export class Scene {
      * @param source - The source of the tileset image.
      */
     addTileset(tileset: TMXTileset, source: string) {
-        const newTileset = { ...tileset, image: { ...tileset.image, source } }
+        const newTileset = { ...tileset, image: { ...tileset.image, source } } // @todo: crerate Tileset class
         for (let i = 0; i < newTileset.tilecount; i++) {
-            this.tiles[i + newTileset.firstgid] = new Tile(this.game, i + newTileset.firstgid, newTileset)
+            this.tiles[i + newTileset.firstgid] = new Tile(this, i + newTileset.firstgid, newTileset)
         }
     }
 
@@ -281,13 +293,8 @@ export class Scene {
         return pos.inRange(this.size) ? this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
     }
 
-    /**
-     * Returns position in grid for a given vector position.
-     * @param pos - The vector position.
-     * @returns The grid position as a vector.
-     */
     getGridPos(pos: Vector) {
-        return vec2(Math.ceil(pos.x / this.tileSize.x) | 0, Math.ceil(pos.y / this.tileSize.y) | 0)
+        return vec2(Math.ceil(pos.x / this.tileSize.x), Math.ceil(pos.y / this.tileSize.y))
     }
 
     /**
@@ -297,34 +304,41 @@ export class Scene {
      * @returns The calculated screen position.
      */
     getScreenPos(pos: Vector, size?: Vector) {
-        return pos.multiply(this.tileSize).subtract(size ? size.multiply(this.tileSize).divide(vec2(2)) : vec2())
+        return pos
+            .clone()
+            .multiply(this.tileSize)
+            .subtract(size ? size.multiply(this.tileSize).divide(2) : vec2())
+            .scale(this.camera.scale)
+    }
+
+    getPointerPos() {
+        const { pos, scale } = this.camera
+        const { mouseScreenPos } = this.game.input
+        return mouseScreenPos.clone().subtract(pos).divide(scale).floor()
+    }
+
+    getPointerRelativeGridPos() {
+        return this.getPointerPos().divide(this.tileSize)
     }
 
     /**
-     * Calculates the grid position rectangle for the given entity or box.
-     * @param entity - The entity or box for which to calculate the grid position rectangle.
-     * @returns The grid position rectangle as a new Box object.
+     * Creates a sprite object using the specified image ID and size.
+     * @param imageId The ID of the image to use for the sprite.
+     * @param size The size of the sprite. Defaults to a zero vector if not provided.
+     * @returns A new Sprite object created using the specified image and size.
      */
-    getGridPosRect(entity: Entity | Box) {
-        return new Box(this.getGridPos(entity.pos), entity.size.divide(this.tileSize))
-    }
-
-    /**
-     * Calculates the screen position rectangle for the given entity or box.
-     * @param entity - The entity or box for which to calculate the screen position rectangle.
-     * @returns The screen position rectangle.
-     */
-    getScreenPosRect(entity: Entity | Box) {
-        return new Box(this.getScreenPos(entity.pos, entity.size), entity.size.multiply(this.tileSize))
-    }
-
     createSprite(imageId: string, size = vec2()) {
         const image = this.game.getImage(imageId)
         if (image instanceof HTMLImageElement) {
-            return new Sprite(this.game, image, size.multiply(this.tileSize))
+            return new Sprite(this, image, size.multiply(this.tileSize))
         }
     }
 
+    /**
+     * Retrieves a layer from the scene based on the provided ID.
+     * @param id - The ID of the layer to retrieve.
+     * @returns The layer with the specified ID, or an empty object if no layer is found.
+     */
     getLayer(id: number) {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
     }
@@ -368,26 +382,16 @@ export class Scene {
 
     displayDebug() {
         const { avgFPS, canvas, draw, primaryColor } = this.game
-        const { pos } = this.camera
-        const { x, y } = this.getGridPos(pos)
-
-        draw.text(
-            `[${-x},${-y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}]`,
-            4,
-            canvas.height - 4,
-            primaryColor,
-            '1em',
-            'left',
-            'bottom'
-        )
-        draw.text(
-            `[${this.objects.length}] FPS:${avgFPS.toFixed(1)}`,
-            canvas.width - 4,
-            canvas.height - 4,
-            primaryColor,
-            '1em',
-            'right',
-            'bottom'
-        )
+        const { pos, scale } = this.camera
+        const { width, height } = canvas
+        const { x, y } = this.getGridPos(pos).divide(scale).floor()
+        const pointerPos = this.getPointerPos()
+        const write = (text: string, align: CanvasTextAlign = 'left') => {
+            const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
+            draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom')
+        }
+        write(`[${-x},${-y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
+        write(`[${pointerPos.x},${pointerPos.y}]`, 'center')
+        write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')
     }
 }

@@ -6,10 +6,6 @@ class Vector {
         public y = 0
     ) {}
 
-    copy() {
-        return new Vector(this.x, this.y)
-    }
-
     add(v: Vector) {
         return new Vector(this.x + v.x, this.y + v.y)
     }
@@ -22,8 +18,13 @@ class Vector {
         return new Vector(this.x * v.x, this.y * v.y)
     }
 
-    divide(v: Vector) {
-        return new Vector(this.x / v.x, this.y / v.y)
+    divide(d: Vector | number) {
+        if (typeof d === 'number') return new Vector(this.x / d, this.y / d)
+        return new Vector(this.x / d.x, this.y / d.y)
+    }
+
+    clone() {
+        return new Vector(this.x, this.y)
     }
 
     scale(s: number) {
@@ -84,8 +85,8 @@ class Vector {
         return Math.abs(this.x) > Math.abs(this.y) ? (this.x < 0 ? 3 : 1) : this.y < 0 ? 2 : 0
     }
 
-    invert() {
-        return new Vector(this.y, -this.x)
+    reverse() {
+        return new Vector(-this.y, -this.x)
     }
 
     floor() {

@@ -28,7 +28,7 @@ export interface Drawable {
 
     animate?(animation?: Animation): void
     getNextGid?(): number
-    draw(pos: Vector, flipH: boolean, flipV: boolean): void
+    draw(pos: Vector, flipH: boolean, flipV: boolean, angle: number): void
 }
 
 export interface GameConfig {

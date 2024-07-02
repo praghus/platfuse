@@ -19,14 +19,14 @@ const canvasStyle = `
 
 export class Game {
     useWebGL = false
+    draw = new Draw(this)
     canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
     gui?: dat.GUI
-    draw: Draw
-    input = new Input()
+    input: Input = new Input(this)
     backgroundColor = DefaultColors.Black
     primaryColor = DefaultColors.White
-    secondaryColor = DefaultColors.DarkRed
+    secondaryColor = DefaultColors.LightBlue
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}
@@ -37,16 +37,15 @@ export class Game {
     width = window.innerWidth
     height = window.innerHeight
     debug = false
-    ready = false
     paused = true
     frameRate = 60
+    delta = 1 / 60
+    avgFPS = 0
     frame = 0
     time = 0
     timeReal = 0
     frameTimeLastMS = 0
     frameTimeBufferMS = 0
-    avgFPS = 0
-    delta = 1 / 60
 
     constructor(
         public config: GameConfig,
@@ -64,7 +63,6 @@ export class Game {
         this.canvas.setAttribute('style', canvasStyle)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-        this.draw = new Draw(this)
         this.debug && this.enableDebugGUI()
 
         document.body.style.background = this.backgroundColor.toString()
@@ -75,8 +73,11 @@ export class Game {
         if (!!config.global) window.Platfuse = this
     }
 
+    /**
+     * Initializes the game engine.
+     * @returns {Promise<void>} A promise that resolves when the initialization is complete.
+     */
     async init() {
-        this.ready = false
         this.assets = await preload(this.preload, (p: number) => this.draw.preloader(p))
         await Promise.all(
             Object.keys(this.sceneClasses).map(async sceneName => {
@@ -88,7 +89,6 @@ export class Game {
             })
         )
         this.useWebGL && glInit(this)
-        this.ready = true
         setTimeout(() => this.update(), 500)
     }
 
@@ -128,7 +128,7 @@ export class Game {
         this.timeReal += frameTimeDeltaMS / 1e3
         this.frameTimeBufferMS += (this.paused ? 0 : 1) * frameTimeDeltaMS
 
-        if (this.ready && scene) {
+        if (scene) {
             if (this.paused) {
             } else {
                 let deltaSmooth = 0
@@ -147,7 +147,7 @@ export class Game {
                     scene.update()
                     scene.updateCamera()
                     // do post update
-                    // scene.updatePost()
+                    scene.postUpdate()
                     this.input.postUpdate()
                 }
                 this.frameTimeBufferMS += deltaSmooth
@@ -183,6 +183,12 @@ export class Game {
         return this.settings[key]
     }
 
+    /**
+     * Plays the specified scene by its index.
+     *
+     * @param idx - The index of the scene to play.
+     * @throws {Error} If the scene is not found.
+     */
     playScene(idx: string) {
         if (this.scenes[idx] instanceof Scene) {
             this.currentScene = this.scenes[idx]
@@ -190,6 +196,10 @@ export class Game {
         } else throw new Error('Scene not found!')
     }
 
+    /**
+     * Returns the current scene of the game.
+     * @returns The current scene if it exists, otherwise throws an error.
+     */
     getCurrentScene() {
         if (this.currentScene instanceof Scene) {
             return this.currentScene
@@ -203,10 +213,18 @@ export class Game {
         } else throw new Error('Invalid image!')
     }
 
+    /**
+     * Creates a new Timer object.
+     * @param timeLeft - The initial time left for the timer (optional).
+     * @returns A new Timer instance.
+     */
     timer(timeLeft?: number) {
         return new Timer(this, timeLeft)
     }
 
+    /**
+     * Enables the debug GUI for the game.
+     */
     enableDebugGUI() {
         if (this.gui) this.gui.destroy()
         this.gui = new dat.GUI()

@@ -5,10 +5,10 @@ export class Camera {
     pos = vec2()
     speed = vec2(1)
     offset = vec2()
-    resolution = vec2()
     followEntity?: Entity
     delta = 1 / 60
     isShaking = false
+    bounded = true // if false allow camera to move outside of bounds
     shakeIntensity = vec2()
     shakeDuration = 0
     shakeElapsed = 0
@@ -16,13 +16,10 @@ export class Camera {
     constructor(
         public size: Vector,
         public scale = 1
-    ) {
-        this.resolution = vec2(size.x / scale, size.y / scale)
-    }
+    ) {}
 
     setScale(scale: number) {
         this.scale = scale
-        this.resolution = vec2(this.size.x / scale, this.size.y / scale)
     }
 
     setSpeed(speed: Vector) {
@@ -37,6 +34,10 @@ export class Camera {
         this.followEntity = undefined
     }
 
+    toggleBounds(bounded: boolean) {
+        this.bounded = bounded
+    }
+
     shake(duration: number, intensity: Vector) {
         this.isShaking = true
         this.shakeDuration = duration
@@ -46,9 +47,9 @@ export class Camera {
     }
 
     update() {
-        const { x, y } = this.resolution
+        const { x, y } = this.size
         if (this.followEntity) {
-            const followRect = this.followEntity.getTranslatedPositionRect()
+            const followRect = this.followEntity.getTranslatedBoundingRect()
             const midPos = vec2(
                 -x / 2 + followRect.pos.x + followRect.size.x / 2,
                 -y / 2 + followRect.pos.y + followRect.size.y / 2
@@ -59,8 +60,8 @@ export class Camera {
 
         // if (this.pos.x - x < -size.x) this.pos.x = -size.x + x
         // if (this.pos.y - y < -size.y) this.pos.y = -size.y + y
-        if (this.pos.x > 0) this.pos.x = 0
-        if (this.pos.y > 0) this.pos.y = 0
+        if (this.bounded && this.pos.x > 0) this.pos.x = 0
+        if (this.bounded && this.pos.y > 0) this.pos.y = 0
 
         // shake
         if (this.isShaking) {
@@ -70,7 +71,7 @@ export class Camera {
                 this.offset = vec2(
                     Math.random() * this.shakeIntensity.x * x * 2 - this.shakeIntensity.x * x,
                     Math.random() * this.shakeIntensity.y * y * 2 - this.shakeIntensity.y * y
-                ).divide(vec2(this.scale))
+                ).divide(this.scale)
             } else {
                 this.isShaking = false
                 this.offset = vec2()

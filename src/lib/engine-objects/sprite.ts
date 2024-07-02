@@ -1,7 +1,8 @@
 import { Animation, Drawable } from '../../types'
 import { normalize, getPerformance } from '../utils/helpers'
-import { Game } from './game'
 import { Vector, vec2 } from '../engine-helpers/vector'
+import { Scene } from './scene'
+import { Box } from '../engine-helpers'
 
 export class Sprite implements Drawable {
     animation?: Animation
@@ -10,7 +11,7 @@ export class Sprite implements Drawable {
     frameStart = getPerformance()
 
     constructor(
-        public game: Game,
+        public scene: Scene,
         public image: HTMLImageElement,
         public size = vec2(image.width, image.height)
     ) {}
@@ -48,14 +49,32 @@ export class Sprite implements Drawable {
         }
     }
 
-    /**
-     * Draws the sprite at the specified position.
-     *
-     * @param pos - The position where the sprite should be drawn.
-     * @param flipH - (Optional) Whether to flip the sprite horizontally. Default is `false`.
-     * @param flipV - (Optional) Whether to flip the sprite vertically. Default is `false`.
-     */
-    draw(pos: Vector, flipH = false, flipV = false) {
-        this.game.draw.sprite(this, pos, flipH, flipV)
+    draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
+        const { image, animation, animFrame, size } = this
+        const { game, camera } = this.scene
+        if (animation) {
+            const { frames, strip, width, height } = animation
+            const frame = (frames && frames[animFrame]) || [0, 0]
+            const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
+            const offset = animation?.offset ? vec2(...animation.offset).scale(camera.scale) : vec2(0, 0)
+            game.draw.draw2d(
+                image,
+                new Box(pos.add(offset).add(camera.pos), vec2(width, height)),
+                camera.scale,
+                angle,
+                flipH,
+                flipV,
+                clip
+            )
+        } else if (image) {
+            game.draw.draw2d(
+                image,
+                new Box(pos.add(camera.pos), size.scale(camera.scale)),
+                camera.scale,
+                angle,
+                flipH,
+                flipV
+            )
+        }
     }
 }

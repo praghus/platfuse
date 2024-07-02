@@ -1,6 +1,6 @@
 import { TMXLayer, getFlips } from 'tmx-map-parser'
 import { NodeType } from '../constants'
-import { Vector, vec2 } from '../engine-helpers'
+import { Box, Vector, vec2 } from '../engine-helpers'
 import { Entity } from './entity'
 import { Scene } from './scene'
 import { noop } from '../utils/helpers'
@@ -14,11 +14,10 @@ export class Layer {
     properties: Record<string, any> = {}
     data?: (number | null)[]
     objects?: Entity[]
-    visible = true
-    renderOrder = 0
-
     layerCanvas?: HTMLCanvasElement
     layerContext?: CanvasRenderingContext2D
+    renderOrder = 0
+    visible = true
 
     constructor(
         public scene: Scene,
@@ -31,15 +30,8 @@ export class Layer {
             this.size = vec2(layerData.width, layerData.height)
             this.visible = layerData.visible === undefined ? true : !!layerData.visible
             this.properties = layerData?.properties || {}
-
             if (layerData.type === NodeType.Layer) {
                 this.data = layerData?.data
-
-                this.layerCanvas = document.createElement('canvas')
-                this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
-                this.layerCanvas.width = this.size.x * this.scene.tileSize.x
-                this.layerCanvas.height = this.size.y * this.scene.tileSize.y
-
                 this.renderTilesToLayerCanvas()
             }
         } else {
@@ -49,14 +41,28 @@ export class Layer {
 
     renderTilesToLayerCanvas() {
         if (this.data) {
+            this.layerCanvas = document.createElement('canvas')
+            this.layerCanvas.width = this.size.x * this.scene.tileSize.x
+            this.layerCanvas.height = this.size.y * this.scene.tileSize.y
+            this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
             this.data.forEach((tileId, index) => {
                 if (tileId) {
                     const tile = this.scene.getTileObject(tileId)
+                    const { image, tilewidth, tileheight } = tile.tileset
+                    const { game } = this.scene
                     const flips = getFlips(tileId)
                     const pos = vec2(index % this.size.x, Math.floor(index / this.size.x)).multiply(this.scene.tileSize)
                     const { H, V } = flips || { H: false, V: false }
-
-                    tile.draw(pos, H, V, this.layerContext)
+                    game.draw.draw2d(
+                        game.getImage(image.source),
+                        new Box(pos, vec2(tilewidth, tileheight)),
+                        1,
+                        0,
+                        H,
+                        V,
+                        tile.getSpriteClip(),
+                        this.layerContext
+                    )
                 }
             })
         }
@@ -117,31 +123,21 @@ export class Layer {
      */
     forEachVisibleTile(fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void = noop) {
         const { camera, tileSize } = this.scene
-        const { resolution } = camera
-
-        const x = Math.min(camera.pos.x, 0)
-        const y = Math.min(camera.pos.y, 0)
-        const startY = Math.floor(y % tileSize.y)
-        const startTileY = Math.floor(-y / tileSize.y)
-
-        for (
-            let yOffset = startY, tileYIndex = startTileY;
-            yOffset <= resolution.y;
-            yOffset += tileSize.y, tileYIndex++
-        ) {
-            const startX = Math.floor(x % tileSize.x)
-            const startTileX = Math.floor(-x / tileSize.x)
-
-            for (
-                let xOffset = startX, tileXIndex = startTileX;
-                xOffset <= resolution.x;
-                xOffset += tileSize.x, tileXIndex++
-            ) {
-                const tileId = this.getTile(vec2(tileXIndex, tileYIndex))
-
+        const { scale } = camera
+        const start = this.scene
+            .getGridPos(vec2(Math.min(camera.pos.x, 0), Math.min(camera.pos.y, 0)))
+            .divide(scale)
+            .floor()
+        const clip = vec2(
+            Math.min(camera.size.x / scale / tileSize.x, this.size.x),
+            Math.min(camera.size.y / scale / tileSize.y, this.size.y)
+        )
+        for (let y = -start.y; y < -start.y + clip.y; y++) {
+            for (let x = -start.x; x < -start.x + clip.x; x++) {
+                const tileId = this.getTile(vec2(x, y))
                 if (tileId) {
                     const tile = this.scene.getTileObject(tileId)
-                    const position = vec2(xOffset, yOffset)
+                    const position = this.scene.getScreenPos(vec2(x, y))
                     const flips = getFlips(tileId)
                     const { H, V } = flips || { H: false, V: false }
                     fn(tile, position, H, V)
@@ -169,15 +165,21 @@ export class Layer {
      * Draws the layer on the canvas.
      */
     draw() {
-        const { pos } = this.scene.camera
+        const { camera } = this.scene
         const mainContext = this.scene.game.ctx
         if (this.visible) {
             switch (this.type) {
                 case NodeType.Layer:
-                    mainContext.drawImage(this.layerCanvas as HTMLCanvasElement, pos.x, pos.y)
+                    mainContext.drawImage(
+                        this.layerCanvas as HTMLCanvasElement,
+                        camera.pos.x,
+                        camera.pos.y,
+                        this.size.x * this.scene.tileSize.x * camera.scale,
+                        this.size.y * this.scene.tileSize.x * camera.scale
+                    )
                     // render animated tiles on main canvas
                     this.forEachVisibleTile((tile, pos, flipH, flipV) => {
-                        tile.animated && tile.draw(pos, flipH, flipV, mainContext)
+                        tile.animated && tile.draw(pos, flipH, flipV)
                     })
                     break
                 case NodeType.ObjectGroup:

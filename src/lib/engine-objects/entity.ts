@@ -1,5 +1,5 @@
 import { Animation, Drawable } from '../../types'
-import { Box, Color, Vector, box, vec2, randVector } from '../engine-helpers'
+import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
 import { DefaultColors } from '../constants'
 import { clamp, lerp } from '../utils/helpers'
 import { Scene } from './scene'
@@ -11,14 +11,13 @@ export class Entity {
     size = vec2()
     force = vec2()
     type: string
-    color?: Color
+    color = new Color()
     gid?: number
     name?: string
     image?: string
     layerId?: number
     flipH = false
     flipV = false
-    tmxRect: Box | null // Rectangle from Tiled map
     animation?: Animation
     properties: Record<string, any>
 
@@ -37,9 +36,10 @@ export class Entity {
     gravityScale = 1 // How much to scale gravity by for this object
     angleVelocity = 0 // Angular force of the object
     angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
-    angle = 0 // @todo: implement rotation
+    angle = 0 // @todo: rename to rotation
     maxSpeed = 1
     renderOrder = 0
+    spawnTime = 0
 
     #sprite?: Drawable
 
@@ -52,25 +52,29 @@ export class Entity {
         this.type = obj.type
         this.name = obj.name
         this.layerId = obj.layerId
-        this.tmxRect = obj.x && obj.y ? box(obj.x, obj.y, obj.width, obj.height) : null
         this.properties = obj.properties
-        this.angle = obj.rotation
+        this.angle = obj.rotation || this.angle
         this.visible = obj.visible !== undefined ? obj.visible : true
-    }
+        this.spawnTime = scene.game.time
 
-    init() {
-        const { tileSize } = this.scene
-        if (this.tmxRect) {
-            this.size = vec2(this.tmxRect.size.x / tileSize.x, this.tmxRect.size.y / tileSize.y)
+        // Translate TMX bounding rect into game grid
+        if (obj.x && obj.y) {
+            const { tileSize } = scene
+            const tmxRect = box(obj.x, obj.y, obj.width, obj.height)
+            this.size = vec2(tmxRect.size.x / tileSize.x, tmxRect.size.y / tileSize.y)
             this.pos = vec2(
-                this.tmxRect.pos.x / tileSize.x + this.size.x / 2,
-                this.tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
+                tmxRect.pos.x / tileSize.x + this.size.x / 2,
+                tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
             )
         }
     }
 
     destroy() {
         this.dead = true
+    }
+
+    getAliveTime() {
+        return this.scene.game.time - this.spawnTime
     }
 
     /**
@@ -99,12 +103,11 @@ export class Entity {
 
     draw() {
         if (this.visible && this.onScreen()) {
-            const { debug, game } = this.scene
-            const rect = this.scene.getScreenPosRect(this).move(this.scene.camera.pos)
+            const { camera, debug, game } = this.scene
             if (this.#sprite) {
-                this.#sprite.draw(rect.pos, this.flipH, this.flipV)
+                this.#sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
-                game.draw.fillRect(rect, this.color)
+                game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color)
             }
             if (debug) this.displayDebug()
         }
@@ -158,8 +161,11 @@ export class Entity {
      * The translated position rectangle is calculated based on the entity's position in the scene.
      * @returns The translated position rectangle of the entity.
      */
-    getTranslatedPositionRect() {
-        return this.scene.getScreenPosRect(this)
+    getTranslatedBoundingRect() {
+        return new Box(
+            this.scene.getScreenPos(this.pos, this.size),
+            this.size.clone().multiply(this.scene.tileSize).scale(this.scene.camera.scale)
+        )
     }
 
     /**
@@ -187,7 +193,7 @@ export class Entity {
 
         if (!this.mass) return
 
-        this.lastPos = this.pos.copy()
+        this.lastPos = this.pos.clone()
         this.force.y += scene.gravity * this.gravityScale
         this.pos.x += this.force.x *= this.damping
         this.pos.y += this.force.y *= this.damping
@@ -301,10 +307,11 @@ export class Entity {
      * @returns {boolean} True if the entity is on the screen, false otherwise.
      */
     onScreen() {
+        // @todo: refactor using overlap method
         const scene = this.scene
         const { camera, tileSize } = scene
-        const { pos, size } = this.getTranslatedPositionRect()
-        const { x, y } = camera.resolution
+        const { x, y } = camera.size
+        const { pos, size } = this.getTranslatedBoundingRect()
         const cx = this.pos.x + pos.x
         const cy = this.pos.y + pos.y
         return (
@@ -321,21 +328,21 @@ export class Entity {
         const { type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
 
-        const fontSize = `${1.2 / camera.scale}em`
-        const rect = this.getTranslatedPositionRect().move(camera.pos)
+        const fontSize = '1em'
+        const rect = this.getTranslatedBoundingRect().move(camera.pos)
         const {
             pos: { x, y },
             size
         } = rect
 
-        draw.outline(rect, visible ? LightGreen : Cyan, 0.5)
-        draw.text(`${type}`, x + size.x / 2, y - 5, primaryColor, fontSize, 'center')
+        draw.outline(rect, visible ? LightGreen : Cyan, 1)
+        draw.text(`${type}[${this.angle}]`, x + size.x / 2, y - 14, primaryColor, fontSize, 'center')
         draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fontSize, 'right')
-        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 5, primaryColor, fontSize, 'right')
+        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 14, primaryColor, fontSize, 'right')
 
         Math.abs(force.x) > 0.012 &&
             draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fontSize, 'left')
         Math.abs(force.y) > 0.012 &&
-            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 5, Red, fontSize, 'left')
+            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fontSize, 'left')
     }
 }

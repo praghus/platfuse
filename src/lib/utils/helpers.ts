@@ -8,6 +8,7 @@ const clamp = (val: number, min = 0, max = 1) => Math.max(min, Math.min(max, val
 const lerp = (percent: number, a: number, b: number) => a + clamp(percent) * (b - a)
 const rand = (a = 1, b = 0) => b + Math.random() * (a - b)
 const percent = (val: number, a: number, b: number) => (b - a ? clamp((val - a) / (b - a)) : 0)
+const randInt = (valueA: number, valueB = 0) => Math.floor(rand(valueA, valueB))
 
 function normalize(n: number, min: number, max: number) {
     while (n < min) n += max - min
@@ -15,4 +16,17 @@ function normalize(n: number, min: number, max: number) {
     return n
 }
 
-export { clamp, uuid, getFilename, getPerformance, noop, isValidArray, rad2deg, lerp, rand, percent, normalize }
+export {
+    clamp,
+    uuid,
+    getFilename,
+    getPerformance,
+    noop,
+    isValidArray,
+    rad2deg,
+    lerp,
+    rand,
+    randInt,
+    percent,
+    normalize
+}
