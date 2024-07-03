@@ -1,7 +1,6 @@
 import * as dat from 'dat.gui'
 
 import { Constructable, GameConfig } from '../../types'
-import { glInit, glRenderPostProcess } from '../utils/webgl'
 import { preload } from '../utils/preload'
 import { lerp } from '../utils/helpers'
 import { Draw, Input, Timer } from '../engine-helpers'
@@ -18,7 +17,6 @@ const canvasStyle = `
 `
 
 export class Game {
-    useWebGL = false
     draw = new Draw(this)
     canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
@@ -88,7 +86,6 @@ export class Game {
                 return s
             })
         )
-        this.useWebGL && glInit(this)
         setTimeout(() => this.update(), 500)
     }
 
@@ -153,7 +150,6 @@ export class Game {
                 this.frameTimeBufferMS += deltaSmooth
             }
             scene.draw()
-            this.useWebGL && glRenderPostProcess(this.time)
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }

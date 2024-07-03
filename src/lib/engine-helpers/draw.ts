@@ -20,21 +20,29 @@ export class Draw {
         this.fillRect(box(0, height - height * 0.015, width * p, height * 0.015), secondaryColor)
     }
 
-    outline(rect: Box, color: Color, lineWidth = 1) {
+    outline(rect: Box, color: Color, lineWidth = 1, angle = 0) {
         const { ctx } = this.game
         const { pos, size } = rect
-        ctx.strokeStyle = color.toString()
-        ctx.lineWidth = lineWidth
-        ctx.beginPath()
-        ctx.rect(pos.x, pos.y, size.x, size.y)
-        ctx.stroke()
+        ctx.save()
+        this.rotate(rect, angle, 1, () => {
+            ctx.strokeStyle = color.toString()
+            ctx.lineWidth = lineWidth
+            ctx.beginPath()
+            ctx.rect(pos.x, pos.y, size.x, size.y)
+            ctx.stroke()
+        })
+        ctx.restore()
     }
 
-    fillRect(rect: Box, color: Color) {
+    fillRect(rect: Box, color: Color, angle = 0) {
         const { ctx } = this.game
         const { pos, size } = rect
-        ctx.fillStyle = color.toString()
-        ctx.fillRect(pos.x, pos.y, size.x, size.y)
+        ctx.save()
+        this.rotate(rect, angle, 1, () => {
+            ctx.fillStyle = color.toString()
+            ctx.fillRect(pos.x, pos.y, size.x, size.y)
+        })
+        ctx.restore()
     }
 
     fillRectRound(rect: Box, radius: number[], color: Color) {
@@ -81,8 +89,8 @@ export class Draw {
         ctx.textBaseline = textBaseline
         ctx.textAlign = textAlign
         ctx.fillStyle = (color || primaryColor).toString()
-        ctx.lineWidth = 1
         ctx.strokeStyle = backgroundColor.toString()
+        ctx.lineWidth = 1.5
         ctx.strokeText(text, x, y)
         ctx.fillText(text, x, y)
     }
@@ -100,35 +108,39 @@ export class Draw {
     ) {
         const ctx = context || this.game.ctx
         const { pos, size } = rect
-
         const flip = flipH || flipV
         const s = vec2(flipH ? -1 : 1, flipV ? -1 : 1)
         const f = vec2(flipH ? -size.x * scale : 0, flipV ? -size.y * scale : 0)
         const fpos = pos.subtract(f).multiply(s)
 
         ctx.save()
+        this.rotate(rect, angle, scale, () => {
+            flip && ctx.scale(s.x, s.y)
+            ctx.translate(-0.5, -0.5)
+            clip
+                ? ctx.drawImage(
+                      image,
+                      clip.x,
+                      clip.y,
+                      size.x,
+                      size.y,
+                      fpos.x - 0.5,
+                      fpos.y - 0.5,
+                      size.x * scale,
+                      size.y * scale
+                  )
+                : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
+        })
+        ctx.restore()
+    }
 
-        // rotation
-        const TO_RADIANS = Math.PI / 180
+    rotate({ pos, size }: Box, angle = 0, scale = 0, cb: () => void) {
         if (angle) {
+            const ctx = this.game.ctx
             ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
-            ctx.rotate(angle * TO_RADIANS)
+            ctx.rotate(angle)
             ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
         }
-        flip && ctx.scale(s.x, s.y)
-        clip
-            ? ctx.drawImage(
-                  image,
-                  clip.x,
-                  clip.y,
-                  size.x,
-                  size.y,
-                  fpos.x, // - 0.5,
-                  fpos.y, // - 0.5,
-                  size.x * scale,
-                  size.y * scale
-              )
-            : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
-        ctx.restore()
+        cb()
     }
 }

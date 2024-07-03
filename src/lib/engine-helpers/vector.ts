@@ -89,6 +89,10 @@ class Vector {
         return new Vector(-this.y, -this.x)
     }
 
+    invert() {
+        return new Vector(-this.x, -this.y)
+    }
+
     floor() {
         return new Vector(Math.floor(this.x), Math.floor(this.y))
     }

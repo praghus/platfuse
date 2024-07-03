@@ -1,6 +1,5 @@
 import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
-import { glPreRender, glCopyToContext } from '../utils/webgl'
 import { isValidArray, getFilename } from '../utils/helpers'
 import { Vector, vec2 } from '../engine-helpers'
 import { Flipped } from '../constants'
@@ -95,8 +94,7 @@ export class Scene {
      * Draws the scene on the canvas.
      */
     draw() {
-        const { ctx, width, height, useWebGL } = this.game
-        useWebGL && glPreRender(this)
+        const { ctx, width, height } = this.game
         ctx.imageSmoothingEnabled = false
         ctx.save()
         // ctx.scale(scale, scale)
@@ -108,7 +106,6 @@ export class Scene {
         objects.sort((a, b) => a.renderOrder - b.renderOrder)
         for (const obj of objects) obj.visible && obj.draw()
         ctx.restore()
-        useWebGL && glCopyToContext(ctx)
         this.debug && this.displayDebug()
     }
 
@@ -309,6 +306,7 @@ export class Scene {
             .multiply(this.tileSize)
             .subtract(size ? size.multiply(this.tileSize).divide(2) : vec2())
             .scale(this.camera.scale)
+            .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
     }
 
     getPointerPos() {

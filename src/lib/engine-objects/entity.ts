@@ -53,7 +53,7 @@ export class Entity {
         this.name = obj.name
         this.layerId = obj.layerId
         this.properties = obj.properties
-        this.angle = obj.rotation || this.angle
+        this.angle = obj.rotation * (Math.PI / 180) || this.angle
         this.visible = obj.visible !== undefined ? obj.visible : true
         this.spawnTime = scene.game.time
 
@@ -79,7 +79,6 @@ export class Entity {
 
     /**
      * Applies a force to the entity (affected by mass)
-     *
      * @param force - The force to be applied.
      */
     applyForce(force: Vector) {
@@ -107,7 +106,7 @@ export class Entity {
             if (this.#sprite) {
                 this.#sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
-                game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color)
+                game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color, this.angle)
             }
             if (debug) this.displayDebug()
         }
@@ -325,10 +324,10 @@ export class Entity {
     displayDebug() {
         const { game, camera } = this.scene
         const { draw, primaryColor } = game
-        const { type, visible, force, pos } = this
+        const { angle, id, type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
 
-        const fontSize = '1em'
+        const fs = '1em'
         const rect = this.getTranslatedBoundingRect().move(camera.pos)
         const {
             pos: { x, y },
@@ -336,13 +335,13 @@ export class Entity {
         } = rect
 
         draw.outline(rect, visible ? LightGreen : Cyan, 1)
-        draw.text(`${type}[${this.angle}]`, x + size.x / 2, y - 14, primaryColor, fontSize, 'center')
-        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fontSize, 'right')
-        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 14, primaryColor, fontSize, 'right')
+        draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, x + size.x / 2, y - 14, primaryColor, fs, 'center')
+        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fs, 'right')
+        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 14, primaryColor, fs, 'right')
 
         Math.abs(force.x) > 0.012 &&
-            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fontSize, 'left')
+            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fs, 'left')
         Math.abs(force.y) > 0.012 &&
-            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fontSize, 'left')
+            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fs, 'left')
     }
 }

@@ -1,4 +1,7 @@
-import { clamp } from '../utils/helpers'
+export function componentToHex(c: number): string {
+    const hex = Math.round(c).toString(16)
+    return hex.length === 1 ? `0${hex}` : hex
+}
 
 class Color {
     r = 255
@@ -6,7 +9,7 @@ class Color {
     b = 255
     a = 1
 
-    constructor(rOrHex: string | number = 1, g: number = 1, b: number = 1, a: number = 1) {
+    constructor(rOrHex: string | number = 255, g: number = 255, b: number = 255, a: number = 1) {
         if (typeof rOrHex === 'string') {
             this.setHex(rOrHex)
         } else {
@@ -17,17 +20,30 @@ class Color {
         }
     }
 
+    copy() {
+        return new Color(this.r, this.g, this.b, this.a)
+    }
+
+    add(c: Color) {
+        return new Color(this.r + c.r, this.g + c.g, this.b + c.b, this.a + c.a)
+    }
+
+    subtract(c: Color) {
+        return new Color(this.r - c.r, this.g - c.g, this.b - c.b, this.a - c.a)
+    }
+
     setHex(hex: string) {
-        const fromHex = (c: number) => clamp(parseInt(hex.slice(c, c + 2), 16) / 255)
-        this.r = fromHex(1)
-        ;(this.g = fromHex(3)), (this.b = fromHex(5))
-        this.a = hex.length > 7 ? fromHex(7) : 1
+        const tempHex = hex.replace('#', '')
+        this.r = parseInt(tempHex.substring(0, 2), 16)
+        this.g = parseInt(tempHex.substring(2, 4), 16)
+        this.b = parseInt(tempHex.substring(4, 6), 16)
+        this.a = tempHex.length === 8 ? parseInt(tempHex.substring(6, 8), 16) / 255 : 1
         return this
     }
 
-    toString(useAlpha = 1) {
-        const toHex = (c: number) => ((c = (c * 255) | 0) < 16 ? '0' : '') + c.toString(16)
-        return '#' + toHex(this.r) + toHex(this.g) + toHex(this.b) + (useAlpha ? toHex(this.a) : '')
+    toString(useAlpha = true) {
+        const toHex = (c: number) => ((c = c | 0) < 16 ? '0' : '') + c.toString(16)
+        return '#' + toHex(this.r) + toHex(this.g) + toHex(this.b) + (useAlpha ? toHex(this.a * 255) : '')
     }
 }
 

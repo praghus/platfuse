@@ -41,3 +41,30 @@ export interface GameConfig {
     global?: boolean
     debug?: boolean
 }
+
+export interface ParticleConfig {
+    pos: Vector
+    angle?: number
+    angleSpeed?: number
+    emitSize?: number
+    emitTime?: number
+    emitRate?: number
+    emitCone?: number
+    emitConeAngle?: number
+    colorStart?: Color
+    colorEnd?: Color
+    ttl?: number
+    sizeStart?: number
+    sizeEnd?: number
+    speed?: number
+    damping?: number
+    angleDamping?: number
+    gravityScale?: number
+    particleConeAngle?: number
+    fadeRate?: number
+    randomness?: number
+    collideTiles?: boolean
+    stretchScale?: number
+    elasticity?: number
+    renderOrder?: number
+}

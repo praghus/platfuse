@@ -35,37 +35,4 @@ enum Flipped {
     Vertically = 0x40000000
 }
 
-enum gl {
-    ONE = 1,
-    TRIANGLE_STRIP = 5,
-    SRC_ALPHA = 770,
-    ONE_MINUS_SRC_ALPHA = 771,
-    BLEND = 3042,
-    TEXTURE_2D = 3553,
-    UNSIGNED_BYTE = 5121,
-    FLOAT = 5126,
-    RGBA = 6408,
-    NEAREST = 9728,
-    LINEAR = 9729,
-    TEXTURE_MAG_FILTER = 10240,
-    TEXTURE_MIN_FILTER = 10241,
-    TEXTURE_WRAP_S = 10242,
-    TEXTURE_WRAP_T = 10243,
-    COLOR_BUFFER_BIT = 16384,
-    CLAMP_TO_EDGE = 33071,
-    TEXTURE0 = 33984,
-    ARRAY_BUFFER = 34962,
-    STATIC_DRAW = 35044,
-    DYNAMIC_DRAW = 35048,
-    FRAGMENT_SHADER = 35632,
-    VERTEX_SHADER = 35633,
-    COMPILE_STATUS = 35713,
-    LINK_STATUS = 35714,
-    UNPACK_FLIP_Y_WEBGL = 37440,
-    INDICIES_PER_VERT = 6,
-    MAX_BATCH = 1e5,
-    VERTEX_BYTE_STRIDE = 4 * 2 * 2 + 4 * 2,
-    VERTEX_BUFFER_SIZE = MAX_BATCH * VERTEX_BYTE_STRIDE
-}
-
-export { NodeType, DefaultColors, Flipped, gl }
+export { NodeType, Flipped, DefaultColors }
