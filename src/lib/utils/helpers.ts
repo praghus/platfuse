@@ -9,6 +9,7 @@ const lerp = (percent: number, a: number, b: number) => a + clamp(percent) * (b 
 const rand = (a = 1, b = 0) => b + Math.random() * (a - b)
 const percent = (val: number, a: number, b: number) => (b - a ? clamp((val - a) / (b - a)) : 0)
 const randInt = (valueA: number, valueB = 0) => Math.floor(rand(valueA, valueB))
+const sortByRenderOrder = (a: any, b: any) => a.renderOrder - b.renderOrder
 
 function normalize(n: number, min: number, max: number) {
     while (n < min) n += max - min
@@ -28,5 +29,6 @@ export {
     rand,
     randInt,
     percent,
-    normalize
+    normalize,
+    sortByRenderOrder
 }

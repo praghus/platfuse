@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Animation, Drawable } from '../../types'
 import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
 import { DefaultColors } from '../constants'
@@ -5,41 +6,44 @@ import { clamp, lerp } from '../utils/helpers'
 import { Scene } from './scene'
 
 export class Entity {
-    id: number
-    pos = vec2()
-    lastPos = vec2()
-    size = vec2()
-    force = vec2()
-    type: string
-    color = new Color()
-    gid?: number
-    name?: string
-    image?: string
-    layerId?: number
-    flipH = false
-    flipV = false
-    animation?: Animation
-    properties: Record<string, any>
-
-    solid = true
-    visible = true
-    active = true
-    dead = false
-    collideTiles = true
-    collideObjects = true
-    groundObject: Entity | boolean = false
-
-    mass = 1 // How heavy the object is, static if 0
-    damping = 0.9 // How much to slow down force each frame (0-1)
-    elasticity = 0 //  How bouncy the object is when colliding (0-1)
-    friction = 0.8 // How much friction to apply when sliding (0-1)
-    gravityScale = 1 // How much to scale gravity by for this object
-    angleVelocity = 0 // Angular force of the object
-    angleDamping = 0.9 // How much to slow down rotation each frame (0-1)
-    angle = 0 // @todo: rename to rotation
-    maxSpeed = 1
-    renderOrder = 0
-    spawnTime = 0
+    id: number //               ID of the object
+    type: string //             Type of the object
+    gid?: number //             Global ID of the object image from TMX map (if any)
+    name?: string //            Name of the object
+    image?: string //           Image of the object (if any)
+    color?: Color //            Color of the object (if no sprite)
+    layerId?: number //         Layer ID of the object (if any)
+    animation?: Animation //    Animation of the object sprite
+    // Flags --------------------------------------------------------------------------
+    flipH = false //            Whether the object is flipped horizontally (mirrored)
+    flipV = false //            Whether the object is flipped vertically
+    solid = true //             Whether the object is solid and collides with other objects
+    visible = true //           Whether the object is visible and should be drawn
+    active = true //            Whether the object is active and should be updated
+    dead = false //             Whether the object is dead and should be removed
+    collideTiles = true //      Whether the object collides with tiles
+    collideObjects = true //    Whether the object collides with other objects
+    onGround: Entity | boolean = false // Object the entity is standing on
+    // Physics -------------------------------------------------------------------------
+    pos = vec2() //             Position of the object (center, scaled by tileSize)
+    lastPos = vec2() //         Last position of the object
+    size = vec2() //            Size of the object (scaled by tileSize)
+    force = vec2() //           Force applied to the object (acceleration)
+    mass = 1 //                 Mass of the object, 0 is static
+    damping = 0.9 //            How much force is kept each frame (0-1)
+    elasticity = 0 //           Bounciness of the object (0-1)
+    friction = 0.8 //           Friciton when on ground (0-1)
+    gravityScale = 1 //         Hot gravity affects the object
+    angleVelocity = 0 //        Angular velocity
+    angleDamping = 0.9 //       Rotation slowdown (0-1)
+    angle = 0 //                Rotation angle
+    maxSpeed = 1 //             Maximum speed
+    // Time ---------------------------------------------------------------------------
+    spawnTime = 0 //            Time the object was spawned
+    // Rendering ----------------------------------------------------------------------
+    renderOrder = 0 //          Order in which the object is drawn (higher is later)
+    // Custom -------------------------------------------------------------------------
+    properties: Record<string, any> // Custom properties of the object
 
     #sprite?: Drawable
 
@@ -69,10 +73,17 @@ export class Entity {
         }
     }
 
+    /**
+     * Marks the entity as destroyed.
+     */
     destroy() {
         this.dead = true
     }
 
+    /**
+     * Returns the alive time of the entity.
+     * @returns The alive time in milliseconds.
+     */
     getAliveTime() {
         return this.scene.game.time - this.spawnTime
     }
@@ -85,37 +96,67 @@ export class Entity {
         if (this.mass) this.force = this.force.add(force.scale(1 / this.mass))
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    /**
+     * Checks if the entity collides with a tile.
+     * @param tileId - The ID of the tile to check collision with.
+     * @param pos - The position of the entity.
+     * @returns True if the entity collides with the tile, false otherwise.
+     */
     collideWithTile(tileId: number, pos: Vector) {
         return tileId > 0
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    /**
+     * Checks if this entity collides with another entity.
+     * @param entity - The entity to check collision with.
+     * @returns `true` if a collision occurs, `false` otherwise.
+     */
     collideWithObject(entity: Entity) {
         return true
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    /**
+     * Checks if the entity collides with a tile using raycasting.
+     * @param tileData - The data of the tile to check collision with.
+     * @param pos - The position of the entity.
+     * @returns True if the entity collides with the tile, false otherwise.
+     */
     collideWithTileRaycast(tileData: number, pos: Vector) {
         return tileData > 0
     }
 
+    /**
+     * Draws the entity on the screen.
+     * - If the entity is visible and on the screen, it will be drawn using the provided scene's camera and game.
+     * - If the entity has a sprite, the sprite will be drawn at the entity's position with the specified
+     *   transformations.
+     * - If the entity does not have a sprite but has a color, a filled rectangle will be drawn at the entity's
+     *   translated bounding rectangle.
+     * - If the game is in debug mode, the entity's debug information will be displayed.
+     */
     draw() {
         if (this.visible && this.onScreen()) {
-            const { camera, debug, game } = this.scene
+            const { camera, game } = this.scene
             if (this.#sprite) {
                 this.#sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
                 game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color, this.angle)
             }
-            if (debug) this.displayDebug()
+            if (game.debug) this.displayDebug()
         }
     }
 
+    /**
+     * Adds a sprite to the entity.
+     * @param sprite - The sprite to be added.
+     */
     addSprite(sprite: Drawable) {
         this.#sprite = sprite
     }
 
+    /**
+     * Animates the entity using the specified animation.
+     */
     animate() {
         if (this.animation && this.#sprite && this.#sprite.animate) {
             this.#sprite.animate(this.animation)
@@ -183,6 +224,10 @@ export class Entity {
     /**
      * Updates the entity's position, velocity, and handles collisions with other objects and tiles.
      * This method applies physics, friction, and collision resolution to the entity.
+     * It also updates the entity's animation.
+     *
+     * Based on LittleJS by Frank Force.
+     * @see https://github.com/KilledByAPixel/LittleJS/blob/main/src/engineObject.js
      */
     update() {
         const { scene } = this
@@ -200,19 +245,19 @@ export class Entity {
 
         const wasMovingDown = this.force.y >= 0
 
-        if (this.groundObject) {
-            const groundSpeed = this.groundObject instanceof Entity ? this.groundObject.force.x : 0
+        if (this.onGround) {
+            const groundSpeed = this.onGround instanceof Entity ? this.onGround.force.x : 0
             this.force.x = groundSpeed + (this.force.x - groundSpeed) * this.friction
-            this.groundObject = false
+            this.onGround = false
         }
 
         if (this.collideTiles) {
-            if (scene.tileCollisionTest(this.pos, this.size, this)) {
-                if (!scene.tileCollisionTest(this.lastPos, this.size, this)) {
-                    const isBlockedY = scene.tileCollisionTest(vec2(this.lastPos.x, this.pos.y), this.size, this)
-                    const isBlockedX = scene.tileCollisionTest(vec2(this.pos.x, this.lastPos.y), this.size, this)
+            if (scene.testTileCollision(this.pos, this.size, this)) {
+                if (!scene.testTileCollision(this.lastPos, this.size, this)) {
+                    const isBlockedY = scene.testTileCollision(vec2(this.lastPos.x, this.pos.y), this.size, this)
+                    const isBlockedX = scene.testTileCollision(vec2(this.pos.x, this.lastPos.y), this.size, this)
                     if (isBlockedY || !isBlockedX) {
-                        this.groundObject = wasMovingDown
+                        this.onGround = wasMovingDown
                         this.force.y *= -this.elasticity
                         const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
                         if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
@@ -258,8 +303,8 @@ export class Entity {
 
                 if (smallStepUp || isBlockedY || !isBlockedX) {
                     this.pos.y = o.pos.y + (sizeBoth.y / 2 + epsilon) * Math.sign(this.lastPos.y - o.pos.y)
-                    if ((o.groundObject && wasMovingDown) || !o.mass) {
-                        if (wasMovingDown) this.groundObject = o
+                    if ((o.onGround && wasMovingDown) || !o.mass) {
+                        if (wasMovingDown) this.onGround = o
                         this.force.y *= -elasticity
                     } else if (o.mass) {
                         // inelastic collision
@@ -297,7 +342,6 @@ export class Entity {
                 }
             }
         }
-
         this.animate()
     }
 
@@ -321,12 +365,14 @@ export class Entity {
         )
     }
 
+    /**
+     * Displays debug information about the entity.
+     */
     displayDebug() {
         const { game, camera } = this.scene
         const { draw, primaryColor } = game
         const { angle, id, type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
-
         const fs = '1em'
         const rect = this.getTranslatedBoundingRect().move(camera.pos)
         const {
@@ -338,7 +384,6 @@ export class Entity {
         draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, x + size.x / 2, y - 14, primaryColor, fs, 'center')
         draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fs, 'right')
         draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 14, primaryColor, fs, 'right')
-
         Math.abs(force.x) > 0.012 &&
             draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fs, 'left')
         Math.abs(force.y) > 0.012 &&

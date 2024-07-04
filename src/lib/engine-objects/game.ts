@@ -1,9 +1,8 @@
-import * as dat from 'dat.gui'
-
+import { Howl, Howler } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { lerp } from '../utils/helpers'
-import { Draw, Input, Timer } from '../engine-helpers'
+import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
 import { DefaultColors } from '../constants'
 import { Entity } from './entity'
 import { Scene } from './scene'
@@ -20,12 +19,12 @@ export class Game {
     draw = new Draw(this)
     canvas: HTMLCanvasElement
     ctx: CanvasRenderingContext2D
-    gui?: dat.GUI
     input: Input = new Input(this)
-    backgroundColor = DefaultColors.Black
+    backgroundColor = DefaultColors.DarkBlue
     primaryColor = DefaultColors.White
     secondaryColor = DefaultColors.LightBlue
     assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
+    sounds: Record<string, Howl> = {}
     objectClasses: Record<string, Constructable<Entity>> = {}
     sceneClasses: Record<string, Constructable<Scene>> = {}
     currentScene: Scene | null = null
@@ -50,43 +49,41 @@ export class Game {
         public preload: Record<string, string>
     ) {
         document.body.appendChild((this.canvas = document.createElement('canvas')))
-
-        this.sceneClasses = config.scenes
+        // document.body.style.background = this.backgroundColor.toString()
         this.objectClasses = config.entities
-        this.sceneClasses = config.scenes
         this.objectClasses = config.entities
         this.debug = !!config.debug
-        this.backgroundColor = config?.backgroundColor || this.backgroundColor
-        this.primaryColor = config?.preloaderColor || this.primaryColor
+        this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
+        this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
+        this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor
         this.canvas.setAttribute('style', canvasStyle)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-        this.debug && this.enableDebugGUI()
-
-        document.body.style.background = this.backgroundColor.toString()
         window.addEventListener('resize', this.onResize.bind(this))
-
         this.onResize()
 
         if (!!config.global) window.Platfuse = this
     }
 
-    /**
-     * Initializes the game engine.
-     * @returns {Promise<void>} A promise that resolves when the initialization is complete.
-     */
-    async init() {
+    async init(SceneClass?: Constructable<Scene>) {
         this.assets = await preload(this.preload, (p: number) => this.draw.preloader(p))
-        await Promise.all(
-            Object.keys(this.sceneClasses).map(async sceneName => {
-                const Model = this.sceneClasses[sceneName]
-                const s: Scene = new Model(this)
-                await s.init()
-                this.scenes[sceneName] = s
-                return s
-            })
-        )
-        setTimeout(() => this.update(), 500)
+        if (SceneClass) {
+            await this.playScene(SceneClass)
+        }
+    }
+
+    async playScene(SceneClass: Constructable<Scene>) {
+        this.currentScene = new SceneClass(this)
+        await this.currentScene.init()
+        this.start()
+    }
+
+    start() {
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame)
+        }
+        this.paused = false
+        this.update()
     }
 
     /**
@@ -95,13 +92,12 @@ export class Game {
     onResize() {
         this.width = window.innerWidth
         this.height = window.innerHeight
-        if (this.config?.fixedSize?.x) {
-            this.canvas.width = this.config.fixedSize.x
-            this.canvas.height = this.config.fixedSize.y
-
+        if (this.config?.fixedSize instanceof Vector) {
+            const { fixedSize } = this.config
             const aspect = innerWidth / innerHeight
-            const fixedAspect = this.canvas.width / this.canvas.height
-
+            const fixedAspect = fixedSize.x / fixedSize.y
+            this.canvas.width = fixedSize.x
+            this.canvas.height = fixedSize.y
             this.canvas.style.width = aspect < fixedAspect ? '100%' : ''
             this.canvas.style.height = aspect < fixedAspect ? '' : '100%'
         } else {
@@ -125,8 +121,10 @@ export class Game {
         this.timeReal += frameTimeDeltaMS / 1e3
         this.frameTimeBufferMS += (this.paused ? 0 : 1) * frameTimeDeltaMS
 
-        if (scene) {
+        if (scene instanceof Scene) {
             if (this.paused) {
+                scene.postUpdate()
+                this.input.postUpdate()
             } else {
                 let deltaSmooth = 0
                 if (this.frameTimeBufferMS < 0 && this.frameTimeBufferMS > -9) {
@@ -150,21 +148,14 @@ export class Game {
                 this.frameTimeBufferMS += deltaSmooth
             }
             scene.draw()
+        } else {
+            console.warn('No scene to render!')
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
 
-    start() {
-        this.paused = false
-    }
-
-    pause() {
-        this.paused = true
-    }
-
-    restart() {
-        this.pause()
-        this.start()
+    togglePause(paused = true) {
+        this.paused = paused
     }
 
     setSettings(value: any) {
@@ -180,36 +171,6 @@ export class Game {
     }
 
     /**
-     * Plays the specified scene by its index.
-     *
-     * @param idx - The index of the scene to play.
-     * @throws {Error} If the scene is not found.
-     */
-    playScene(idx: string) {
-        if (this.scenes[idx] instanceof Scene) {
-            this.currentScene = this.scenes[idx]
-            this.restart()
-        } else throw new Error('Scene not found!')
-    }
-
-    /**
-     * Returns the current scene of the game.
-     * @returns The current scene if it exists, otherwise throws an error.
-     */
-    getCurrentScene() {
-        if (this.currentScene instanceof Scene) {
-            return this.currentScene
-        } else throw new Error('No current scene!')
-    }
-
-    // @todo: implement getter for audio files
-    getImage(name: string) {
-        if (this.assets[name] instanceof HTMLImageElement) {
-            return this.assets[name] as HTMLImageElement
-        } else throw new Error('Invalid image!')
-    }
-
-    /**
      * Creates a new Timer object.
      * @param timeLeft - The initial time left for the timer (optional).
      * @returns A new Timer instance.
@@ -218,12 +179,26 @@ export class Game {
         return new Timer(this, timeLeft)
     }
 
-    /**
-     * Enables the debug GUI for the game.
-     */
-    enableDebugGUI() {
-        if (this.gui) this.gui.destroy()
-        this.gui = new dat.GUI()
+    getImage(name: string) {
+        if (this.assets[name] instanceof HTMLImageElement) {
+            return this.assets[name] as HTMLImageElement
+        } else throw new Error('Invalid image!')
+    }
+
+    getSound(name: string) {
+        if (this.sounds[name] instanceof Howl) {
+            return this.sounds[name] as Howl
+        } else if (this.assets[name] instanceof HTMLAudioElement) {
+            return (this.sounds[name] = new Howl({ src: this.assets[name].src }))
+        } else throw new Error('Invalid sound!')
+    }
+
+    playSound(name: string) {
+        this.getSound(name)?.play()
+    }
+
+    setAudioVolume(volume: number) {
+        Howler.volume(volume)
     }
 }
 

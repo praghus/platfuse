@@ -2,16 +2,17 @@ import { Entity } from './entity'
 import { Vector, vec2 } from '../engine-helpers'
 
 export class Camera {
-    pos = vec2()
-    speed = vec2(1)
-    offset = vec2()
-    followEntity?: Entity
-    delta = 1 / 60
-    isShaking = false
-    bounded = true // if false allow camera to move outside of bounds
-    shakeIntensity = vec2()
-    shakeDuration = 0
-    shakeElapsed = 0
+    pos = vec2() //             camera position
+    speed = vec2(1) //          camera speed
+    offset = vec2() //          camera shake offset
+    followEntity?: Entity //    entity to follow
+    delta = 1 / 60 //           delta time
+    scrolling = true //         is camera scrolling or switching between views
+    isShaking = false //        is camera shaking
+    bounded = true //           if false allow camera to move outside of bounds
+    shakeIntensity = vec2() //  shake intensity
+    shakeDuration = 0 //        shake duration
+    shakeElapsed = 0 //         shake elapsed time
 
     constructor(
         public size: Vector,
@@ -24,6 +25,10 @@ export class Camera {
 
     setSpeed(speed: Vector) {
         this.speed = speed
+    }
+
+    setScrolling(scrolling: boolean) {
+        this.scrolling = scrolling
     }
 
     follow(follow: Entity) {
@@ -46,16 +51,30 @@ export class Camera {
         this.shakeElapsed = 0
     }
 
+    getVisibleRect() {
+        return {
+            pos: this.pos,
+            size: this.size
+        }
+    }
+
     update() {
         const { x, y } = this.size
         if (this.followEntity) {
             const followRect = this.followEntity.getTranslatedBoundingRect()
-            const midPos = vec2(
-                -x / 2 + followRect.pos.x + followRect.size.x / 2,
-                -y / 2 + followRect.pos.y + followRect.size.y / 2
-            )
-            const moveTo = vec2((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
-            this.pos = this.pos.subtract(vec2(moveTo.x / this.scale, moveTo.y / this.scale)).floor()
+            // smooth scroll
+            if (this.scrolling) {
+                const midPos = vec2(
+                    -x / 2 + followRect.pos.x + followRect.size.x / 2,
+                    -y / 2 + followRect.pos.y + followRect.size.y / 2
+                )
+                const moveTo = vec2((midPos.x + this.pos.x) * this.speed.x, (midPos.y + this.pos.y) * this.speed.y)
+                this.pos = this.pos.subtract(vec2(moveTo.x / this.scale, moveTo.y / this.scale)).floor()
+                // no scrolling - switching between views
+            } else {
+                const room = followRect.pos.divide(this.size).floor()
+                this.pos = vec2(-room.x * x, -room.y * y)
+            }
         }
 
         // if (this.pos.x - x < -size.x) this.pos.x = -size.x + x

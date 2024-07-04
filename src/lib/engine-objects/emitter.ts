@@ -9,6 +9,7 @@ const randPointOnCircle = (radius = 1, minRadius = 0) =>
     radius > 0 ? randVector(radius * rand(minRadius / radius, 1) ** 0.5) : new Vector()
 
 export class Emitter extends Entity {
+    type = 'emitter'
     pos: Vector
     angle = 0 //                    Angle to emit the particles
     emitSize: Vector | number //    World space size of the emitter (float for circle diameter, vec2 for rect)
@@ -106,6 +107,7 @@ export class Emitter extends Entity {
         particle.sizeDelta = sizeEnd - sizeStart
         particle.fadeRate = this.fadeRate
         particle.stretchScale = this.stretchScale
+        particle.layerId = this.layerId
 
         this.scene.objects.push(particle)
     }

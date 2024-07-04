@@ -3,6 +3,7 @@ import { Entity } from './entity'
 import { Scene } from './scene'
 
 export class Particle extends Entity {
+    type = 'particle'
     colorStart = new Color()
     colorEndDelta = new Color()
     ttl = 0

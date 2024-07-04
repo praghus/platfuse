@@ -1,8 +1,8 @@
 import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
-import { isValidArray, getFilename } from '../utils/helpers'
+import { isValidArray, getFilename, sortByRenderOrder } from '../utils/helpers'
 import { Vector, vec2 } from '../engine-helpers'
-import { Flipped } from '../constants'
+import { Flipped, NodeType } from '../constants'
 import { Camera } from './camera'
 import { Entity } from './entity'
 import { Game } from './game'
@@ -11,21 +11,18 @@ import { Sprite } from './sprite'
 import { Tile } from './tile'
 
 export class Scene {
-    size = vec2()
-    tileSize = vec2()
-    camera: Camera
-    tiles: Record<string, Tile> = {}
-    tileCollision: number[] = []
-    objects: Entity[] = []
-    layers: Layer[] = []
-    gravity = 0
-    debug = false
+    size = vec2() //                    The size of the scene (in tiles)
+    tileSize = vec2() //                The size of each tile in the scene
+    camera: Camera //                   The camera object for the scene
+    tiles: Record<string, Tile> = {} // The tiles objects in the scene
+    tileCollisionData: number[] = [] // The collision data for the scene
+    objects: Entity[] = [] //           The objects in the scene
+    layers: Layer[] = [] //             The layers in the scene
+    gravity = 0 //                      The gravity value for the scene
+    nextRenderOrder = 0 //              The next available render order for layers
 
     constructor(public game: Game) {
         this.camera = new Camera(vec2(game.width, game.height))
-        if (game.debug && game.gui) {
-            game.gui.add(this, 'debug').listen()
-        }
     }
 
     /**
@@ -34,21 +31,11 @@ export class Scene {
      * @returns A promise that resolves when the initialization is complete.
      */
     async init(map?: string): Promise<void> {
-        const { debug, gui } = this.game
         if (map) {
             const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
             this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
-        }
-        if (debug && gui) {
-            const f1 = gui.addFolder('Scene')
-            const f2 = f1.addFolder('Layers')
-            f1.add(this, 'gravity').name('Gravity').step(0.01).min(0.01).max(1)
-            f1.add(this.camera, 'scale').name('Scale').step(0.1).min(1).max(10).listen()
-            this.layers.map(layer => {
-                f2.add(layer, 'visible').name(layer.name || `Layer#${layer.id}`)
-            })
         }
     }
 
@@ -91,22 +78,23 @@ export class Scene {
     postUpdate() {}
 
     /**
-     * Draws the scene on the canvas.
+     * Draws the scene on the main context.
      */
     draw() {
         const { ctx, width, height } = this.game
+        const layers = this.layers.filter(l => l instanceof Layer && l.visible)
+        const objects = this.objects.filter(o => o.visible && !o.layerId)
+        layers.sort(sortByRenderOrder)
+        objects.sort(sortByRenderOrder)
+
         ctx.imageSmoothingEnabled = false
         ctx.save()
-        // ctx.scale(scale, scale)
         ctx.clearRect(0, 0, width, height)
-        // renders layers and contained objects
-        for (const layer of this.layers) layer instanceof Layer && layer.draw()
-        // renders object not attached to any layer
-        const objects = this.objects.filter(({ layerId }) => !layerId)
-        objects.sort((a, b) => a.renderOrder - b.renderOrder)
-        for (const obj of objects) obj.visible && obj.draw()
+        for (const layer of layers) layer.draw()
+        for (const obj of objects) obj.draw()
         ctx.restore()
-        this.debug && this.displayDebug()
+
+        this.game.debug && this.displayDebug()
     }
 
     /**
@@ -135,7 +123,7 @@ export class Scene {
     setTileCollisionLayer(layerIndex: number, exclude = [] as number[]) {
         const layer = this.layers[layerIndex]
         if (layer) {
-            this.tileCollision =
+            this.tileCollisionData =
                 layer?.data?.map((id): number => {
                     return id && !exclude.includes(id) ? id : 0
                 }) || []
@@ -149,15 +137,14 @@ export class Scene {
      * @param entity - The entity to perform the collision test for (optional).
      * @returns `true` if a collision is detected, `false` otherwise.
      */
-    tileCollisionTest(pos: Vector, size: Vector, entity?: Entity) {
+    testTileCollision(pos: Vector, size: Vector, entity?: Entity) {
         const minX = Math.max((pos.x - size.x / 2) | 0, 0)
         const minY = Math.max((pos.y - size.y / 2) | 0, 0)
         const maxX = Math.min(pos.x + size.x / 2, this.size.x)
         const maxY = Math.min(pos.y + size.y / 2, this.size.y)
-
         for (let y = minY; y < maxY; ++y) {
             for (let x = minX; x < maxX; ++x) {
-                const tileData = this.tileCollision[x + this.size.x * y]
+                const tileData = this.tileCollisionData[x + this.size.x * y]
                 if (tileData && (!entity || entity.collideWithTile(tileData, vec2(x, y)))) return true
             }
         }
@@ -166,12 +153,13 @@ export class Scene {
 
     /**
      * Performs a raycast to check for tile collisions between two positions.
+     * Based on the DDA algorithm: https://lodev.org/cgtutor/raycasting.html
      * @param start The starting position of the raycast.
      * @param end The ending position of the raycast.
      * @param entity An optional entity to check for collisions with tiles.
      * @returns The position of the first tile hit by the raycast, or null if no collision occurred.
      */
-    tileCollisionRaycast(start: Vector, end: Vector, entity?: Entity) {
+    raycastTileCollision(start: Vector, end: Vector, entity?: Entity, exclude = [] as number[]) {
         const pos = start.floor()
         const delta = end.subtract(start)
         const length = delta.length()
@@ -183,7 +171,7 @@ export class Scene {
 
         while (1) {
             const tileData = this.getTileCollisionData(pos)
-            if (tileData && (!entity || entity.collideWithTile(tileData, pos))) {
+            if (tileData && !exclude.includes(tileData) && (!entity || entity.collideWithTile(tileData, pos))) {
                 return pos.add(vec2(0.5))
             }
             if (x1 > length && y1 > length) break
@@ -204,39 +192,42 @@ export class Scene {
     /**
      * Adds a layer to the scene.
      * @param l - The layer to add. It can be a constructor function or an instance of TMXLayer.
+     * @param order - The render order of the layer. If not provided,
+     *                it will be assigned the next available render order.
      */
-    addLayer(l: Constructable<Layer> | TMXLayer) {
-        // @todo: add index to position layer in array
-        if (typeof l === 'function') {
-            this.layers.push(new l(this))
-        } else {
-            this.layers.push(new Layer(this, l))
-            l.objects && l.objects.forEach(obj => this.addObject(obj.type, { ...obj, layerId: l.id }))
+    addLayer(l: Constructable<Layer> | TMXLayer, order?: number) {
+        const layer = typeof l === 'function' ? new l(this) : new Layer(this, l)
+        // Extract object from TMXLayer
+        if (typeof l !== 'function') {
+            l.objects && l.objects.forEach(obj => this.createObject(obj.type, { ...obj, layerId: l.id }))
         }
+        layer.renderOrder = order || this.nextRenderOrder++
+        this.layers.push(layer)
     }
 
-    /**
-     * Adds an object to the scene.
-     *
-     * @param type - The type of the object.
-     * @param props - The properties of the object.
-     * @param index - The optional index at which to insert the object in the objects array.
-     * @returns The newly created entity.
-     */
-    addObject(type: string, props: Record<string, any>, index?: number) {
+    createObject(type: string, props: Record<string, any>) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(this, props) : new Entity(this, props)
         const sprite =
             (entity.image && this.createSprite(entity.image, entity.size)) || (entity.gid && this.tiles[entity.gid])
         if (sprite) entity.addSprite(sprite)
-
-        index !== undefined ? this.objects.splice(index, 0, entity) : this.objects.push(entity)
+        this.objects.push(entity)
         return entity
+    }
+
+    addObject(entity: Entity, layerId?: number) {
+        if (layerId) {
+            const layer = this.getLayer(layerId)
+            console.log(layer)
+            layer instanceof Layer && layer.type === NodeType.ObjectGroup
+                ? (entity.layerId = layer.id)
+                : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
+        }
+        this.objects.push(entity)
     }
 
     /**
      * Removes an object from the scene.
-     *
      * @param obj - The object to be removed.
      */
     removeObject(obj: Entity) {
@@ -245,7 +236,6 @@ export class Scene {
 
     /**
      * Adds a tileset to the scene.
-     *
      * @param tileset - The tileset to add.
      * @param source - The source of the tileset image.
      */
@@ -258,7 +248,6 @@ export class Scene {
 
     /**
      * Creates tilesets for the scene.
-     *
      * @param tilesets - An array of TMXTileset objects representing the tilesets to be created.
      */
     createTilesets(tilesets: TMXTileset[]) {
@@ -272,24 +261,27 @@ export class Scene {
 
     /**
      * Sets the collision data for a tile at the specified position.
-     *
      * @param pos - The position of the tile.
      * @param data - The collision data to set for the tile. Defaults to 0.
      */
     setTileCollisionData(pos: Vector, data = 0) {
-        pos.inRange(this.size) && (this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] = data)
+        pos.inRange(this.size) && (this.tileCollisionData[((pos.y | 0) * this.size.x + pos.x) | 0] = data)
     }
 
     /**
      * Retrieves the tile collision data at the specified position.
-     *
      * @param pos - The position to retrieve the tile collision data from.
      * @returns The tile collision data at the specified position.
      */
     getTileCollisionData(pos: Vector) {
-        return pos.inRange(this.size) ? this.tileCollision[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
+        return pos.inRange(this.size) ? this.tileCollisionData[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
     }
 
+    /**
+     * Returns the grid position of a given vector.
+     * @param pos - The vector to calculate the grid position for.
+     * @returns The grid position as a vector.
+     */
     getGridPos(pos: Vector) {
         return vec2(Math.ceil(pos.x / this.tileSize.x), Math.ceil(pos.y / this.tileSize.y))
     }

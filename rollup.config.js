@@ -3,7 +3,7 @@ import typescript from '@rollup/plugin-typescript'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import pkg from './package.json' assert { type: 'json' }
 
-const external = ['dat.gui', 'tmx-map-parser']
+const external = ['howler', 'tmx-map-parser']
 
 export default [
     // browser-friendly UMD build
@@ -12,7 +12,7 @@ export default [
         external,
         output: {
             globals: {
-                'dat.gui': 'dat.gui',
+                'howler': 'howler',
                 'tmx-map-parser': 'tmx-map-parser'
             },
             name: 'platfuse',
