@@ -11,7 +11,7 @@ const exec = promisify(cp.exec)
 const rm = promisify(fs.rm)
 
 if (process.argv.length < 3) {
-  console.log('You have to provide a name to your app.')
+  console.log('You have to provide a name to your game.')
   console.log('For example :')
   console.log('    npx platfuse my-game')
   process.exit(1)
@@ -20,7 +20,6 @@ if (process.argv.length < 3) {
 const projectName = process.argv[2]
 const currentPath = process.cwd()
 const projectPath = path.join(currentPath, projectName)
-// TODO: change to your boilerplate repo
 const git_repo = 'https://github.com/praghus/platfuse-example.git'
 
 // create project directory
@@ -55,7 +54,7 @@ try {
   npmSpinner.succeed()
 
   console.log('The installation is done!')
-  console.log('You can now run your app with:')
+  console.log('You can now run your game with:')
   console.log(`    cd ${projectName}`)
   console.log('    npm run start')
 } catch (error) {
