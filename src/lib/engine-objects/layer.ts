@@ -7,7 +7,7 @@ import { noop } from '../utils/helpers'
 import { Tile } from './tile'
 
 export class Layer {
-    id = 0
+    id = Date.now()
     name?: string
     type = NodeType.Custom as string
     size = vec2()
