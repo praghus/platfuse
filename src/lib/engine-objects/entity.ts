@@ -4,11 +4,13 @@ import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
 import { DefaultColors } from '../constants'
 import { clamp, lerp } from '../utils/helpers'
 import { Scene } from './scene'
+import { Sprite } from './sprite'
 
 export class Entity {
     id: number //               ID of the object
     type: string //             Type of the object
     gid?: number //             Global ID of the object image from TMX map (if any)
+    ttl?: number //             Time to live of the object
     name?: string //            Name of the object
     image?: string //           Image of the object (if any)
     color?: Color //            Color of the object (if no sprite)
@@ -45,7 +47,7 @@ export class Entity {
     // Custom -------------------------------------------------------------------------
     properties: Record<string, any> // Custom properties of the object
 
-    #sprite?: Drawable
+    sprite?: Drawable
 
     constructor(
         public scene: Scene,
@@ -60,6 +62,8 @@ export class Entity {
         this.angle = obj.rotation * (Math.PI / 180) || this.angle
         this.visible = obj.visible !== undefined ? obj.visible : true
         this.spawnTime = scene.game.time
+        this.flipH = obj.flipH || this.flipH
+        this.flipV = obj.flipV || this.flipV
 
         // Translate TMX bounding rect into game grid
         if (obj.x && obj.y) {
@@ -70,7 +74,16 @@ export class Entity {
                 tmxRect.pos.x / tileSize.x + this.size.x / 2,
                 tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
             )
+        } else {
+            this.pos = obj?.pos || this.pos
+            this.size = obj?.size || this.size
         }
+    }
+
+    createSprite() {
+        console.info(this)
+        if (this.image) this.sprite = new Sprite(this)
+        else if (this.gid) this.sprite = this.scene.tiles[this.gid]
     }
 
     /**
@@ -137,8 +150,8 @@ export class Entity {
     draw() {
         if (this.visible && this.onScreen()) {
             const { camera, game } = this.scene
-            if (this.#sprite) {
-                this.#sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
+            if (this.sprite) {
+                this.sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
                 game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color, this.angle)
             }
@@ -147,19 +160,11 @@ export class Entity {
     }
 
     /**
-     * Adds a sprite to the entity.
-     * @param sprite - The sprite to be added.
-     */
-    addSprite(sprite: Drawable) {
-        this.#sprite = sprite
-    }
-
-    /**
      * Animates the entity using the specified animation.
      */
     animate() {
-        if (this.animation && this.#sprite && this.#sprite.animate) {
-            this.#sprite.animate(this.animation)
+        if (this.animation && this.sprite && this.sprite.animate) {
+            this.sprite.animate(this.animation)
         }
     }
 
@@ -170,7 +175,7 @@ export class Entity {
      * @param flipV - (Optional) Whether to flip the animation vertically. Default is false.
      */
     setAnimation(animation: Animation, flipH = false, flipV = false) {
-        if (this.#sprite && this.#sprite.animate) {
+        if (this.sprite && this.sprite.animate) {
             this.flipH = flipH
             this.flipV = flipV
             this.animation = animation
@@ -185,7 +190,7 @@ export class Entity {
      * @returns The current animation frame.
      */
     getAnimationFrame() {
-        return this.#sprite?.animFrame || 0
+        return this.sprite?.animFrame || 0
     }
 
     /**
@@ -193,7 +198,7 @@ export class Entity {
      * @param frame - The frame number to set.
      */
     setAnimationFrame(frame: number) {
-        if (this.#sprite) this.#sprite.animFrame = frame
+        if (this.sprite) this.sprite.animFrame = frame
     }
 
     /**
@@ -232,6 +237,13 @@ export class Entity {
     update() {
         const { scene } = this
 
+        this.animate()
+
+        // Kill if TTL is up
+        if (this.ttl && Math.min((scene.game.time - this.spawnTime) / this.ttl, 1) === 1) {
+            this.destroy()
+        }
+        // Obey speed limit
         this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
         this.force.y = clamp(this.force.y, -this.maxSpeed, this.maxSpeed)
 
@@ -342,7 +354,6 @@ export class Entity {
                 }
             }
         }
-        this.animate()
     }
 
     /**

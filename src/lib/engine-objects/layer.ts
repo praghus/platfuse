@@ -48,21 +48,23 @@ export class Layer {
             this.data.forEach((tileId, index) => {
                 if (tileId) {
                     const tile = this.scene.getTileObject(tileId)
+                    const pos = vec2(index % this.size.x, Math.floor(index / this.size.x)).multiply(this.scene.tileSize)
+                    const { H, V } = getFlips(tileId) || { H: false, V: false }
                     const { image, tilewidth, tileheight } = tile.tileset
                     const { game } = this.scene
-                    const flips = getFlips(tileId)
-                    const pos = vec2(index % this.size.x, Math.floor(index / this.size.x)).multiply(this.scene.tileSize)
-                    const { H, V } = flips || { H: false, V: false }
-                    game.draw.draw2d(
-                        game.getImage(image.source),
-                        new Box(pos, vec2(tilewidth, tileheight)),
-                        1,
-                        0,
-                        H,
-                        V,
-                        tile.getSpriteClip(),
-                        this.layerContext
-                    )
+                    // render static tiles to layer canvas (non-animated tiles)
+                    if (!tile.animated) {
+                        game.draw.draw2d(
+                            game.getImage(image.source),
+                            new Box(pos, vec2(tilewidth, tileheight)),
+                            1,
+                            0,
+                            H,
+                            V,
+                            tile.getSpriteClip(),
+                            this.layerContext
+                        )
+                    }
                 }
             })
         }

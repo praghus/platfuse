@@ -7,7 +7,6 @@ import { Camera } from './camera'
 import { Entity } from './entity'
 import { Game } from './game'
 import { Layer } from './layer'
-import { Sprite } from './sprite'
 import { Tile } from './tile'
 
 export class Scene {
@@ -199,18 +198,16 @@ export class Scene {
         const layer = typeof l === 'function' ? new l(this) : new Layer(this, l)
         // Extract object from TMXLayer
         if (typeof l !== 'function') {
-            l.objects && l.objects.forEach(obj => this.createObject(obj.type, { ...obj, layerId: l.id }))
+            l.objects && l.objects.forEach(obj => this.addObjectFromLayer(obj.type, { ...obj, layerId: l.id }))
         }
         layer.renderOrder = order || this.nextRenderOrder++
         this.layers.push(layer)
     }
 
-    createObject(type: string, props: Record<string, any>) {
+    addObjectFromLayer(type: string, props: Record<string, any>) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(this, props) : new Entity(this, props)
-        const sprite =
-            (entity.image && this.createSprite(entity.image, entity.size)) || (entity.gid && this.tiles[entity.gid])
-        if (sprite) entity.addSprite(sprite)
+        entity.createSprite()
         this.objects.push(entity)
         return entity
     }
@@ -223,6 +220,7 @@ export class Scene {
                 ? (entity.layerId = layer.id)
                 : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
         }
+        entity.createSprite()
         this.objects.push(entity)
     }
 
@@ -309,19 +307,6 @@ export class Scene {
 
     getPointerRelativeGridPos() {
         return this.getPointerPos().divide(this.tileSize)
-    }
-
-    /**
-     * Creates a sprite object using the specified image ID and size.
-     * @param imageId The ID of the image to use for the sprite.
-     * @param size The size of the sprite. Defaults to a zero vector if not provided.
-     * @returns A new Sprite object created using the specified image and size.
-     */
-    createSprite(imageId: string, size = vec2()) {
-        const image = this.game.getImage(imageId)
-        if (image instanceof HTMLImageElement) {
-            return new Sprite(this, image, size.multiply(this.tileSize))
-        }
     }
 
     /**

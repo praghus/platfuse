@@ -1,4 +1,4 @@
-export { NodeType, Flipped } from './lib/constants'
+export { DefaultColors, NodeType, Flipped } from './lib/constants'
 export { Camera, Emitter, Entity, Game, Layer, Particle, Scene, Sprite, Tile } from './lib/engine-objects'
 export { Box, Color, Draw, Input, Timer, Vector, box, vec2, isVector, randVector } from './lib/engine-helpers'
 export { clamp, rad2deg, lerp, rand, percent, normalize } from './lib/utils/helpers'

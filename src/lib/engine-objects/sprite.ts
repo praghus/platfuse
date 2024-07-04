@@ -1,23 +1,25 @@
 import { Animation, Drawable } from '../../types'
 import { normalize, getPerformance } from '../utils/helpers'
 import { Vector, vec2 } from '../engine-helpers/vector'
-import { Scene } from './scene'
 import { Box } from '../engine-helpers'
+import { Entity } from './entity'
 
 export class Sprite implements Drawable {
+    image?: HTMLImageElement
     animation?: Animation
-    animFrame = 0
+    size = vec2()
     then = getPerformance()
     frameStart = getPerformance()
+    animFrame = 0
 
-    constructor(
-        public scene: Scene,
-        public image: HTMLImageElement,
-        public size = vec2(image.width, image.height)
-    ) {}
-
-    setSize(size: Vector) {
-        this.size = size
+    constructor(public entity: Entity) {
+        if (entity?.image) {
+            const { scene } = entity
+            this.image = scene.game.getImage(entity.image)
+            this.size = entity.size.clone().multiply(scene.tileSize)
+        } else {
+            throw new Error('Sprite must have an image')
+        }
     }
 
     /**
@@ -51,8 +53,8 @@ export class Sprite implements Drawable {
 
     draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
         const { image, animation, animFrame, size } = this
-        const { game, camera } = this.scene
-        if (animation) {
+        const { game, camera } = this.entity.scene
+        if (animation && image) {
             const { frames, strip, width, height } = animation
             const frame = (frames && frames[animFrame]) || [0, 0]
             const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
