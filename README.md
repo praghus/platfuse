@@ -99,31 +99,31 @@ The [`Game`](https://praghus.github.io/platfuse/interfaces/Game.html) class key 
 -   **Responsive Design**: Includes an event handler for window resize events to adjust the game canvas size and maintain aspect ratio, ensuring the game is responsive across different devices.
 -   **Debugging and Development Features**: Offers debugging support and configuration options for development purposes.
 
-    Example:
+Example:
 
-    ```typescript
-    import { Game, vec2 } from 'platfuse'
-    import { MainScene } from './scenes'
-    import { Enemy, Player } from './models'
-    import { assets } from './assets'
+```typescript
+import { Game, vec2 } from 'platfuse'
+import { MainScene } from './scenes'
+import { Enemy, Player } from './models'
+import { assets } from './assets'
 
-    const gameConfig = {
-        fixedSize: vec2(1280, 720),
-        entities: {
-            enemy: Enemy,
-            player: Player
-        },
-        debug: true
-    }
+const gameConfig = {
+    fixedSize: vec2(1280, 720),
+    entities: {
+        enemy: Enemy,
+        player: Player
+    },
+    debug: true
+}
 
-    const game = new Game(gameConfig, assets)
+const game = new Game(gameConfig, assets)
 
-    async function start() {
-        await game.init(MainScene)
-    }
+async function start() {
+    await game.init(MainScene)
+}
 
-    start()
-    ```
+start()
+```
 
 ### Scene
 
@@ -133,29 +133,29 @@ The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class key fun
 -   **Tile Management**: Methods to retrieve tiles based on their position within a layer or by their unique identifier. It supports handling flipped tiles through bitwise operations.
 -   **Debugging Support**: A method to display debug information on the canvas. This includes the camera's position and scale, the grid visible through the camera, the pointer's position, the number of objects in the scene, and the average frames per second (FPS).
 
-    Example:
+Example:
 
-    ```typescript
-    import { Scene } from 'platfuse'
-    import { CustomLayer } from './layers/custom-layer'
-    import tiledMap from './assets/map.tmx'
+```typescript
+import { Scene } from 'platfuse'
+import { CustomLayer } from './layers/custom-layer'
+import tiledMap from './assets/map.tmx'
 
-    class MainScene extends Scene {
-        gravity = 0.05 // Set global gravity value for physics
+class MainScene extends Scene {
+    gravity = 0.05 // Set global gravity value for physics
 
-        async init() {
-            // Initialize scene with map data from *.tmx file.
-            // Generate tilesets, layers and game objects.
-            await super.init(tiledMap)
+    async init() {
+        // Initialize scene with map data from *.tmx file.
+        // Generate tilesets, layers and game objects.
+        await super.init(tiledMap)
 
-            this.setScale(4) // Set camera scale to 4
-            this.addLayer(CustomLayer, 1) // Add custom layer with render order 1
-            this.setTileCollisionLayer(2) // Set tiles collision data from Tmx layer #2
+        this.setScale(4) // Set camera scale to 4
+        this.addLayer(CustomLayer, 1) // Add custom layer with render order 1
+        this.setTileCollisionLayer(2) // Set tiles collision data from Tmx layer #2
 
-            console.log('Main Scene initialized', this)
-        }
+        console.log('Main Scene initialized', this)
     }
-    ```
+}
+```
 
 ### Layer
 
