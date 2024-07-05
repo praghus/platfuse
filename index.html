@@ -1,4 +1,5 @@
 <!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Platfuse</title><meta name="description" content="Documentation for Platfuse"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">Platfuse</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h2>Platfuse</h2></div><div class="tsd-panel tsd-typography"><a id="md:platfuse-game-engine-npm-version" class="tsd-anchor"></a><h1 class="tsd-anchor-link">Platfuse Game Engine <strong><a href="https://www.npmjs.org/package/platfuse"><img src="https://img.shields.io/npm/v/platfuse.svg?style=flat" alt="NPM Version"></a></strong><a href="#md:platfuse-game-engine-npm-version" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.</p>
+<p><img src="https://github.com/praghus/platfuse/assets/5312169/bad80076-a66f-47ea-ab0a-cc9e6803517e" alt="Jul-05-2024 22-05-43"></p>
 <a id="md:main-features" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Main features<a href="#md:main-features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
 <li><strong>Tiled Map Editor Support:</strong> Directly use <a href="https://www.mapeditor.org/">Tiled map</a> format (.tmx) for creating and editing game levels, offering a seamless integration with the popular map editor.</li>
 <li><strong>Retro-Focused:</strong> Tailored features and optimizations for creating games with a nostalgic feel. (main focus to be as pixel perfect as possible)</li>
@@ -65,33 +66,15 @@
 </ol>
 <a id="md:documentation" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Documentation<a href="#md:documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:game" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Game<a href="#md:game" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <a href="https://praghus.github.io/platfuse/interfaces/Game.html"><code>Game</code></a> class key features and components:</p>
 <ul>
-<li>
-<p><strong>Initialization and Configuration</strong>: The class constructor takes a <a href="https://praghus.github.io/platfuse/interfaces/GameConfig.html"><code>GameConfig</code></a> object.</p>
-</li>
-<li>
-<p><strong>Asset Management</strong>: It supports preloading and managing game assets, including images and sounds, with methods to retrieve and play sounds, and to get images by name.</p>
-</li>
-<li>
-<p><strong>Scene Management</strong>: The class allows for initializing and playing scenes, with support for switching between different scenes and managing scene lifecycle events.</p>
-</li>
-<li>
-<p><strong>Rendering and Drawing</strong>: It integrates a drawing utility for rendering game elements, handling the canvas context, and managing background and primary colors.</p>
-</li>
-<li>
-<p><strong>Input Handling</strong>: An input handler is included for managing user interactions.</p>
-</li>
-<li>
-<p><strong>Game Loop and Timing</strong>: Implements a game loop with support for pausing, updating game state, and rendering scenes. It also includes timing utilities for managing frame rates and calculating deltas.</p>
-</li>
-<li>
-<p><strong>Utility Methods</strong>: Provides utility methods for settings management, sound volume control, and creating timer objects.</p>
-</li>
-<li>
-<p><strong>Responsive Design</strong>: Includes an event handler for window resize events to adjust the game canvas size and maintain aspect ratio, ensuring the game is responsive across different devices.</p>
-</li>
-<li>
-<p><strong>Debugging and Development Features</strong>: Offers debugging support and configuration options for development purposes.</p>
-</li>
+<li><strong>Initialization and Configuration</strong>: The class constructor takes a <a href="https://praghus.github.io/platfuse/interfaces/GameConfig.html"><code>GameConfig</code></a> object.</li>
+<li><strong>Asset Management</strong>: It supports preloading and managing game assets, including images and sounds, with methods to retrieve and play sounds, and to get images by name.</li>
+<li><strong>Scene Management</strong>: The class allows for initializing and playing scenes, with support for switching between different scenes and managing scene lifecycle events.</li>
+<li><strong>Rendering and Drawing</strong>: It integrates a drawing utility for rendering game elements, handling the canvas context, and managing background and primary colors.</li>
+<li><strong>Input Handling</strong>: An input handler is included for managing user interactions.</li>
+<li><strong>Game Loop and Timing</strong>: Implements a game loop with support for pausing, updating game state, and rendering scenes. It also includes timing utilities for managing frame rates and calculating deltas.</li>
+<li><strong>Utility Methods</strong>: Provides utility methods for settings management, sound volume control, and creating timer objects.</li>
+<li><strong>Responsive Design</strong>: Includes an event handler for window resize events to adjust the game canvas size and maintain aspect ratio, ensuring the game is responsive across different devices.</li>
+<li><strong>Debugging and Development Features</strong>: Offers debugging support and configuration options for development purposes.</li>
 </ul>
 <a id="md:scene" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Scene<a href="#md:scene" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <a href="https://praghus.github.io/platfuse/classes/Scene.html">Scene</a> class key functionalities include:</p>
 <ul>
@@ -110,18 +93,10 @@
 <a id="md:custom-function-layers" class="tsd-anchor"></a><h4 class="tsd-anchor-link">Custom Function Layers<a href="#md:custom-function-layers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><p>In addition to handling standard tile and image layers, the <a href="https://praghus.github.io/platfuse/classes/Layer.html"><code>Layer</code></a> class supports the definition of custom function layers. These layers allow to implement specialized rendering or update logic that goes beyond static tile or image displays. This feature is particularly useful for dynamic content or interactive elements within a scene that cannot be adequately represented by static tiles or images alone.</p>
 <p>Key aspects of custom function layers include:</p>
 <ul>
-<li>
-<p><strong>Custom Rendering Logic</strong>: You can define a custom rendering function that is called whenever the layer needs to be drawn. This function can use any drawing commands to render content directly onto the layer's canvas, allowing for a wide range of visual effects.</p>
-</li>
-<li>
-<p><strong>Dynamic Content Support</strong>: Custom function layers are ideal for scenes that require dynamic content updates, such as moving characters, changing weather effects, or interactive elements that respond to user inputs.</p>
-</li>
-<li>
-<p><strong>Integration with Game Loop</strong>: Custom function layers can be integrated into the game's main loop, allowing their content to be updated each frame based on game state, user actions, or other criteria.</p>
-</li>
-<li>
-<p><strong>Flexibility</strong>: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, allows to implement features that would be difficult or impossible with standard layer types.</p>
-</li>
+<li><strong>Custom Rendering Logic</strong>: You can define a custom rendering function that is called whenever the layer needs to be drawn. This function can use any drawing commands to render content directly onto the layer's canvas, allowing for a wide range of visual effects.</li>
+<li><strong>Dynamic Content Support</strong>: Custom function layers are ideal for scenes that require dynamic content updates, such as moving characters, changing weather effects, or interactive elements that respond to user inputs.</li>
+<li><strong>Integration with Game Loop</strong>: Custom function layers can be integrated into the game's main loop, allowing their content to be updated each frame based on game state, user actions, or other criteria.</li>
+<li><strong>Flexibility</strong>: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, allows to implement features that would be difficult or impossible with standard layer types.</li>
 </ul>
 <p>To define a custom function layer, You should extend the <a href="https://praghus.github.io/platfuse/classes/Layer.html"><code>Layer</code></a> class and override the <code>draw</code> method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an <code>update</code> method, which should also be called from the game's main loop.</p>
 <p>Example:</p>
@@ -130,27 +105,13 @@
 
 <a id="md:entity" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Entity<a href="#md:entity" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <a href="https://praghus.github.io/platfuse/classes/Entity.html"><code>Entity</code></a> class incorporates a simplified physics model for game development, focusing on movement, collision, and force application. Here's a summary of its physics-related features:</p>
 <ul>
-<li>
-<p><strong>Force Application</strong>: Entities can have forces applied to them, which are affected by their mass. This allows for dynamic movement and interactions within the game world.</p>
-</li>
-<li>
-<p><strong>Velocity and Speed Limit</strong>: The class enforces a maximum speed (<code>maxSpeed</code>) for entities, ensuring that their movement remains within realistic bounds.</p>
-</li>
-<li>
-<p><strong>Friction and Damping</strong>: Entities experience damping (reduction of force over time) and friction when in contact with the ground, simulating natural movement and stopping behaviors.</p>
-</li>
-<li>
-<p><strong>Gravity</strong>: A gravity scale can be applied to entities, allowing them to fall or be affected by the game world's gravity.</p>
-</li>
-<li>
-<p><strong>Collision Detection</strong>: The class includes methods for detecting collisions with tiles (<code>collideWithTile</code>, <code>collideWithTileRaycast</code>) and other entities (<code>collideWithObject</code>), enabling interaction with the game environment and other entities.</p>
-</li>
-<li>
-<p><strong>Collision Response</strong>: Upon collision, entities can respond by stopping, sliding, or bouncing, based on their physical properties and the nature of the collision.</p>
-</li>
-<li>
-<p><strong>Animation and Movement Update</strong>: The <code>update</code> method integrates physics calculations with animation updates, ensuring that entity movements are both visually and physically consistent.</p>
-</li>
+<li><strong>Force Application</strong>: Entities can have forces applied to them, which are affected by their mass. This allows for dynamic movement and interactions within the game world.</li>
+<li><strong>Velocity and Speed Limit</strong>: The class enforces a maximum speed <code>maxSpeed</code> for entities, ensuring that their movement remains within realistic bounds.</li>
+<li><strong>Friction and Damping</strong>: Entities experience damping (reduction of force over time) and friction when in contact with the ground, simulating natural movement and stopping behaviors.</li>
+<li><strong>Gravity</strong>: A gravity scale can be applied to entities, allowing them to fall or be affected by the game world's gravity.</li>
+<li><strong>Collision Detection</strong>: The class includes methods for detecting collisions with tiles <code>collideWithTile</code>, <code>collideWithTileRaycast</code> and other entities <code>collideWithObject</code>, enabling interaction with the game environment and other entities.</li>
+<li><strong>Collision Response</strong>: Upon collision, entities can respond by stopping, sliding, or bouncing, based on their physical properties and the nature of the collision.</li>
+<li><strong>Animation and Movement Update</strong>: The <code>update</code> method integrates physics calculations with animation updates, ensuring that entity movements are both visually and physically consistent.</li>
 </ul>
 <p>This physics model provides a foundation for creating dynamic and interactive game experiences, allowing entities to move, collide, and interact in a realistic manner.</p>
 <hr>
