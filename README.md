@@ -9,7 +9,7 @@ Platfuse is a lightweight, highly customizable game engine built with TypeScript
 -   **Flexible Scene Management:** Easily manage game scenes, including loading, switching, and unloading.
 -   **Asset Preloading:** Supports preloading of images and audio to ensure smooth gameplay.
 -   **Input Handling:** Integrated input management for keyboard and mouse events.
--   **Sound Management:** Utilize the Howler.js library for comprehensive audio control.
+-   **Sound Management:** Utilize the [Howler.js](https://howlerjs.com) library for comprehensive audio control.
 -   **Particle System:** Incorporate a versatile particle system to add visually stunning effects like smoke, fire, and explosions to your games.
 -   **Retro Camera Mode:** Easily switch the camera to a retro mode, disabling scrolling and allowing for fixed screen views, enhancing the nostalgic game experience.
 -   **Responsive Design:** Automatically adjusts the game canvas to fit the window size, with support for fixed aspect ratios.
@@ -120,12 +120,12 @@ The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) classis des
 -   **Layer Identification and Metadata**: Each layer has a unique ID (defaulting to the current timestamp), an optional name, a type (custom or derived from TMX data), and custom properties.
 -   **Dimension and Visibility Management**: The class supports setting layer dimensions (width and height) and visibility, allowing layers to be shown or hidden as needed.
 -   **Tile Data Handling**: Tile data (an array of tile IDs) can be stored and used to render the layer's visual representation.
--   **Canvas Rendering**: The class can create a canvas element ([`layerCanvas`](https://praghus.github.io/platfuse/classes/Layer.html#layerCanvas)) specifically for the layer, onto which tile graphics are rendered based on the layer's tile data. This is particularly useful for optimizing rendering performance in web-based applications.
+-   **Canvas Rendering**: The class can create a canvas element [`layerCanvas`](https://praghus.github.io/platfuse/classes/Layer.html#layerCanvas) specifically for the layer, onto which tile graphics are rendered based on the layer's tile data. This is particularly useful for optimizing rendering performance in web-based applications.
 -   **Integration with Scene and Entities**: Layers are associated with a [`Scene`](https://praghus.github.io/platfuse/classes/Scene.html) object (representing the overall scene or map) and can contain [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) objects, allowing for a structured and hierarchical organization of game elements.
 
 #### Custom Function Layers
 
-In addition to handling standard tile and image layers, the `Layer` class supports the definition of custom function layers. These layers allow to implement specialized rendering or update logic that goes beyond static tile or image displays. This feature is particularly useful for dynamic content or interactive elements within a scene that cannot be adequately represented by static tiles or images alone.
+In addition to handling standard tile and image layers, the [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) class supports the definition of custom function layers. These layers allow to implement specialized rendering or update logic that goes beyond static tile or image displays. This feature is particularly useful for dynamic content or interactive elements within a scene that cannot be adequately represented by static tiles or images alone.
 
 Key aspects of custom function layers include:
 
@@ -137,7 +137,7 @@ Key aspects of custom function layers include:
 
 -   **Flexibility**: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, allows to implement features that would be difficult or impossible with standard layer types.
 
-To define a custom function layer, You should extend the `Layer` class and override the `render` method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an `update` method, which should also be called from the game's main loop.
+To define a custom function layer, You should extend the [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) class and override the `draw` method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an `update` method, which should also be called from the game's main loop.
 
 Example:
 
@@ -179,7 +179,7 @@ This physics model provides a foundation for creating dynamic and interactive ga
 
 ---
 
-For detailed documentation on the Platfuse Game Engine, including API references and advanced configuration options, please refer to the official [documentation](https://praghus.github.io/platfuse).
+For detailed documentation on the Platfuse Game Engine, including advanced configuration options, please refer to the official [documentation](https://praghus.github.io/platfuse).
 
 ## Contributing
 
