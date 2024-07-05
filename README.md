@@ -85,7 +85,7 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
 
 ### Game
 
-The [`Game`]() class is a comprehensive framework designed for creating and managing game environments in TypeScript. It leverages HTML Canvas for rendering and supports a wide range of functionalities essential for game development. Here's a summary of its key features and components:
+The [`Game`](https://praghus.github.io/platfuse/interfaces/Game.html) class key features and components:
 
 -   **Initialization and Configuration**: The class constructor takes a [`GameConfig`](https://praghus.github.io/platfuse/interfaces/GameConfig.html) object.
 
@@ -105,43 +105,39 @@ The [`Game`]() class is a comprehensive framework designed for creating and mana
 
 -   **Debugging and Development Features**: Offers debugging support and configuration options for development purposes.
 
-This class serves as a foundational framework for building browser-based games, offering a structured approach to game development with support for essential features like asset management, scene handling, input processing, and more.
-
 ### Scene
 
-The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class, presumably part of a game engine or a similar interactive application, provides functionality for managing and interacting with a scene's layers and tiles. Key functionalities include:
+The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class key functionalities include:
 
 -   **Layer Management**: Methods to add, remove, show, and hide layers within the scene. Layers can contain objects or tiles, and their visibility can be toggled.
 -   **Tile Management**: Methods to retrieve tiles based on their position within a layer or by their unique identifier. It supports handling flipped tiles through bitwise operations.
 -   **Debugging Support**: A method to display debug information on the canvas. This includes the camera's position and scale, the grid visible through the camera, the pointer's position, the number of objects in the scene, and the average frames per second (FPS).
 
-This class is essential for managing the visual aspects of a game scene, including layer and tile management, and provides debugging tools to aid in development.
-
 ### Layer
 
-The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) classis designed for managing layers within a scene, particularly in applications that use tile-based maps, such as 2D games or mapping applications. It integrates with the [`tmx-map-parser`]() library for handling TMX layer data, making it suitable for projects that utilize Tiled Map Editor files. Key features and functionalities include:
+The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) classis designed for managing layers within a scene, particularly to use tile-based maps. It integrates with the [`tmx-map-parser`](https://github.com/praghus/tmx-map-parser) library for handling TMX layer data. Key features and functionalities include:
 
 -   **Layer Identification and Metadata**: Each layer has a unique ID (defaulting to the current timestamp), an optional name, a type (custom or derived from TMX data), and custom properties.
 -   **Dimension and Visibility Management**: The class supports setting layer dimensions (width and height) and visibility, allowing layers to be shown or hidden as needed.
 -   **Tile Data Handling**: Tile data (an array of tile IDs) can be stored and used to render the layer's visual representation.
 -   **Canvas Rendering**: The class can create a canvas element ([`layerCanvas`](https://praghus.github.io/platfuse/classes/Layer.html#layerCanvas)) specifically for the layer, onto which tile graphics are rendered based on the layer's tile data. This is particularly useful for optimizing rendering performance in web-based applications.
--   **Integration with Scene and Entities**: Layers are associated with a [`Scene`](https://praghus.github.io/platfuse/classes/Scene.html) object (representing the overall scene or map) and can contain [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) objects, allowing for a structured and hierarchical organization of game or application elements.
+-   **Integration with Scene and Entities**: Layers are associated with a [`Scene`](https://praghus.github.io/platfuse/classes/Scene.html) object (representing the overall scene or map) and can contain [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) objects, allowing for a structured and hierarchical organization of game elements.
 
 #### Custom Function Layers
 
-In addition to handling standard tile and image layers, the `Layer` class supports the definition of custom function layers. These layers allow developers to implement specialized rendering or update logic that goes beyond static tile or image displays. This feature is particularly useful for dynamic content or interactive elements within a scene that cannot be adequately represented by static tiles or images alone.
+In addition to handling standard tile and image layers, the `Layer` class supports the definition of custom function layers. These layers allow to implement specialized rendering or update logic that goes beyond static tile or image displays. This feature is particularly useful for dynamic content or interactive elements within a scene that cannot be adequately represented by static tiles or images alone.
 
 Key aspects of custom function layers include:
 
--   **Custom Rendering Logic**: Developers can define a custom rendering function that is called whenever the layer needs to be drawn. This function can use any drawing commands to render content directly onto the layer's canvas, allowing for a wide range of visual effects.
+-   **Custom Rendering Logic**: You can define a custom rendering function that is called whenever the layer needs to be drawn. This function can use any drawing commands to render content directly onto the layer's canvas, allowing for a wide range of visual effects.
 
 -   **Dynamic Content Support**: Custom function layers are ideal for scenes that require dynamic content updates, such as moving characters, changing weather effects, or interactive elements that respond to user inputs.
 
 -   **Integration with Game Loop**: Custom function layers can be integrated into the game's main loop, allowing their content to be updated each frame based on game state, user actions, or other criteria.
 
--   **Flexibility**: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, enabling developers to implement features that would be difficult or impossible with standard layer types.
+-   **Flexibility**: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, allows to implement features that would be difficult or impossible with standard layer types.
 
-To define a custom function layer, developers should extend the `Layer` class and override the `render` method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an `update` method, which should also be called from the game's main loop.
+To define a custom function layer, You should extend the `Layer` class and override the `render` method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an `update` method, which should also be called from the game's main loop.
 
 Example:
 
@@ -160,8 +156,6 @@ class CustomFunctionLayer extends Layer {
     }
 }
 ```
-
-This class is essential for managing different visual and logical parts of a scene, enabling developers to create complex and layered 2D environments.
 
 ### Entity
 
