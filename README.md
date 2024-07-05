@@ -141,14 +141,15 @@ The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class key fun
     import tiledMap from './assets/map.tmx'
 
     class MainScene extends Scene {
-        gravity = 0.05 // - Set global gravity value for physics
+        gravity = 0.05 // Set global gravity value for physics
 
         async init() {
-            await super.init(tiledMap) // - Initialize scene with map data from *.tmx file
-            //   (generate tilesets, layers and objects)
-            this.setScale(4) // - Set camera scale to 4
-            this.addLayer(CustomLayer, 1) // - Add custom layer with render order 1
-            this.setTileCollisionLayer(2) // - Set tiles collision data from Tmx layer #2
+             // Initialize scene with map data from *.tmx file (generate tilesets, layers and objects)
+            await super.init(tiledMap)
+    
+            this.setScale(4) // Set camera scale to 4
+            this.addLayer(CustomLayer, 1) // Add custom layer with render order 1
+            this.setTileCollisionLayer(2) // Set tiles collision data from Tmx layer #2
 
             console.log('Main Scene initialized', this)
         }
