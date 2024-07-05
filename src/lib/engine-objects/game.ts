@@ -50,8 +50,6 @@ export class Game {
         public preload: Record<string, string>
     ) {
         document.body.appendChild((this.canvas = document.createElement('canvas')))
-        // document.body.style.background = this.backgroundColor.toString()
-        this.objectClasses = config.entities
         this.objectClasses = config.entities
         this.debug = !!config.debug
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
@@ -66,6 +64,10 @@ export class Game {
         if (!!config.global) window.Platfuse = this
     }
 
+    /**
+     * Initializes the game engine.
+     * @param SceneClass Optional parameter specifying the scene class to play after initialization.
+     */
     async init(SceneClass?: Constructable<Scene>) {
         const drawPreloader = (p: number) => {
             this.draw.preloader(p)
@@ -77,12 +79,19 @@ export class Game {
         }
     }
 
+    /**
+     * Plays a scene by instantiating the provided `SceneClass` and initializing it.
+     * @param SceneClass The class of the scene to be played.
+     */
     async playScene(SceneClass: Constructable<Scene>) {
         this.currentScene = new SceneClass(this)
         await this.currentScene.init()
         setTimeout(() => this.start(), 500)
     }
 
+    /**
+     * Starts the game.
+     */
     start() {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame)
@@ -159,18 +168,36 @@ export class Game {
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
 
+    /**
+     * Toggles the pause state of the game.
+     * @param paused - Optional. Specifies whether the game should be paused or not. Default is true.
+     */
     togglePause(paused = true) {
         this.paused = paused
     }
 
+    /**
+     * Sets the optional settings for the game.
+     * @param value - The new settings value.
+     */
     setSettings(value: any) {
         this.settings = value
     }
 
+    /**
+     * Sets a setting value for the game.
+     * @param key - The key of the setting.
+     * @param value - The value to set for the setting.
+     */
     setSetting(key: string, value: any) {
         this.settings = { ...this.settings, [key]: value }
     }
 
+    /**
+     * Retrieves the value of a setting based on the provided key.
+     * @param key - The key of the setting to retrieve.
+     * @returns The value of the setting.
+     */
     getSetting(key: string) {
         return this.settings[key]
     }
@@ -184,12 +211,24 @@ export class Game {
         return new Timer(this, timeLeft)
     }
 
+    /**
+     * Retrieves an image by its name from the assets.
+     * @param name - The name of the image to retrieve.
+     * @returns The HTMLImageElement corresponding to the specified name.
+     * @throws Error if the image is not found in the assets.
+     */
     getImage(name: string) {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
         } else throw new Error('Invalid image!')
     }
 
+    /**
+     * Retrieves a sound by its name.
+     * @param name - The name of the sound to retrieve.
+     * @returns The Howl instance representing the sound.
+     * @throws Error if the sound is invalid.
+     */
     getSound(name: string) {
         if (this.sounds[name] instanceof Howl) {
             return this.sounds[name] as Howl
@@ -198,10 +237,18 @@ export class Game {
         } else throw new Error('Invalid sound!')
     }
 
+    /**
+     * Plays the sound with the specified name.
+     * @param name - The name of the sound to play.
+     */
     playSound(name: string) {
         this.getSound(name)?.play()
     }
 
+    /**
+     * Sets the global audio volume.
+     * @param volume - The volume level to set.
+     */
     setAudioVolume(volume: number) {
         Howler.volume(volume)
     }

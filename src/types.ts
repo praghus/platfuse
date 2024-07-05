@@ -37,7 +37,6 @@ export interface GameConfig {
     backgroundColor?: string
     primaryColor?: string
     secondaryColor?: string
-    scale?: number
     global?: boolean
     debug?: boolean
 }
