@@ -4,7 +4,7 @@ First off, thank you for considering contributing to Platfuse Game Engine! It's 
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the Platfuse Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [email@example.com](mailto:email@example.com).
+This project and everyone participating in it is governed by the Platfuse Code of Conduct. By participating, you are expected to uphold this code. 
 
 ## How Can I Contribute?
 
@@ -14,7 +14,7 @@ This section guides you through submitting a bug report for Platfuse. Following 
 
 **Before Submitting A Bug Report**
 
--   Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/your-repository/platfuse/issues).
+-   Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/praghus/platfuse/issues).
 -   If you're unable to find an open issue addressing the problem, open a new one. Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
 ### Suggesting Enhancements
@@ -30,12 +30,11 @@ This section guides you through submitting an enhancement suggestion for Platfus
 
 Unsure where to begin contributing to Platfuse? You can start by looking through these `beginner` and `help-wanted` issues:
 
--   [Beginner issues](https://github.com/your-repository/platfuse/labels/beginner) - issues which should only require a few lines of code, and a test or two.
--   [Help wanted issues](https://github.com/your-repository/platfuse/labels/help%20wanted) - issues which should be a bit more involved than `beginner` issues.
+-   [Beginner issues](https://github.com/praghus/platfuse/labels/beginner) - issues which should only require a few lines of code, and a test or two.
+-   [Help wanted issues](https://github.com/praghus/platfuse/labels/help%20wanted) - issues which should be a bit more involved than `beginner` issues.
 
 ### Pull Requests
 
--   Fill in [the required template](PULL_REQUEST_TEMPLATE.md)
 -   Do not include issue numbers in the PR title
 -   Include screenshots and animated GIFs in your pull request whenever possible.
 -   Follow the [TypeScript style guide](https://www.typescriptlang.org/docs/handbook/style-guide.html).
