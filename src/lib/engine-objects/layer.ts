@@ -124,18 +124,9 @@ export class Layer {
      * @returns void
      */
     forEachVisibleTile(fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void = noop) {
-        const { camera, tileSize } = this.scene
-        const { scale } = camera
-        const start = this.scene
-            .getGridPos(vec2(Math.min(camera.pos.x, 0), Math.min(camera.pos.y, 0)))
-            .divide(scale)
-            .floor()
-        const clip = vec2(
-            Math.min(camera.size.x / scale / tileSize.x, this.size.x),
-            Math.min(camera.size.y / scale / tileSize.y, this.size.y)
-        )
-        for (let y = -start.y; y < -start.y + clip.y; y++) {
-            for (let x = -start.x; x < -start.x + clip.x; x++) {
+        const { pos, size } = this.scene.getCameraVisibleGrid()
+        for (let y = pos.y; y < pos.y + size.y; y++) {
+            for (let x = pos.x; x < pos.x + size.x; x++) {
                 const tileId = this.getTile(vec2(x, y))
                 if (tileId) {
                     const tile = this.scene.getTileObject(tileId)
@@ -168,16 +159,15 @@ export class Layer {
      */
     draw() {
         const { camera } = this.scene
-        const mainContext = this.scene.game.ctx
+        const { draw } = this.scene.game
         if (this.visible) {
             switch (this.type) {
                 case NodeType.Layer:
-                    mainContext.drawImage(
+                    // draw layer canvas on main canvas
+                    draw.copyToMainContext(
                         this.layerCanvas as HTMLCanvasElement,
-                        camera.pos.x,
-                        camera.pos.y,
-                        this.size.x * this.scene.tileSize.x * camera.scale,
-                        this.size.y * this.scene.tileSize.x * camera.scale
+                        camera.pos.subtract(vec2(camera.scale)), // subtract 1 to prevent clipping
+                        this.size.multiply(this.scene.tileSize).scale(camera.scale)
                     )
                     // render animated tiles on main canvas
                     this.forEachVisibleTile((tile, pos, flipH, flipV) => {

@@ -81,7 +81,6 @@ export class Entity {
     }
 
     createSprite() {
-        console.info(this)
         if (this.image) this.sprite = new Sprite(this)
         else if (this.gid) this.sprite = this.scene.tiles[this.gid]
     }
@@ -153,7 +152,7 @@ export class Entity {
             if (this.sprite) {
                 this.sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
-                game.draw.fillRect(this.getTranslatedBoundingRect().move(camera.pos), this.color, this.angle)
+                game.draw.fillRect(this.getRelativeBoundingRect(), this.color, this.angle)
             }
             if (game.debug) this.displayDebug()
         }
@@ -214,6 +213,16 @@ export class Entity {
     }
 
     /**
+     * Returns the relative bounding rectangle of the entity.
+     * The relative bounding rectangle is calculated by translating the entity's bounding rectangle
+     * and moving it based on the position of the scene's camera.
+     * @returns The relative bounding rectangle of the entity.
+     */
+    getRelativeBoundingRect() {
+        return this.getTranslatedBoundingRect().move(this.scene.camera.pos)
+    }
+
+    /**
      * Checks if the entity is overlapping with a given position and size.
      * @param pos - The position vector of the other object.
      * @param size - The size vector of the other object.
@@ -243,10 +252,12 @@ export class Entity {
         if (this.ttl && Math.min((scene.game.time - this.spawnTime) / this.ttl, 1) === 1) {
             this.destroy()
         }
+
         // Obey speed limit
         this.force.x = clamp(this.force.x, -this.maxSpeed, this.maxSpeed)
         this.force.y = clamp(this.force.y, -this.maxSpeed, this.maxSpeed)
 
+        // Do not perform physics on static objects
         if (!this.mass) return
 
         this.lastPos = this.pos.clone()
@@ -361,31 +372,18 @@ export class Entity {
      * @returns {boolean} True if the entity is on the screen, false otherwise.
      */
     onScreen() {
-        // @todo: refactor using overlap method
-        const scene = this.scene
-        const { camera, tileSize } = scene
-        const { x, y } = camera.size
-        const { pos, size } = this.getTranslatedBoundingRect()
-        const cx = this.pos.x + pos.x
-        const cy = this.pos.y + pos.y
-        return (
-            cx + size.x + tileSize.x > -camera.pos.x &&
-            cy + size.y + tileSize.y > -camera.pos.y &&
-            cx - tileSize.x < -camera.pos.x + x &&
-            cy - tileSize.y < -camera.pos.y + y
-        )
+        return this.scene.getCameraVisibleArea().overlaps(new Box(this.pos, this.size))
     }
 
     /**
      * Displays debug information about the entity.
      */
     displayDebug() {
-        const { game, camera } = this.scene
-        const { draw, primaryColor } = game
+        const { draw, primaryColor } = this.scene.game
         const { angle, id, type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
+        const rect = this.getRelativeBoundingRect()
         const fs = '1em'
-        const rect = this.getTranslatedBoundingRect().move(camera.pos)
         const {
             pos: { x, y },
             size

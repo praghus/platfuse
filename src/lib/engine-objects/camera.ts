@@ -51,13 +51,6 @@ export class Camera {
         this.shakeElapsed = 0
     }
 
-    getVisibleRect() {
-        return {
-            pos: this.pos,
-            size: this.size
-        }
-    }
-
     update() {
         const { x, y } = this.size
         if (this.followEntity) {

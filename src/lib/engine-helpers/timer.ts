@@ -34,7 +34,7 @@ export class Timer {
         return this.time !== undefined && this.game.time <= this.time
     }
 
-    getElapsed() {
+    elapsed() {
         return this.time !== undefined && this.game.time > this.time
     }
 

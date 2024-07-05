@@ -26,12 +26,17 @@ async function preload(assets: Record<string, string>, indicator: (p: number) =>
             } else return Promise.resolve()
         })
     }
-    const promises = Object.keys(assets).map(async (key: string) => ({
-        [key]: await load(key)
-    }))
-    const loadedAssets = Object.assign({}, ...(await Promise.all(promises)))
 
-    return Promise.resolve(loadedAssets)
+    return Promise.resolve(
+        Object.assign(
+            {},
+            ...(await Promise.all(
+                Object.keys(assets).map(async (key: string) => ({
+                    [key]: await load(key)
+                }))
+            ))
+        )
+    )
 }
 
 export { preload }

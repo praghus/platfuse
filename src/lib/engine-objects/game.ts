@@ -43,6 +43,7 @@ export class Game {
     timeReal = 0
     frameTimeLastMS = 0
     frameTimeBufferMS = 0
+    preloadPercent = 0
 
     constructor(
         public config: GameConfig,
@@ -66,7 +67,11 @@ export class Game {
     }
 
     async init(SceneClass?: Constructable<Scene>) {
-        this.assets = await preload(this.preload, (p: number) => this.draw.preloader(p))
+        const drawPreloader = (p: number) => {
+            this.draw.preloader(p)
+            this.animationFrame = requestAnimationFrame(() => drawPreloader(p))
+        }
+        this.assets = await preload(this.preload, drawPreloader)
         if (SceneClass) {
             await this.playScene(SceneClass)
         }
@@ -75,7 +80,7 @@ export class Game {
     async playScene(SceneClass: Constructable<Scene>) {
         this.currentScene = new SceneClass(this)
         await this.currentScene.init()
-        this.start()
+        setTimeout(() => this.start(), 500)
     }
 
     start() {

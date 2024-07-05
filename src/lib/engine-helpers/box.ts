@@ -14,7 +14,19 @@ class Box {
         return new Box(this.pos.scale(s), this.size.scale(s))
     }
 
-    overlapping = (b: Box) =>
+    multiply(v: Vector) {
+        return new Box(this.pos.multiply(v), this.size.multiply(v))
+    }
+
+    divide(v: Vector) {
+        return new Box(this.pos.divide(v), this.size.divide(v))
+    }
+
+    floor() {
+        return new Box(this.pos.floor(), this.size.floor())
+    }
+
+    overlaps = (b: Box) =>
         Math.abs(this.pos.x - b.pos.x) * 2 < this.size.x + b.size.x &&
         Math.abs(this.pos.y - b.pos.y) * 2 < this.size.y + b.size.y
 }

@@ -2,22 +2,36 @@ import { Game } from '../engine-objects/game'
 import { Vector, vec2 } from './vector'
 import { Box, box } from './box'
 import { Color } from './color'
+import { DefaultColors } from '../constants'
 
 export class Draw {
     constructor(public game: Game) {}
 
     preloader(p: number) {
-        const { canvas, backgroundColor, primaryColor, secondaryColor } = this.game
+        const { ctx, canvas, backgroundColor, primaryColor, secondaryColor } = this.game
         const { width, height } = canvas
         const logoSize = vec2(height * 0.2)
         const logoPos = vec2(width / 2 - logoSize.x, height / 2 - logoSize.y / 2)
         const textPos = vec2(width / 2, height / 2 + logoSize.x / 4.5)
         const fontSize = `${logoSize.x / 2.5}px`
-        this.fillRect(box(0, 0, width, height), backgroundColor)
+        const gradient = ctx.createRadialGradient(width / 2, height / 2, logoSize.y, width / 2, height / 2, height)
+        ctx.save()
+        gradient.addColorStop(0, backgroundColor.brightness(15).toString())
+        gradient.addColorStop(0.7, backgroundColor.toString())
+        ctx.fillStyle = gradient
+        ctx.fillRect(0, 0, width, height)
+
+        this.fillRectRound(
+            box(logoPos.x + 3, logoPos.y + 3, logoSize.x, logoSize.y),
+            [logoSize.x / 10],
+            backgroundColor
+        )
         this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [logoSize.x / 12], secondaryColor)
-        this.text('plat', textPos.x, textPos.y, backgroundColor, fontSize, 'right', 'middle')
-        this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle')
+        this.text('plat', textPos.x, textPos.y, backgroundColor.brightness(-10), fontSize, 'right', 'middle', false)
+        this.text('fuse', textPos.x + 3, textPos.y + 3, backgroundColor, fontSize, 'left', 'middle', false)
+        this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle', false)
         this.fillRect(box(0, height - height * 0.015, width * p, height * 0.015), secondaryColor)
+        ctx.restore()
     }
 
     outline(rect: Box, color: Color, lineWidth = 1, angle = 0) {
@@ -82,16 +96,21 @@ export class Draw {
         color?: Color,
         size = '1em',
         textAlign: CanvasTextAlign = 'left',
-        textBaseline: CanvasTextBaseline = 'top'
+        textBaseline: CanvasTextBaseline = 'top',
+        stroke = true
     ) {
-        const { ctx, primaryColor, backgroundColor } = this.game
+        const { ctx } = this.game
+
         ctx.font = `${size} monospace`
         ctx.textBaseline = textBaseline
         ctx.textAlign = textAlign
-        ctx.fillStyle = (color || primaryColor).toString()
-        ctx.strokeStyle = backgroundColor.toString()
-        ctx.lineWidth = 1.5
-        ctx.strokeText(text, x, y)
+        if (stroke) {
+            ctx.strokeStyle = DefaultColors.Black.setAlpha(0.9).toString()
+            ctx.lineJoin = 'round'
+            ctx.lineWidth = 4
+            ctx.strokeText(text, x, y)
+        }
+        ctx.fillStyle = (color || DefaultColors.White).toString()
         ctx.fillText(text, x, y)
     }
 
@@ -116,7 +135,7 @@ export class Draw {
         ctx.save()
         this.rotate(rect, angle, scale, () => {
             flip && ctx.scale(s.x, s.y)
-            ctx.translate(-0.5, -0.5)
+            ctx.translate(0.5, 0.5)
             clip
                 ? ctx.drawImage(
                       image,
@@ -130,6 +149,7 @@ export class Draw {
                       size.y * scale
                   )
                 : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
+            ctx.translate(-0.5, -0.5)
         })
         ctx.restore()
     }
@@ -142,5 +162,10 @@ export class Draw {
             ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
         }
         cb()
+    }
+
+    copyToMainContext(canvas: HTMLCanvasElement, pos: Vector, size: Vector) {
+        const { ctx } = this.game
+        ctx.drawImage(canvas, pos.x, pos.y, size.x, size.y)
     }
 }

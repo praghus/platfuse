@@ -1,7 +1,7 @@
 import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
 import { isValidArray, getFilename, sortByRenderOrder } from '../utils/helpers'
-import { Vector, vec2 } from '../engine-helpers'
+import { Box, Vector, vec2 } from '../engine-helpers'
 import { Flipped, NodeType } from '../constants'
 import { Camera } from './camera'
 import { Entity } from './entity'
@@ -215,7 +215,6 @@ export class Scene {
     addObject(entity: Entity, layerId?: number) {
         if (layerId) {
             const layer = this.getLayer(layerId)
-            console.log(layer)
             layer instanceof Layer && layer.type === NodeType.ObjectGroup
                 ? (entity.layerId = layer.id)
                 : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
@@ -273,6 +272,20 @@ export class Scene {
      */
     getTileCollisionData(pos: Vector) {
         return pos.inRange(this.size) ? this.tileCollisionData[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
+    }
+
+    getCameraVisibleGrid() {
+        return new Box(
+            this.camera.pos.divide(this.tileSize).invert().divide(this.camera.scale).floor(),
+            this.camera.size.divide(this.tileSize).divide(this.camera.scale).floor()
+        )
+    }
+
+    getCameraVisibleArea() {
+        return new Box(
+            this.camera.pos.invert().add(this.camera.size.divide(2)).divide(this.camera.scale),
+            this.camera.size.divide(this.camera.scale)
+        ).divide(this.tileSize)
     }
 
     /**
@@ -359,13 +372,13 @@ export class Scene {
         const { avgFPS, canvas, draw, primaryColor } = this.game
         const { pos, scale } = this.camera
         const { width, height } = canvas
-        const { x, y } = this.getGridPos(pos).divide(scale).floor()
+        const grid = this.getCameraVisibleGrid()
         const pointerPos = this.getPointerPos()
         const write = (text: string, align: CanvasTextAlign = 'left') => {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
             draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom')
         }
-        write(`[${-x},${-y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
+        write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
         write(`[${pointerPos.x},${pointerPos.y}]`, 'center')
         write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')
     }
