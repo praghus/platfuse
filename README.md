@@ -144,9 +144,10 @@ The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class key fun
         gravity = 0.05 // Set global gravity value for physics
 
         async init() {
-             // Initialize scene with map data from *.tmx file (generate tilesets, layers and objects)
+            // Initialize scene with map data from *.tmx file.
+            // Generate tilesets, layers and game objects.
             await super.init(tiledMap)
-    
+
             this.setScale(4) // Set camera scale to 4
             this.addLayer(CustomLayer, 1) // Add custom layer with render order 1
             this.setTileCollisionLayer(2) // Set tiles collision data from Tmx layer #2
