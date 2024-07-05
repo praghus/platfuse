@@ -159,7 +159,7 @@ class MainScene extends Scene {
 
 ### Layer
 
-The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) classis designed for managing layers within a scene, particularly to use tile-based maps. It integrates with the [`tmx-map-parser`](https://github.com/praghus/tmx-map-parser) library for handling TMX layer data. Key features and functionalities include:
+The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) class is designed for managing layers within a scene, particularly to use tile-based maps. It integrates with the [`tmx-map-parser`](https://github.com/praghus/tmx-map-parser) library for handling TMX layer data. Key features and functionalities include:
 
 -   **Layer Identification and Metadata**: Each layer has a unique ID (defaulting to the current timestamp), an optional name, a type (custom or derived from TMX data), and custom properties.
 -   **Dimension and Visibility Management**: The class supports setting layer dimensions (width and height) and visibility, allowing layers to be shown or hidden as needed.
