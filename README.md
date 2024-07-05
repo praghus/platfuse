@@ -90,21 +90,13 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
 The [`Game`](https://praghus.github.io/platfuse/interfaces/Game.html) class key features and components:
 
 -   **Initialization and Configuration**: The class constructor takes a [`GameConfig`](https://praghus.github.io/platfuse/interfaces/GameConfig.html) object.
-
 -   **Asset Management**: It supports preloading and managing game assets, including images and sounds, with methods to retrieve and play sounds, and to get images by name.
-
 -   **Scene Management**: The class allows for initializing and playing scenes, with support for switching between different scenes and managing scene lifecycle events.
-
 -   **Rendering and Drawing**: It integrates a drawing utility for rendering game elements, handling the canvas context, and managing background and primary colors.
-
 -   **Input Handling**: An input handler is included for managing user interactions.
-
 -   **Game Loop and Timing**: Implements a game loop with support for pausing, updating game state, and rendering scenes. It also includes timing utilities for managing frame rates and calculating deltas.
-
 -   **Utility Methods**: Provides utility methods for settings management, sound volume control, and creating timer objects.
-
 -   **Responsive Design**: Includes an event handler for window resize events to adjust the game canvas size and maintain aspect ratio, ensuring the game is responsive across different devices.
-
 -   **Debugging and Development Features**: Offers debugging support and configuration options for development purposes.
 
 ### Scene
@@ -132,11 +124,8 @@ In addition to handling standard tile and image layers, the [`Layer`](https://pr
 Key aspects of custom function layers include:
 
 -   **Custom Rendering Logic**: You can define a custom rendering function that is called whenever the layer needs to be drawn. This function can use any drawing commands to render content directly onto the layer's canvas, allowing for a wide range of visual effects.
-
 -   **Dynamic Content Support**: Custom function layers are ideal for scenes that require dynamic content updates, such as moving characters, changing weather effects, or interactive elements that respond to user inputs.
-
 -   **Integration with Game Loop**: Custom function layers can be integrated into the game's main loop, allowing their content to be updated each frame based on game state, user actions, or other criteria.
-
 -   **Flexibility**: By providing a mechanism to execute arbitrary code for rendering and updating, custom function layers offer unparalleled flexibility, allows to implement features that would be difficult or impossible with standard layer types.
 
 To define a custom function layer, You should extend the [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) class and override the `draw` method with their custom drawing logic. Additionally, any necessary update logic can be implemented in an `update` method, which should also be called from the game's main loop.
@@ -164,17 +153,11 @@ class CustomFunctionLayer extends Layer {
 The [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) class incorporates a simplified physics model for game development, focusing on movement, collision, and force application. Here's a summary of its physics-related features:
 
 -   **Force Application**: Entities can have forces applied to them, which are affected by their mass. This allows for dynamic movement and interactions within the game world.
-
--   **Velocity and Speed Limit**: The class enforces a maximum speed (`maxSpeed`) for entities, ensuring that their movement remains within realistic bounds.
-
+-   **Velocity and Speed Limit**: The class enforces a maximum speed `maxSpeed` for entities, ensuring that their movement remains within realistic bounds.
 -   **Friction and Damping**: Entities experience damping (reduction of force over time) and friction when in contact with the ground, simulating natural movement and stopping behaviors.
-
 -   **Gravity**: A gravity scale can be applied to entities, allowing them to fall or be affected by the game world's gravity.
-
--   **Collision Detection**: The class includes methods for detecting collisions with tiles (`collideWithTile`, `collideWithTileRaycast`) and other entities (`collideWithObject`), enabling interaction with the game environment and other entities.
-
+-   **Collision Detection**: The class includes methods for detecting collisions with tiles `collideWithTile`, `collideWithTileRaycast` and other entities `collideWithObject`, enabling interaction with the game environment and other entities.
 -   **Collision Response**: Upon collision, entities can respond by stopping, sliding, or bouncing, based on their physical properties and the nature of the collision.
-
 -   **Animation and Movement Update**: The `update` method integrates physics calculations with animation updates, ensuring that entity movements are both visually and physically consistent.
 
 This physics model provides a foundation for creating dynamic and interactive game experiences, allowing entities to move, collide, and interact in a realistic manner.
