@@ -183,7 +183,7 @@ For detailed documentation on the Platfuse Game Engine, including advanced confi
 
 ## Contributing
 
-We welcome contributions to the Platfuse Game Engine! Please read our contributing guidelines (link to guidelines) before submitting pull requests.
+We welcome contributions to the Platfuse Game Engine! Please read our contributing [guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## License
 
