@@ -1,6 +1,6 @@
 {
     "name": "platfuse",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "type": "module",
     "description": "Platform game engine concept based on Tiled map editor",
     "author": "Piotr Praga <praghus@gmail.com>",
