@@ -1,10 +1,10 @@
 # Platfuse Game Engine **[![NPM Version](https://img.shields.io/npm/v/platfuse.svg?style=flat)](https://www.npmjs.org/package/platfuse)**
 
-Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient. (based on Tiled map editor.)
+Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.
 
 ## Main features
 
--   **Tiled Map Editor Support:** Directly use Tiled map format (.tmx) for creating and editing game levels, offering a seamless integration with the popular map editor.
+-   **Tiled Map Editor Support:** Directly use [Tiled map](https://www.mapeditor.org/) format (.tmx) for creating and editing game levels, offering a seamless integration with the popular map editor.
 -   **Retro-Focused:** Tailored features and optimizations for creating games with a nostalgic feel. (main focus to be as pixel perfect as possible)
 -   **Flexible Scene Management:** Easily manage game scenes, including loading, switching, and unloading.
 -   **Asset Preloading:** Supports preloading of images and audio to ensure smooth gameplay.
@@ -56,6 +56,7 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
     const gameConfig = {
         debug: true,
         global: true,
+        fixedSize: vec2(800, 600),
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
         secondaryColor: '#FF0000'
@@ -86,7 +87,7 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
 
 The [`Game`]() class is a comprehensive framework designed for creating and managing game environments in TypeScript. It leverages HTML Canvas for rendering and supports a wide range of functionalities essential for game development. Here's a summary of its key features and components:
 
--   **Initialization and Configuration**: The class constructor takes a [`GameConfig`]() object.
+-   **Initialization and Configuration**: The class constructor takes a [`GameConfig`](https://praghus.github.io/platfuse/interfaces/GameConfig.html) object.
 
 -   **Asset Management**: It supports preloading and managing game assets, including images and sounds, with methods to retrieve and play sounds, and to get images by name.
 
@@ -108,25 +109,23 @@ This class serves as a foundational framework for building browser-based games, 
 
 ### Scene
 
-This class, presumably part of a game engine or a similar interactive application, provides functionality for managing and interacting with a scene's layers and tiles. Key functionalities include:
+The [Scene](https://praghus.github.io/platfuse/classes/Scene.html) class, presumably part of a game engine or a similar interactive application, provides functionality for managing and interacting with a scene's layers and tiles. Key functionalities include:
 
 -   **Layer Management**: Methods to add, remove, show, and hide layers within the scene. Layers can contain objects or tiles, and their visibility can be toggled.
 -   **Tile Management**: Methods to retrieve tiles based on their position within a layer or by their unique identifier. It supports handling flipped tiles through bitwise operations.
 -   **Debugging Support**: A method to display debug information on the canvas. This includes the camera's position and scale, the grid visible through the camera, the pointer's position, the number of objects in the scene, and the average frames per second (FPS).
 
-The class interacts with various components of the game engine, such as the camera, the drawing context ([`draw`]()), and the game's primary color and canvas. It utilizes a method [`getCameraVisibleGrid`]()) to calculate the grid visible through the camera, and [`getPointerPos`]() to get the current pointer position, though the implementations of these methods are not shown in the excerpt.
-
 This class is essential for managing the visual aspects of a game scene, including layer and tile management, and provides debugging tools to aid in development.
 
 ### Layer
 
-The [`Layer`]() classis designed for managing layers within a scene, particularly in applications that use tile-based maps, such as 2D games or mapping applications. It integrates with the [`tmx-map-parser`]() library for handling TMX layer data, making it suitable for projects that utilize Tiled Map Editor files. Key features and functionalities include:
+The [`Layer`](https://praghus.github.io/platfuse/classes/Layer.html) classis designed for managing layers within a scene, particularly in applications that use tile-based maps, such as 2D games or mapping applications. It integrates with the [`tmx-map-parser`]() library for handling TMX layer data, making it suitable for projects that utilize Tiled Map Editor files. Key features and functionalities include:
 
 -   **Layer Identification and Metadata**: Each layer has a unique ID (defaulting to the current timestamp), an optional name, a type (custom or derived from TMX data), and custom properties.
 -   **Dimension and Visibility Management**: The class supports setting layer dimensions (width and height) and visibility, allowing layers to be shown or hidden as needed.
 -   **Tile Data Handling**: Tile data (an array of tile IDs) can be stored and used to render the layer's visual representation.
--   **Canvas Rendering**: The class can create a canvas element ([`layerCanvas`]()) specifically for the layer, onto which tile graphics are rendered based on the layer's tile data. This is particularly useful for optimizing rendering performance in web-based applications.
--   **Integration with Scene and Entities**: Layers are associated with a [`Scene`]() object (representing the overall scene or map) and can contain [`Entity`]() objects, allowing for a structured and hierarchical organization of game or application elements.
+-   **Canvas Rendering**: The class can create a canvas element ([`layerCanvas`](https://praghus.github.io/platfuse/classes/Layer.html#layerCanvas)) specifically for the layer, onto which tile graphics are rendered based on the layer's tile data. This is particularly useful for optimizing rendering performance in web-based applications.
+-   **Integration with Scene and Entities**: Layers are associated with a [`Scene`](https://praghus.github.io/platfuse/classes/Scene.html) object (representing the overall scene or map) and can contain [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) objects, allowing for a structured and hierarchical organization of game or application elements.
 
 #### Custom Function Layers
 
@@ -166,7 +165,7 @@ This class is essential for managing different visual and logical parts of a sce
 
 ### Entity
 
-The [`Entity`]() class incorporates a simplified physics model for game development, focusing on movement, collision, and force application. Here's a summary of its physics-related features:
+The [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) class incorporates a simplified physics model for game development, focusing on movement, collision, and force application. Here's a summary of its physics-related features:
 
 -   **Force Application**: Entities can have forces applied to them, which are affected by their mass. This allows for dynamic movement and interactions within the game world.
 
