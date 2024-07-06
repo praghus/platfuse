@@ -97,7 +97,7 @@ export class Draw {
         size = '1em',
         textAlign: CanvasTextAlign = 'left',
         textBaseline: CanvasTextBaseline = 'top',
-        stroke = true
+        stroke = false
     ) {
         const { ctx } = this.game
 
@@ -133,7 +133,7 @@ export class Draw {
         const fpos = pos.subtract(f).multiply(s)
 
         ctx.save()
-        this.rotate(rect, angle, scale, () => {
+        this.rotate(rect, angle, clip ? scale : 1, () => {
             flip && ctx.scale(s.x, s.y)
             ctx.translate(0.5, 0.5)
             clip

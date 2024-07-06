@@ -25,6 +25,7 @@ export interface Drawable {
     animFrame: number
     then: number
     frameStart: number
+    size: Vector
 
     animate?(animation?: Animation): void
     getNextGid?(): number
@@ -33,7 +34,7 @@ export interface Drawable {
 
 export interface GameConfig {
     fixedSize?: Vector
-    entities: Record<string, Constructable<Entity>>
+    entities?: Record<string, Constructable<Entity>>
     backgroundColor?: string
     primaryColor?: string
     secondaryColor?: string
@@ -48,7 +49,6 @@ export interface ParticleConfig {
     emitSize?: number
     emitTime?: number
     emitRate?: number
-    emitCone?: number
     emitConeAngle?: number
     colorStart?: Color
     colorEnd?: Color

@@ -7,8 +7,8 @@ import { Scene } from './scene'
 import { Sprite } from './sprite'
 
 export class Entity {
-    id: number //               ID of the object
-    type: string //             Type of the object
+    id = Date.now() //          ID of the object
+    type?: string //            Type of the object
     gid?: number //             Global ID of the object image from TMX map (if any)
     ttl?: number //             Time to live of the object
     name?: string //            Name of the object
@@ -45,39 +45,38 @@ export class Entity {
     // Rendering ----------------------------------------------------------------------
     renderOrder = 0 //          Order in which the object is drawn (higher is later)
     // Custom -------------------------------------------------------------------------
-    properties: Record<string, any> // Custom properties of the object
+    properties: Record<string, any> = {} // Custom properties of the object
 
     sprite?: Drawable
 
     constructor(
         public scene: Scene,
-        obj: Record<string, any>
+        obj?: Record<string, any> // @todo make this optional
     ) {
-        this.id = obj.id
-        this.gid = obj.gid
-        this.type = obj.type
-        this.name = obj.name
-        this.layerId = obj.layerId
-        this.properties = obj.properties
-        this.angle = obj.rotation * (Math.PI / 180) || this.angle
-        this.visible = obj.visible !== undefined ? obj.visible : true
-        this.spawnTime = scene.game.time
-        this.flipH = obj.flipH || this.flipH
-        this.flipV = obj.flipV || this.flipV
-
-        // Translate TMX bounding rect into game grid
-        if (obj.x && obj.y) {
-            const { tileSize } = scene
-            const tmxRect = box(obj.x, obj.y, obj.width, obj.height)
-            this.size = vec2(tmxRect.size.x / tileSize.x, tmxRect.size.y / tileSize.y)
-            this.pos = vec2(
-                tmxRect.pos.x / tileSize.x + this.size.x / 2,
-                tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
-            )
-        } else {
-            this.pos = obj?.pos || this.pos
-            this.size = obj?.size || this.size
+        if (obj) {
+            this.id = obj.id
+            this.gid = obj.gid
+            this.type = obj.type
+            this.name = obj.name
+            this.layerId = obj.layerId
+            this.properties = obj.properties
+            // Translate TMX bounding rect into game grid
+            if (obj.x && obj.y) {
+                const { tileSize } = scene
+                const tmxRect = box(obj.x, obj.y, obj.width, obj.height)
+                this.size = vec2(tmxRect.size.x / tileSize.x, tmxRect.size.y / tileSize.y)
+                this.pos = vec2(
+                    tmxRect.pos.x / tileSize.x + this.size.x / 2,
+                    tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
+                )
+            }
         }
+        this.angle = obj?.rotation ? obj.rotation * (Math.PI / 180) : this.angle
+        this.visible = obj?.visible !== undefined ? obj.visible : true
+        this.spawnTime = scene.game.time
+        this.flipH = obj?.flipH || this.flipH
+        this.flipV = obj?.flipV || this.flipV
+        this.animation = obj?.animation || this.animation
     }
 
     createSprite() {
@@ -148,7 +147,7 @@ export class Entity {
      */
     draw() {
         if (this.visible && this.onScreen()) {
-            const { camera, game } = this.scene
+            const { game } = this.scene
             if (this.sprite) {
                 this.sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
@@ -228,7 +227,7 @@ export class Entity {
      * @param size - The size vector of the other object.
      * @returns True if the entity is overlapping with the other object, false otherwise.
      */
-    isOverlapping(pos: Vector, size: Vector) {
+    isOverlapping(pos: Vector, size = vec2()) {
         return (
             Math.abs(this.pos.x - pos.x) * 2 < this.size.x + size.x &&
             Math.abs(this.pos.y - pos.y) * 2 < this.size.y + size.y
@@ -390,12 +389,30 @@ export class Entity {
         } = rect
 
         draw.outline(rect, visible ? LightGreen : Cyan, 1)
-        draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, x + size.x / 2, y - 14, primaryColor, fs, 'center')
-        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fs, 'right')
-        draw.text(`y:${pos.y.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y + 14, primaryColor, fs, 'right')
+        draw.text(
+            `${type || id || ''}[${angle.toFixed(2)}]`,
+            x + size.x / 2,
+            y - 14,
+            primaryColor,
+            fs,
+            'center',
+            'top',
+            true
+        )
+        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fs, 'right', 'top', true)
+        draw.text(
+            `y:${pos.y.toFixed(1)}`,
+            x + size.x / 2 - size.x / 2 - 2,
+            y + 14,
+            primaryColor,
+            fs,
+            'right',
+            'top',
+            true
+        )
         Math.abs(force.x) > 0.012 &&
-            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fs, 'left')
+            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fs, 'left', 'top', true)
         Math.abs(force.y) > 0.012 &&
-            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fs, 'left')
+            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fs, 'left', 'top', true)
     }
 }

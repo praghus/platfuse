@@ -109,6 +109,8 @@ import { assets } from './assets'
 
 const gameConfig = {
     fixedSize: vec2(1280, 720),
+    // Classes which will be used when creating objects defined in the tmx file.
+    // Key values should correspond to the object classes defined in the map
     entities: {
         enemy: Enemy,
         player: Player
@@ -154,6 +156,12 @@ class MainScene extends Scene {
 
         console.log('Main Scene initialized', this)
     }
+
+    /* Scene lifecycle methods */
+
+    update() {}
+    draw() {}
+    postUpdate() {}
 }
 ```
 

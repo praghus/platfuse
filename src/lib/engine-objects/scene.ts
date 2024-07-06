@@ -2,7 +2,7 @@ import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
 import { isValidArray, getFilename, sortByRenderOrder } from '../utils/helpers'
 import { Box, Vector, vec2 } from '../engine-helpers'
-import { Flipped, NodeType } from '../constants'
+import { Flipped } from '../constants'
 import { Camera } from './camera'
 import { Entity } from './entity'
 import { Game } from './game'
@@ -10,8 +10,8 @@ import { Layer } from './layer'
 import { Tile } from './tile'
 
 export class Scene {
-    size = vec2() //                    The size of the scene (in tiles)
-    tileSize = vec2() //                The size of each tile in the scene
+    size = vec2(1) //                   The size of the scene (in tiles)
+    tileSize = vec2(1) //               The size of each tile in the scene
     camera: Camera //                   The camera object for the scene
     tiles: Record<string, Tile> = {} // The tiles objects in the scene
     tileCollisionData: number[] = [] // The collision data for the scene
@@ -35,6 +35,8 @@ export class Scene {
             this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
+        } else {
+            this.setDimensions(vec2(this.game.width, this.game.height).divide(this.tileSize), this.tileSize)
         }
     }
 
@@ -215,12 +217,13 @@ export class Scene {
     addObject(entity: Entity, layerId?: number) {
         if (layerId) {
             const layer = this.getLayer(layerId)
-            layer instanceof Layer && layer.type === NodeType.ObjectGroup
+            layer instanceof Layer
                 ? (entity.layerId = layer.id)
                 : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
         }
         entity.createSprite()
         this.objects.push(entity)
+        return entity
     }
 
     /**
@@ -315,7 +318,7 @@ export class Scene {
     getPointerPos() {
         const { pos, scale } = this.camera
         const { mouseScreenPos } = this.game.input
-        return mouseScreenPos.clone().subtract(pos).divide(scale).floor()
+        return mouseScreenPos.clone().subtract(pos).divide(scale)
     }
 
     getPointerRelativeGridPos() {
@@ -376,10 +379,12 @@ export class Scene {
         const pointerPos = this.getPointerPos()
         const write = (text: string, align: CanvasTextAlign = 'left') => {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
-            draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom')
+            draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom', true)
         }
-        write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
-        write(`[${pointerPos.x},${pointerPos.y}]`, 'center')
+        write(
+            `[${grid.pos.x || '-'},${grid.pos.y || '-'}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`
+        )
+        write(`[${pointerPos.x.toFixed(2)},${pointerPos.y.toFixed(2)}]`, 'center')
         write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')
     }
 }

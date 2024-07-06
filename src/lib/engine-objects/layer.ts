@@ -174,7 +174,7 @@ export class Layer {
                         tile.animated && tile.draw(pos, flipH, flipV)
                     })
                     break
-                case NodeType.ObjectGroup:
+                default:
                     this.forEachVisibleObject(obj => obj.draw())
                     break
             }

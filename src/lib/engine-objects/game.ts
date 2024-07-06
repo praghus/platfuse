@@ -50,7 +50,7 @@ export class Game {
         public preload: Record<string, string>
     ) {
         document.body.appendChild((this.canvas = document.createElement('canvas')))
-        this.objectClasses = config.entities
+        this.objectClasses = config?.entities || {}
         this.debug = !!config.debug
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
