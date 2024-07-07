@@ -8,28 +8,55 @@ export class Draw {
     constructor(public game: Game) {}
 
     preloader(p: number) {
-        const { ctx, canvas, backgroundColor, primaryColor, secondaryColor } = this.game
+        const { ctx, canvas, backgroundColor, secondaryColor } = this.game
         const { width, height } = canvas
-        const logoSize = vec2(height * 0.2)
-        const logoPos = vec2(width / 2 - logoSize.x, height / 2 - logoSize.y / 2)
-        const textPos = vec2(width / 2, height / 2 + logoSize.x / 4.5)
-        const fontSize = `${logoSize.x / 2.5}px`
+        const logoSize = vec2(height / 4).floor()
+        const logoPos = vec2(width / 2 - logoSize.x / 2, height / 2 - logoSize.y / 2).floor()
+        const step = logoSize.x / 8
+
         const gradient = ctx.createRadialGradient(width / 2, height / 2, logoSize.y, width / 2, height / 2, height)
+
         ctx.save()
         gradient.addColorStop(0, backgroundColor.brightness(15).toString())
         gradient.addColorStop(0.7, backgroundColor.toString())
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
 
-        this.fillRectRound(
-            box(logoPos.x + 3, logoPos.y + 3, logoSize.x, logoSize.y),
-            [logoSize.x / 10],
-            backgroundColor
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetX = 3
+        ctx.shadowOffsetY = 3
+
+        this.fillRect(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), DefaultColors.LightBlue)
+        this.fillRect(
+            box(logoPos.x + step, logoPos.y + step, logoSize.x - step * 2, logoSize.y - step * 2),
+            DefaultColors.DarkBlue
         )
-        this.fillRectRound(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), [logoSize.x / 12], secondaryColor)
-        this.text('plat', textPos.x, textPos.y, backgroundColor.brightness(-10), fontSize, 'right', 'middle', false)
-        this.text('fuse', textPos.x + 3, textPos.y + 3, backgroundColor, fontSize, 'left', 'middle', false)
-        this.text('fuse', textPos.x, textPos.y, primaryColor, fontSize, 'left', 'middle', false)
+        ctx.fillStyle = DefaultColors.White.toString()
+        this.stroke(
+            logoPos.x + step * 2,
+            logoPos.y + step * 7,
+            [
+                vec2(0, 0),
+                vec2(0, -step * 5),
+                vec2(step * 4, -step * 5),
+                vec2(step * 4, -step),
+                vec2(step * 1.25, -step),
+                vec2(step * 1.25, 0)
+            ],
+            0
+        )
+        ctx.fill()
+        this.fillRect(
+            box(
+                (-step * 1.5) / 2 + logoPos.x + logoSize.x / 2,
+                (-step * 1.5) / 2 + logoPos.y + logoSize.y / 2,
+                step * 1.5,
+                step * 1.5
+            ),
+            DefaultColors.LightBlue
+        )
+        // Progress bar
         this.fillRect(box(0, height - height * 0.015, width * p, height * 0.015), secondaryColor)
         ctx.restore()
     }
@@ -59,28 +86,10 @@ export class Draw {
         ctx.restore()
     }
 
-    fillRectRound(rect: Box, radius: number[], color: Color) {
+    stroke(x: number, y: number, points: Vector[], lineWidth = 1) {
         const { ctx } = this.game
-        const { pos, size } = rect
-        ctx.fillStyle = color.toString()
-        ctx.beginPath()
-        ctx.roundRect(pos.x, pos.y, size.x, size.y, radius)
-        ctx.fill()
-    }
-
-    roundRect(rect: Box, radius: number[], color: Color, lineWidth = 1) {
-        const { ctx } = this.game
-        const { pos, size } = rect
-        ctx.strokeStyle = color.toString()
         ctx.lineWidth = lineWidth
-        ctx.beginPath()
-        ctx.roundRect(pos.x, pos.y, size.x, size.y, radius)
-        ctx.stroke()
-    }
-
-    stroke(x: number, y: number, points: Vector[], color: Color) {
-        const { ctx } = this.game
-        ctx.strokeStyle = color.toString()
+        ctx.lineJoin = 'miter'
         ctx.beginPath()
         ctx.moveTo(points[0].x + x, points[0].y + y)
         points.map((v: Vector) => ctx.lineTo(x + v.x, y + v.y))

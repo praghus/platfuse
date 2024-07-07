@@ -56,9 +56,9 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
 
     ```typescript
     const gameConfig = {
-        debug: true,
-        global: true,
-        fixedSize: vec2(800, 600),
+        debug: true, // Debug enabled
+        global: true, // Platfuse as a global `window` object.
+        fixedSize: vec2(800, 600), // Fixed `canvas` size
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
         secondaryColor: '#FF0000'
@@ -105,12 +105,15 @@ Example:
 import { Game, vec2 } from 'platfuse'
 import { MainScene } from './scenes'
 import { Enemy, Player } from './models'
-import { assets } from './assets'
+import playerImage from './assets/images/player.png'
+import enemyImage from './assets/images/enemy.png'
+import tilesetImage from './assets/images/tileset.png'
+import sound from './assets/sounds/sound.mp3'
 
 const gameConfig = {
-    fixedSize: vec2(1280, 720),
+    fixedSize: vec2(1280, 720), // Optional, can be used to maintain fixed aspect ratio of the game view.
     // Classes which will be used when creating objects defined in the tmx file.
-    // Key values should correspond to the object classes defined in the map
+    // Key values should correspond to the object classes defined in the map.
     entities: {
         enemy: Enemy,
         player: Player
@@ -118,7 +121,14 @@ const gameConfig = {
     debug: true
 }
 
-const game = new Game(gameConfig, assets)
+const preloadAssets = {
+    'player.png': playerImage,
+    'enemy.png': enemyImage,
+    'tileset.png': tilesetImage,
+    'sound.mp3' sound
+}
+
+const game = new Game(gameConfig, preloadAssets)
 
 async function start() {
     await game.init(MainScene)

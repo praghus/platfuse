@@ -26,9 +26,9 @@ class Box {
         return new Box(this.pos.floor(), this.size.floor())
     }
 
-    overlaps = (b: Box) =>
-        Math.abs(this.pos.x - b.pos.x) * 2 < this.size.x + b.size.x &&
-        Math.abs(this.pos.y - b.pos.y) * 2 < this.size.y + b.size.y
+    overlaps = (pos: Vector, size: Vector) =>
+        Math.abs(this.pos.x - pos.x) * 2 < this.size.x + size.x &&
+        Math.abs(this.pos.y - pos.y) * 2 < this.size.y + size.y
 }
 
 const box = (x = 0, y = 0, w = 0, h = 0) => new Box(vec2(x, y), vec2(w, h))

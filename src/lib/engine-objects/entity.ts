@@ -16,6 +16,7 @@ export class Entity {
     color?: Color //            Color of the object (if no sprite)
     layerId?: number //         Layer ID of the object (if any)
     animation?: Animation //    Animation of the object sprite
+    sprite?: Drawable //        Sprite of the object
     // Flags --------------------------------------------------------------------------
     flipH = false //            Whether the object is flipped horizontally (mirrored)
     flipV = false //            Whether the object is flipped vertically
@@ -46,8 +47,6 @@ export class Entity {
     renderOrder = 0 //          Order in which the object is drawn (higher is later)
     // Custom -------------------------------------------------------------------------
     properties: Record<string, any> = {} // Custom properties of the object
-
-    sprite?: Drawable
 
     constructor(
         public scene: Scene,
@@ -371,48 +370,31 @@ export class Entity {
      * @returns {boolean} True if the entity is on the screen, false otherwise.
      */
     onScreen() {
-        return this.scene.getCameraVisibleArea().overlaps(new Box(this.pos, this.size))
+        return this.scene.getCameraVisibleArea().overlaps(this.pos, this.size)
     }
 
     /**
      * Displays debug information about the entity.
      */
     displayDebug() {
+        const rect = this.getRelativeBoundingRect()
         const { draw, primaryColor } = this.scene.game
         const { angle, id, type, visible, force, pos } = this
         const { Cyan, LightGreen, Red } = DefaultColors
-        const rect = this.getRelativeBoundingRect()
-        const fs = '1em'
         const {
             pos: { x, y },
             size
         } = rect
+        const s1 = size.x / 2
+        const x1 = x + s1
+        const fs = '1em'
 
         draw.outline(rect, visible ? LightGreen : Cyan, 1)
-        draw.text(
-            `${type || id || ''}[${angle.toFixed(2)}]`,
-            x + size.x / 2,
-            y - 14,
-            primaryColor,
-            fs,
-            'center',
-            'top',
-            true
-        )
-        draw.text(`x:${pos.x.toFixed(1)}`, x + size.x / 2 - size.x / 2 - 2, y, primaryColor, fs, 'right', 'top', true)
-        draw.text(
-            `y:${pos.y.toFixed(1)}`,
-            x + size.x / 2 - size.x / 2 - 2,
-            y + 14,
-            primaryColor,
-            fs,
-            'right',
-            'top',
-            true
-        )
-        Math.abs(force.x) > 0.012 &&
-            draw.text(`x:${force.x.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y, Red, fs, 'left', 'top', true)
+        draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, x1, y - 14, primaryColor, fs, 'center', 'top', true)
+        draw.text(`x:${pos.x.toFixed(1)}`, x1 - s1 - 2, y, primaryColor, fs, 'right', 'top', true)
+        draw.text(`y:${pos.y.toFixed(1)}`, x1 - s1 - 2, y + 14, primaryColor, fs, 'right', 'top', true)
+        Math.abs(force.x) > 0.012 && draw.text(`x:${force.x.toFixed(3)}`, x1 + s1 + 2, y, Red, fs, 'left', 'top', true)
         Math.abs(force.y) > 0.012 &&
-            draw.text(`y:${force.y.toFixed(3)}`, x + size.x / 2 + size.x / 2 + 2, y + 14, Red, fs, 'left', 'top', true)
+            draw.text(`y:${force.y.toFixed(3)}`, x1 + s1 + 2, y + 14, Red, fs, 'left', 'top', true)
     }
 }

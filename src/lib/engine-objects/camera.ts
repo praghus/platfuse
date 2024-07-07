@@ -3,9 +3,9 @@ import { Vector, vec2 } from '../engine-helpers'
 
 export class Camera {
     pos = vec2() //             camera position
-    speed = vec2(1) //          camera speed scale (percent) 0 - no speed, 1 - instant
     offset = vec2() //          camera shake offset
     followEntity?: Entity //    entity to follow
+    speed = 1 //                camera speed scale (percent) 0 - no movement, 1 - instant
     delta = 1 / 60 //           delta time
     scrolling = true //         is camera scrolling or switching between views
     isShaking = false //        is camera shaking
@@ -23,8 +23,8 @@ export class Camera {
         this.scale = scale
     }
 
-    setSpeed(speed: Vector | number) {
-        this.speed = typeof speed === 'number' ? vec2(speed) : speed
+    setSpeed(speed: number) {
+        this.speed = speed
     }
 
     setScrolling(scrolling: boolean) {
@@ -63,7 +63,7 @@ export class Camera {
                     .add(this.size.divide(vec2(2)))
                     .subtract(followRect.size.divide(vec2(2)))
 
-                this.pos = this.speed.x >= 1 && this.speed.y >= 1 ? midPos : this.pos.lerp(midPos, this.speed.x).floor()
+                this.pos = this.pos.lerp(midPos, this.speed).floor()
             } else {
                 // no scrolling - switching between views
                 const room = followRect.pos.divide(this.size).floor()
