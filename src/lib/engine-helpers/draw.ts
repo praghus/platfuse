@@ -29,7 +29,7 @@ export class Draw {
 
         this.fillRect(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), DefaultColors.LightBlue)
         this.fillRect(
-            box(logoPos.x + step, logoPos.y + step, logoSize.x - step * 2, logoSize.y - step * 2),
+            box(logoPos.x + step * 0.8, logoPos.y + step * 0.8, logoSize.x - step * 1.6, logoSize.y - step * 1.6),
             DefaultColors.DarkBlue
         )
         ctx.fillStyle = DefaultColors.White.toString()
@@ -37,12 +37,12 @@ export class Draw {
             logoPos.x + step * 2,
             logoPos.y + step * 7,
             [
-                vec2(0, 0),
+                vec2(0, step * 0.2),
                 vec2(0, -step * 5),
                 vec2(step * 4, -step * 5),
                 vec2(step * 4, -step),
                 vec2(step * 1.25, -step),
-                vec2(step * 1.25, 0)
+                vec2(step * 1.25, step * 0.2)
             ],
             0
         )

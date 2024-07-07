@@ -20,7 +20,7 @@ Platfuse is a lightweight, highly customizable game engine built with TypeScript
 
 ## Getting Started
 
-To get started with Platfuse, you'll need to have Node.js and Yarn installed on your system.
+To get started with Platfuse, you'll need to have Node.js installed on your system.
 
 ### Installation
 
@@ -41,13 +41,13 @@ To get started with Platfuse, you'll need to have Node.js and Yarn installed on 
 3. Start the development build:
 
     ```bash
-    yarn start
+    npm run start
     ```
 
 4. Or build:
 
     ```bash
-    yarn build
+    npm run build
     ```
 
 ### Creating Your First Game
