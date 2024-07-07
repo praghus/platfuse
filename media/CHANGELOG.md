@@ -4,16 +4,18 @@ All notable changes to the Platfuse Game Engine project will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.2] - unreleased
+## [1.3.4] - 2024-07-07
 
 ### Added
 
--   N/A
+-   Camera speed scale for smooth scrolling.
 
 ### Changed
 
 -   Text printing method (optional stroke).
 -   Entity overlaping metod allow to check colissions also with points (vec2).
+-   Box overlaping method parameters change form `Box` to `pos` and `size`.
+-   Preloader logo
 
 ### Deprecated
 
@@ -21,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Removed
 
--   N/A
+-   Removed `game.draw.fillRectRound` and `game.draw.roundRect`
 
 ### Fixed
 
