@@ -6,7 +6,7 @@ Platfuse is a lightweight, highly customizable game engine built with TypeScript
 
 ## Main features
 
--   **Tiled Map Editor Support:** Directly use [Tiled map](https://www.mapeditor.org/) format (.tmx) for creating and editing game levels, offering a seamless integration with the popular map editor.
+-   **Tiled Map Editor Support:** Directly use [Tiled map](https://www.mapeditor.org/) format (.tmx) for creating and editing game levels, offering a seamless integration with the popular map editor. Supports tile animations and transformations (flips).
 -   **Retro-Focused:** Tailored features and optimizations for creating games with a nostalgic feel. (main focus to be as pixel perfect as possible)
 -   **Flexible Scene Management:** Easily manage game scenes, including loading, switching, and unloading.
 -   **Asset Preloading:** Supports preloading of images and audio to ensure smooth gameplay.
