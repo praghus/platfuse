@@ -45,7 +45,7 @@ Unsure where to begin contributing to Platfuse? You can start by looking through
 
 ### TypeScript Styleguide
 
-All TypeScript must adhere to [TypeScript Style Guide](https://www.typescriptlang.org/docs/handbook/style-guide.html).
+All TypeScript must adhere to [TypeScript Style Guide](https://ts.dev/style/).
 
 ### Git Commit Messages
 
