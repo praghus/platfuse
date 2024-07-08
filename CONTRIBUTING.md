@@ -37,7 +37,7 @@ Unsure where to begin contributing to Platfuse? You can start by looking through
 
 -   Do not include issue numbers in the PR title
 -   Include screenshots and animated GIFs in your pull request whenever possible.
--   Follow the [TypeScript style guide](https://www.typescriptlang.org/docs/handbook/style-guide.html).
+-   Follow the [TypeScript style guide](https://ts.dev/style/).
 -   Document new code based on the [JSDoc style](https://jsdoc.app/).
 -   End all files with a newline.
 
