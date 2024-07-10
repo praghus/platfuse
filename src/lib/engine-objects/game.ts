@@ -164,6 +164,7 @@ export class Game {
             scene.draw()
         } else {
             console.warn('No scene to render!')
+            this.animationFrame && cancelAnimationFrame(this.animationFrame)
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
@@ -174,6 +175,14 @@ export class Game {
      */
     togglePause(paused = true) {
         this.paused = paused
+    }
+
+    /**
+     * Gets the resolution of the game.
+     * @returns A Vector representing the width and height of the game.
+     */
+    getResolution() {
+        return new Vector(this.width, this.height)
     }
 
     /**
@@ -220,7 +229,7 @@ export class Game {
     getImage(name: string) {
         if (this.assets[name] instanceof HTMLImageElement) {
             return this.assets[name] as HTMLImageElement
-        } else throw new Error('Invalid image!')
+        } else throw new Error(`'${name}' is not a valid image!`)
     }
 
     /**

@@ -12,7 +12,7 @@ import { Tile } from './tile'
 export class Scene {
     size = vec2(1) //                   The size of the scene (in tiles)
     tileSize = vec2(1) //               The size of each tile in the scene
-    camera: Camera //                   The camera object for the scene
+    camera = new Camera(this) //        The camera object for the scene
     tiles: Record<string, Tile> = {} // The tiles objects in the scene
     tileCollisionData: number[] = [] // The collision data for the scene
     objects: Entity[] = [] //           The objects in the scene
@@ -20,9 +20,7 @@ export class Scene {
     gravity = 0 //                      The gravity value for the scene
     nextRenderOrder = 0 //              The next available render order for layers
 
-    constructor(public game: Game) {
-        this.camera = new Camera(vec2(game.width, game.height))
-    }
+    constructor(public game: Game) {}
 
     /**
      * Initializes the scene.
@@ -204,6 +202,7 @@ export class Scene {
         }
         layer.renderOrder = order || this.nextRenderOrder++
         this.layers.push(layer)
+        return layer
     }
 
     addObjectFromLayer(type: string, props: Record<string, any>) {
@@ -244,6 +243,7 @@ export class Scene {
         for (let i = 0; i < newTileset.tilecount; i++) {
             this.tiles[i + newTileset.firstgid] = new Tile(this, i + newTileset.firstgid, newTileset)
         }
+        return newTileset
     }
 
     /**
@@ -280,14 +280,15 @@ export class Scene {
     getCameraVisibleGrid() {
         return new Box(
             this.camera.pos.divide(this.tileSize).invert().divide(this.camera.scale).floor(),
-            this.camera.size.divide(this.tileSize).divide(this.camera.scale).floor()
+            this.game.getResolution().divide(this.tileSize).divide(this.camera.scale).add(vec2(1))
         )
     }
 
     getCameraVisibleArea() {
+        const viewSize = this.game.getResolution()
         return new Box(
-            this.camera.pos.invert().add(this.camera.size.divide(2)).divide(this.camera.scale),
-            this.camera.size.divide(this.camera.scale)
+            this.camera.pos.invert().add(viewSize.divide(2)).divide(this.camera.scale),
+            viewSize.divide(this.camera.scale)
         ).divide(this.tileSize)
     }
 
@@ -381,9 +382,7 @@ export class Scene {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
             draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom', true)
         }
-        write(
-            `[${grid.pos.x || '-'},${grid.pos.y || '-'}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`
-        )
+        write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
         write(`[${pointerPos.x.toFixed(2)},${pointerPos.y.toFixed(2)}]`, 'center')
         write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')
     }

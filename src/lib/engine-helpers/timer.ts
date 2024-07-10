@@ -18,10 +18,6 @@ export class Timer {
         this.ts = t
     }
 
-    get() {
-        return this.time !== undefined ? this.game.time - this.time : 0
-    }
-
     unset() {
         this.time = undefined
     }
@@ -34,8 +30,12 @@ export class Timer {
         return this.time !== undefined && this.game.time <= this.time
     }
 
-    elapsed() {
+    isDone() {
         return this.time !== undefined && this.game.time > this.time
+    }
+
+    getTime() {
+        return this.time !== undefined ? this.game.time - this.time : 0
     }
 
     getPercent() {

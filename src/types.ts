@@ -63,6 +63,7 @@ export interface ParticleConfig {
     fadeRate?: number
     randomness?: number
     collideTiles?: boolean
+    collideObjects?: boolean
     stretchScale?: number
     elasticity?: number
     renderOrder?: number

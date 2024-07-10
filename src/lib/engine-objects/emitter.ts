@@ -29,6 +29,7 @@ export class Emitter extends Entity {
     fadeRate = 0.1 //               How quick to fade in particles at start/end in percent of life
     randomness = 0.2 //             Randomness percent
     collideTiles = false //         Collide against tiles
+    collideObjects = false //       Collide against objects
     renderOrder = 0 //              Render order
     stretchScale = 0 //             If set the partile is drawn as a trail, stretched in the drection of velocity
     timeBuffer = 0 //               Time buffer for emit rate
@@ -58,6 +59,7 @@ export class Emitter extends Entity {
         this.fadeRate = obj?.fadeRate || this.fadeRate
         this.randomness = obj?.randomness || this.randomness
         this.collideTiles = !!obj?.collideTiles
+        this.collideObjects = !!obj?.collideObjects
         this.stretchScale = obj?.stretchScale || this.stretchScale
         this.elasticity = obj?.elasticity || this.elasticity
     }
@@ -101,6 +103,7 @@ export class Emitter extends Entity {
         particle.friction = this.friction
         particle.gravityScale = this.gravityScale
         particle.collideTiles = this.collideTiles
+        particle.collideObjects = this.collideObjects
         particle.force = vec2().setAngle(forceAngle, speed)
         particle.ttl = ttl
         particle.sizeStart = sizeStart

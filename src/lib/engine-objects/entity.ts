@@ -9,6 +9,7 @@ import { Sprite } from './sprite'
 export class Entity {
     id = Date.now() //          ID of the object
     type?: string //            Type of the object
+    family?: string //          Family of the object (optional)
     gid?: number //             Global ID of the object image from TMX map (if any)
     ttl?: number //             Time to live of the object
     name?: string //            Name of the object
@@ -33,12 +34,12 @@ export class Entity {
     size = vec2() //            Size of the object (scaled by tileSize)
     force = vec2() //           Force applied to the object (acceleration)
     mass = 1 //                 Mass of the object, 0 is static
-    damping = 0.9 //            How much force is kept each frame (0-1)
+    damping = 1 //              How much force is kept each frame (0-1)
     elasticity = 0 //           Bounciness of the object (0-1)
     friction = 0.8 //           Friciton when on ground (0-1)
     gravityScale = 1 //         Hot gravity affects the object
     angleVelocity = 0 //        Angular velocity
-    angleDamping = 0.9 //       Rotation slowdown (0-1)
+    angleDamping = 1 //         Rotation slowdown (0-1)
     angle = 0 //                Rotation angle
     maxSpeed = 1 //             Maximum speed
     // Time ---------------------------------------------------------------------------
@@ -50,7 +51,7 @@ export class Entity {
 
     constructor(
         public scene: Scene,
-        obj?: Record<string, any> // @todo make this optional
+        public obj?: Record<string, any>
     ) {
         if (obj) {
             this.id = obj.id
@@ -68,14 +69,19 @@ export class Entity {
                     tmxRect.pos.x / tileSize.x + this.size.x / 2,
                     tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
                 )
+            } else {
+                this.size = obj.size || this.size
+                this.pos = obj.pos || this.pos
             }
         }
+        this.spawnTime = scene.game.time
         this.angle = obj?.rotation ? obj.rotation * (Math.PI / 180) : this.angle
         this.visible = obj?.visible !== undefined ? obj.visible : true
-        this.spawnTime = scene.game.time
+        this.force = obj?.force || this.force
         this.flipH = obj?.flipH || this.flipH
         this.flipV = obj?.flipV || this.flipV
         this.animation = obj?.animation || this.animation
+        this.family = obj?.family || this.family
     }
 
     createSprite() {
