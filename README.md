@@ -242,11 +242,11 @@ We welcome contributions to the Platfuse Game Engine! Please read our contributi
 
 Platfuse is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Project Status
+
+The project is in a state of continuous development and improvement. For the latest changes, please refer to the [CHANGELOG.md](CHANGELOG.md).
+
 ## Games Made With Platfuse
 - [Posthumus](https://github.com/praghus/posthumus) - Zombie shooter platformer
 - [Showcase](https://github.com/praghus/platfuse-example) - Platformer example
 - [Boilerplate](https://github.com/praghus/platfuse-boilerplate) - Platfuse boilerplate project
-
-## Project Status
-
-The project is in a state of continuous development and improvement. For the latest changes, please refer to the [CHANGELOG.md](CHANGELOG.md).
