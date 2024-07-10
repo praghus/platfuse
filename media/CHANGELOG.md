@@ -4,18 +4,17 @@ All notable changes to the Platfuse Game Engine project will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.4] - 2024-07-07
+## [1.x.x] - unreleased
 
 ### Added
 
--   Camera speed scale for smooth scrolling.
+-   Entity `family` property.
+-   Game `getResolution()` method
 
 ### Changed
 
--   Text printing method (optional stroke).
--   Entity overlaping metod allow to check colissions also with points (vec2).
--   Box overlaping method parameters change form `Box` to `pos` and `size`.
--   Preloader logo
+-   Camera constructor.
+-   Split camera speed to horizontal and vertical value.
 
 ### Deprecated
 
@@ -23,7 +22,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Removed
 
--   Removed `game.draw.fillRectRound` and `game.draw.roundRect`
+-   N/A
+
+### Fixed
+
+-   Camera shake scale.
+-   Camera bounds and view size.
+-   Entity initial position for non TMX objects
+
+### Security
+
+-   N/A
+
+## [1.3.4] - 2024-07-07
+
+### Added
+
+-   N/A
+
+### Changed
+
+-   N/A
+
+### Deprecated
+
+-   N/A
+
+### Removed
+
+-   N/A
 
 ### Fixed
 
