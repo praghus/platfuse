@@ -112,9 +112,9 @@ import sound from './assets/sounds/sound.mp3'
 
 const gameConfig = {
     fixedSize: vec2(1280, 720), // Optional, can be used to maintain fixed aspect ratio of the game view.
-    // Classes which will be used when creating objects defined in the tmx file.
-    // Key values should correspond to the object classes defined in the map.
     entities: {
+        // Classes which will be used when creating objects defined in the tmx file.
+        // Key values should correspond to the object classes defined in the map.
         enemy: Enemy,
         player: Player
     },
