@@ -10,33 +10,59 @@ import { Layer } from './layer'
 import { Tile } from './tile'
 
 export class Scene {
-    size = vec2(1) //                   The size of the scene (in tiles)
-    tileSize = vec2(1) //               The size of each tile in the scene
-    camera = new Camera(this) //        The camera object for the scene
-    tiles: Record<string, Tile> = {} // The tiles objects in the scene
-    tileCollisionData: number[] = [] // The collision data for the scene
-    objects: Entity[] = [] //           The objects in the scene
-    layers: Layer[] = [] //             The layers in the scene
-    gravity = 0 //                      The gravity value for the scene
-    nextRenderOrder = 0 //              The next available render order for layers
+    /** The camera object for the scene. */
+    camera = new Camera(this)
 
+    /** The size of the scene (grid size in tiles). Default grid is canvas resolution with tile size 1px. */
+    size = this.game.getResolution()
+
+    /** The size of each tile in the scene (default 1px). */
+    tileSize = vec2(1)
+
+    /** A record of all the tiles in the scene. */
+    tiles: Record<string, Tile> = {}
+
+    /** An array of tile collision data. */
+    tileCollisionData: number[] = []
+
+    /** An array of all the objects in the scene. */
+    objects: Entity[] = []
+
+    /** An array of all the layers in the scene. */
+    layers: Layer[] = []
+
+    /** The global gravity value for the scene. */
+    gravity = 0
+
+    /** The next available render order for layers. */
+    nextRenderOrder = 0
+
+    /** The TMX map file to load. */
+    tmxMap?: string
+
+    /**
+     * Creates a new scene object.
+     * @param game - The game object that the scene belongs to.
+     */
     constructor(public game: Game) {}
 
     /**
-     * Initializes the scene.
-     * @param map - Optional parameter specifying the Tiled map (.tmx) to load.
-     * @returns A promise that resolves when the initialization is complete.
+     * Performs pre-initialization tasks for the scene.
+     * If a TMX map is provided, it sets the dimensions, creates tilesets, and creates layers based on the map.
      */
-    async init(map?: string): Promise<void> {
-        if (map) {
-            const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(map)
+    async preInit(): Promise<void> {
+        if (this.tmxMap) {
+            const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(this.tmxMap)
             this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
-        } else {
-            this.setDimensions(vec2(this.game.width, this.game.height).divide(this.tileSize), this.tileSize)
         }
     }
+
+    /**
+     * Initializes the scene.
+     */
+    init() {}
 
     /**
      * Updates the scene.
@@ -54,9 +80,7 @@ export class Scene {
      * Updates all the layers in the scene.
      */
     updateLayers() {
-        for (const layer of this.layers) {
-            layer instanceof Layer && layer.update()
-        }
+        for (const layer of this.layers) layer instanceof Layer && layer.update()
     }
 
     /**
@@ -75,6 +99,13 @@ export class Scene {
      * Performs post-update operations for the scene.
      */
     postUpdate() {}
+
+    /**
+     * Performs post-update operations for all the layers in the scene.
+     */
+    postUpdateLayers() {
+        for (const layer of this.layers) layer instanceof Layer && layer.postUpdate()
+    }
 
     /**
      * Draws the scene on the main context.
@@ -116,7 +147,6 @@ export class Scene {
 
     /**
      * Sets the tile collision layer for the scene.
-     *
      * @param layerIndex - The index of the layer to set as the collision layer.
      */
     setTileCollisionLayer(layerIndex: number, exclude = [] as number[]) {
@@ -158,7 +188,7 @@ export class Scene {
      * @param entity An optional entity to check for collisions with tiles.
      * @returns The position of the first tile hit by the raycast, or null if no collision occurred.
      */
-    raycastTileCollision(start: Vector, end: Vector, entity?: Entity, exclude = [] as number[]) {
+    raycastTileCollision(start: Vector, end: Vector, entity?: Entity) {
         const pos = start.floor()
         const delta = end.subtract(start)
         const length = delta.length()
@@ -169,8 +199,8 @@ export class Scene {
         let y1 = unit.y * (delta.y < 0 ? start.y - pos.y : pos.y - start.y + 1)
 
         while (1) {
-            const tileData = this.getTileCollisionData(pos)
-            if (tileData && !exclude.includes(tileData) && (!entity || entity.collideWithTile(tileData, pos))) {
+            const tileId = this.getTileCollisionData(pos)
+            if (tileId && (!entity || entity.collideWithTileRaycast(tileId, pos))) {
                 return pos.add(vec2(0.5))
             }
             if (x1 > length && y1 > length) break

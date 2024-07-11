@@ -3,22 +3,47 @@ import { NodeType } from '../constants'
 import { Box, Vector, vec2 } from '../engine-helpers'
 import { Entity } from './entity'
 import { Scene } from './scene'
-import { noop } from '../utils/helpers'
 import { Tile } from './tile'
 
 export class Layer {
+    /** The unique identifier of the layer. */
     id = Date.now()
+
+    /** The name of the layer (optional). */
     name?: string
+
+    /** The type of the layer. */
     type = NodeType.Custom as string
+
+    /** The size of the layer. */
     size = vec2()
-    properties: Record<string, any> = {}
+
+    /** The data of the layer. */
     data?: (number | null)[]
+
+    /** The objects in the layer. */
     objects?: Entity[]
+
+    /** The canvas element for the layer. */
     layerCanvas?: HTMLCanvasElement
+
+    /** The rendering context of the layer canvas. */
     layerContext?: CanvasRenderingContext2D
+
+    /** The render order of the layer. */
     renderOrder = 0
+
+    /** Flag indicating whether the layer is visible. */
     visible = true
 
+    /** The properties of the layer. */
+    properties: Record<string, any> = {}
+
+    /**
+     * Creates a new layer.
+     * @param scene
+     * @param layerData
+     */
     constructor(
         public scene: Scene,
         layerData?: TMXLayer
@@ -39,6 +64,9 @@ export class Layer {
         }
     }
 
+    /**
+     * Renders the tiles to the layer canvas.
+     */
     renderTilesToLayerCanvas() {
         if (this.data) {
             this.layerCanvas = document.createElement('canvas')
@@ -74,6 +102,13 @@ export class Layer {
      * Updates the layer.
      */
     update() {}
+
+    /**
+     * Post-update method.
+     * This method is called after the update and draw.
+     * It can be used to perform additional operations after the update.
+     */
+    postUpdate() {}
 
     /**
      * Retrieves the tile at the specified position.
@@ -121,9 +156,8 @@ export class Layer {
      *
      * @param fn - The callback function to execute for each visible tile.
      *             It receives the tile object, position, and flips as parameters.
-     * @returns void
      */
-    forEachVisibleTile(fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void = noop) {
+    forEachVisibleTile(fn: (tile: Tile, pos: Vector, flipH: boolean, flipV: boolean) => void) {
         const { pos, size } = this.scene.getCameraVisibleGrid()
         for (let y = pos.y; y < pos.y + size.y; y++) {
             for (let x = pos.x; x < pos.x + size.x; x++) {
@@ -144,9 +178,8 @@ export class Layer {
      * The callback function receives the object as a parameter.
      *
      * @param cb - The callback function to be invoked for each visible object.
-     * @returns void
      */
-    forEachVisibleObject(cb: (obj: Entity) => void = noop) {
+    forEachVisibleObject(cb: (obj: Entity) => void) {
         const objects = this.scene.objects.filter(({ layerId }) => layerId === this.id)
         objects.sort((a, b) => a.renderOrder - b.renderOrder)
         for (const obj of objects) {
@@ -155,7 +188,7 @@ export class Layer {
     }
 
     /**
-     * Draws the layer on the canvas.
+     * Draws the layer.
      */
     draw() {
         const { camera } = this.scene

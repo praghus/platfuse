@@ -118,6 +118,9 @@ const gameConfig = {
         enemy: Enemy,
         player: Player
     },
+    scenes: {
+        MainScene
+    },
     debug: true
 }
 
@@ -131,7 +134,7 @@ const preloadAssets = {
 const game = new Game(gameConfig, preloadAssets)
 
 async function start() {
-    await game.init(MainScene)
+    await game.start('MainScene')
 }
 
 start()
@@ -153,22 +156,25 @@ import { CustomLayer } from './layers/custom-layer'
 import tiledMap from './assets/map.tmx'
 
 class MainScene extends Scene {
-    gravity = 0.05 // Set global gravity value for physics
+    /**
+     * Initialize scene with map data from *.tmx file.
+     * Generate tilesets, layers and game objects.
+     */
+    tmxMap = tiledMap
+    /**
+     *  Set global gravity value for physics
+     */
+    gravity = 0.05
 
-    async init() {
-        // Initialize scene with map data from *.tmx file.
-        // Generate tilesets, layers and game objects.
-        await super.init(tiledMap)
-
-        this.setScale(4) // Set camera scale to 4
+    init() {
+        this.camera.setScale(4) // Set camera scale to 4
         this.addLayer(CustomLayer, 1) // Add custom layer with render order 1
-        this.setTileCollisionLayer(2) // Set tiles collision data from Tmx layer #2
+        this.setTileCollisionLayer(2) // Set tiles collision data from TMX layer #2
 
         console.log('Main Scene initialized', this)
     }
 
     /* Scene lifecycle methods */
-
     update() {}
     draw() {}
     postUpdate() {}
@@ -206,13 +212,14 @@ class CustomFunctionLayer extends Layer {
         super(scene)
     }
 
-    draw() {
-        // Custom rendering logic here
-    }
+    // Optional update logic here
+    update() {}
 
-    update() {
-        // Optional update logic here
-    }
+    // Custom rendering logic here
+    draw() {}
+
+    // Optional post-update logic here
+    postUpdate() {}
 }
 ```
 

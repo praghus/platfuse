@@ -3,51 +3,110 @@ import { Vector, vec2 } from '../engine-helpers'
 import { Scene } from './scene'
 import { lerp } from '../utils/helpers'
 
+/**
+ * Represents a camera object used for rendering and controlling the view of a scene.
+ */
 export class Camera {
-    pos = vec2() //             camera position
-    offset = vec2() //          camera shake offset
-    followEntity?: Entity //    entity to follow
-    scale = 1 //                camera scale (zoom)
-    speed = vec2(1) //          camera horizontal and vertical speed scale (percent) 0 - no movement, 1 - instant
-    delta = 1 / 60 //           delta time
-    scrolling = true //         scrolling mode (smooth or switch between views without scrolling)
-    isShaking = false //        is camera shaking
-    bounded = true //           if false allow camera to move outside of bounds
-    shakeIntensity = vec2() //  shake intensity
-    shakeDuration = 0 //        shake duration
-    shakeElapsed = 0 //         shake elapsed time
+    /** Camera position */
+    pos = vec2()
 
+    /** Camera shake offset */
+    offset = vec2()
+
+    /** Entity to follow */
+    followEntity?: Entity
+
+    /** Camera scale (zoom) */
+    scale = 1
+
+    /** Camera horizontal and vertical speed scale (percent). 0 - no movement, 1 - instant movement */
+    speed = vec2(1)
+
+    /** Scrolling mode (smooth or switch between views without scrolling) */
+    scrolling = true
+
+    /** Is camera shaking */
+    isShaking = false
+
+    /** Camera bounds. If true, camera will not go outside the game world. */
+    bounded = true
+
+    /** Shake intensity */
+    shakeIntensity = vec2()
+
+    /** Shake duration */
+    shakeDuration = 0
+
+    /** Shake elapsed time*/
+    shakeElapsed = 0
+
+    /**
+     * Camera constructor
+     * @param scene Scene object
+     */
     constructor(public scene: Scene) {}
 
+    /**
+     * Set camera position
+     * @param pos Position vector
+     */
     setPos(pos: Vector) {
         this.followEntity = undefined
         this.pos = pos
     }
 
+    /**
+     * Set camera scale
+     * @param scale
+     */
     setScale(scale: number) {
         this.scale = scale
     }
 
+    /**
+     * Sets the speed of the camera.
+     * @param speed - The speed value or a vector representing the speed.
+     */
     setSpeed(speed: number | Vector) {
         this.speed = typeof speed === 'number' ? vec2(speed) : speed
     }
 
+    /**
+     * Sets the scrolling behavior of the camera.
+     * @param scrolling - A boolean value indicating whether scrolling is enabled or disabled.
+     */
     setScrolling(scrolling: boolean) {
         this.scrolling = scrolling
     }
 
+    /**
+     * Sets the entity to follow.
+     * @param follow The entity to follow.
+     */
     follow(follow: Entity) {
         this.followEntity = follow
     }
 
+    /**
+     * Stops the camera from following any entity.
+     */
     unfollow() {
         this.followEntity = undefined
     }
 
+    /**
+     * Toggles the bounds of the camera.
+     * @param bounded - A boolean value indicating whether the camera should be bounded or not.
+     */
     toggleBounds(bounded: boolean) {
         this.bounded = bounded
     }
 
+    /**
+     * Shakes the camera for a specified duration with a given intensity.
+     * @param duration The duration of the camera shake in seconds.
+     * @param intensity The intensity of the camera shake as a Vector.
+     */
     shake(duration: number, intensity: Vector) {
         this.isShaking = true
         this.shakeDuration = duration
@@ -56,6 +115,9 @@ export class Camera {
         this.shakeElapsed = 0
     }
 
+    /**
+     * Updates the camera position and behavior based on the current scene state.
+     */
     update() {
         const { game, size, tileSize } = this.scene
         const viewSize = vec2(game.width, game.height)
@@ -89,7 +151,7 @@ export class Camera {
 
         // shake
         if (this.isShaking) {
-            this.shakeElapsed += this.delta * 1000
+            this.shakeElapsed += game.delta
             // progress = clamp(this.shakeElapsed / this.shakeDuration, 0, 1)
             if (this.shakeElapsed < this.shakeDuration) {
                 this.offset = vec2(

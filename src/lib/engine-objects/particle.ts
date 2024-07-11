@@ -2,16 +2,39 @@ import { Color, vec2 } from '../engine-helpers'
 import { Entity } from './entity'
 import { Scene } from './scene'
 
+/**
+ * Represents a particle in the Platfuse game engine.
+ */
 export class Particle extends Entity {
-    type = 'particle'
+    /** The type of the particle. */
+    type = 'Platfuse.Particle'
+
+    /** The starting color of the particle. */
     colorStart = new Color()
+
+    /** The color delta of the particle. */
     colorEndDelta = new Color()
+
+    /** The time to live (in seconds) of the particle. */
     ttl = 0
+
+    /** The starting size of the particle. */
     sizeStart = 0.1
+
+    /** The size delta of the particle. */
     sizeDelta = 0
+
+    /** The rate at which the particle fades. */
     fadeRate = 0.1
+
+    /** The scale of the particle's stretch effect. */
     stretchScale = 0
 
+    /**
+     * Creates a new Particle instance.
+     * @param scene The scene the particle belongs to.
+     * @param obj Additional properties for the particle.
+     */
     constructor(
         public scene: Scene,
         obj: Record<string, any>
@@ -20,9 +43,11 @@ export class Particle extends Entity {
         this.pos = obj?.pos || vec2()
     }
 
+    /**
+     * Draws the particle on the canvas.
+     */
     draw() {
         const { time } = this.scene.game
-
         const p = Math.min((time - this.spawnTime) / this.ttl, 1)
         const radius = this.sizeStart + p * this.sizeDelta
         const fading = this.fadeRate / 2
@@ -47,7 +72,7 @@ export class Particle extends Entity {
         }
 
         if (p === 1) {
-            this.dead = true
+            this.destroy()
         }
 
         super.draw()

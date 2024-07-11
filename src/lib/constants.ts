@@ -1,6 +1,10 @@
 import { Color } from './engine-helpers/color'
 
-// DawnBringer 16 color palette
+/**
+ * DawnBringer 16 color palette
+ * @see {@link https://lospec.com/palette-list/dawnbringer-16}
+ * @see {@link https://pixeljoint.com/forum/forum_posts.asp?TID=12795}
+ */
 const DefaultColors = {
     Black: new Color('#140C1C'),
     DarkRed: new Color('#442434'),
@@ -20,6 +24,9 @@ const DefaultColors = {
     White: new Color('#DEEED6')
 }
 
+/**
+ * The type of a node in a Tiled map.
+ */
 enum NodeType {
     Custom = 'custom',
     ImageLayer = 'imagelayer',
@@ -29,6 +36,9 @@ enum NodeType {
     TileSet = 'tileset'
 }
 
+/**
+ * The flipped flags for a tile in a Tiled map.
+ */
 enum Flipped {
     Diagonally = 0x20000000,
     Horizontally = 0x80000000,

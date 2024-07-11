@@ -5,15 +5,37 @@ import { Vector, vec2 } from '../engine-helpers/vector'
 import { Scene } from './scene'
 import { Box } from '../engine-helpers'
 
+/**
+ * The `Tile` class represents a tile on a tilemap.
+ */
 export class Tile implements Drawable {
-    properties: Record<string, any>
-    type: string
+    /** The size of the tile. */
     size = vec2()
+
+    /** The type of the tile. */
+    type: string
+
+    /** Whether the tile is animated. */
     animated = false
+
+    /** The current frame of the animation. */
     animFrame = 0
+
+    /** The start time of the frame. */
     then = getPerformance()
+
+    /** The start time of the frame. */
     frameStart = getPerformance()
 
+    /** The properties of the tile. */
+    properties: Record<string, any>
+
+    /**
+     * Creates a new `Tile` object.
+     * @param scene
+     * @param id
+     * @param tileset
+     */
     constructor(
         public scene: Scene,
         public id: number,
@@ -61,6 +83,7 @@ export class Tile implements Drawable {
      * @returns The sprite clip position as a `vec2` object.
      */
     getSpriteClip() {
+        // @todo: refactor this method
         const { columns, firstgid, tilewidth, tileheight } = this.tileset
         const tileGid = this.getNextGid()
         return vec2(
@@ -71,7 +94,6 @@ export class Tile implements Drawable {
 
     /**
      * Draws the tile at the specified position.
-     *
      * @param pos - The position to draw the tile at.
      * @param flipH - Whether to flip the tile horizontally (default: false).
      * @param flipV - Whether to flip the tile vertically (default: false).

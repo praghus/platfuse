@@ -1,39 +1,95 @@
+/**
+ * Represents an emitter that spawns particles in a scene.
+ */
 import { ParticleConfig } from '../../types'
-import { Color, Vector, randVector, vec2 } from '../engine-helpers'
+import { Color, Vector, vec2 } from '../engine-helpers'
+import { randPointOnCircle } from '../engine-helpers/vector'
 import { rand } from '../utils/helpers'
 import { Entity } from './entity'
 import { Particle } from './particle'
 import { Scene } from './scene'
 
-const randPointOnCircle = (radius = 1, minRadius = 0) =>
-    radius > 0 ? randVector(radius * rand(minRadius / radius, 1) ** 0.5) : new Vector()
-
+/**
+ * Represents an emitter object that spawns particles in a scene.
+ */
 export class Emitter extends Entity {
-    type = 'emitter'
-    pos: Vector
-    angle = 0 //                    Angle to emit the particles
-    emitSize: Vector | number //    World space size of the emitter (float for circle diameter, vec2 for rect)
-    emitTime = 0 //                 How long to stay alive (0 is forever)
-    emitRate = 100 //               How many particles per second to spawn, does not emit if 0
-    emitConeAngle = Math.PI //      Local angle to apply velocity to particles from emitter
-    colorStart = new Color() //     Color at start of life 1, randomized between start colors
-    colorEnd = new Color() //       Color at end of life, randomized between end colors
-    ttl = 0.5 //                    How long particles live
-    sizeStart = 0.1 //              How big are particles at start
-    sizeEnd = 1 //                  How big are particles at end
-    speed = 0.1 //                  How fast are particles when spawned
-    damping = 1 //                  How much to dampen particle speed
-    angleDamping = 1 //             How much to dampen particle angular speed
-    gravityScale = 0 //             How much does gravity effect particles
-    particleConeAngle = Math.PI //  Cone for start particle angle
-    fadeRate = 0.1 //               How quick to fade in particles at start/end in percent of life
-    randomness = 0.2 //             Randomness percent
-    collideTiles = false //         Collide against tiles
-    collideObjects = false //       Collide against objects
-    renderOrder = 0 //              Render order
-    stretchScale = 0 //             If set the partile is drawn as a trail, stretched in the drection of velocity
-    timeBuffer = 0 //               Time buffer for emit rate
+    /** The type of the emitter. */
+    type = 'Platfuse.Emitter'
 
+    /** The position of the emitter. */
+    pos: Vector
+
+    /** The angle to emit the particles. */
+    angle = 0
+
+    /** The size of the emitter. It can be a float for circle diameter or a vec2 for rectangle dimensions. */
+    emitSize: Vector | number
+
+    /** How long the emitter stays alive (0 is forever). */
+    emitTime = 0
+
+    /** How many particles per second to spawn. If set to 0, no particles will be emitted. */
+    emitRate = 100
+
+    /** The local angle to apply velocity to particles from the emitter. */
+    emitConeAngle = Math.PI
+
+    /** The color at the start of the particle's life. It is randomized between start colors. */
+    colorStart = new Color()
+
+    /** The color at the end of the particle's life. It is randomized between end colors. */
+    colorEnd = new Color()
+
+    /** How long particles live. */
+    ttl = 0.5
+
+    /** The size of particles at the start. */
+    sizeStart = 0.1
+
+    /** The size of particles at the end. */
+    sizeEnd = 1
+
+    /** The speed of particles when spawned. */
+    speed = 0.1
+
+    /** How much to dampen particle speed. */
+    damping = 1
+
+    /** How much to dampen particle angular speed. */
+    angleDamping = 1
+
+    /** How much gravity affects particles. */
+    gravityScale = 0
+
+    /** The cone for the start particle angle. */
+    particleConeAngle = Math.PI
+
+    /** How quickly particles fade in at the start/end in percent of life. */
+    fadeRate = 0.1
+
+    /** The randomness percent. */
+    randomness = 0.2
+
+    /** Whether particles collide against tiles. */
+    collideTiles = false
+
+    /** Whether particles collide against objects. */
+    collideObjects = false
+
+    /** The render order of particles. */
+    renderOrder = 0
+
+    /** If set, the particle is drawn as a trail, stretched in the direction of velocity. */
+    stretchScale = 0
+
+    /** Time buffer for emit rate. */
+    timeBuffer = 0
+
+    /**
+     * Creates a new Emitter instance.
+     * @param scene - The scene the emitter belongs to.
+     * @param obj - Additional properties for the emitter.
+     */
     constructor(
         public scene: Scene,
         public obj: ParticleConfig
@@ -115,5 +171,8 @@ export class Emitter extends Entity {
         this.scene.objects.push(particle)
     }
 
+    /**
+     * Draws the emitter.
+     */
     draw() {}
 }

@@ -4,14 +4,35 @@ import { Vector, vec2 } from '../engine-helpers/vector'
 import { Box } from '../engine-helpers'
 import { Entity } from './entity'
 
+/**
+ * The `Sprite` class represents an image that can be drawn on the screen.
+ * It can be animated using a specified animation.
+ * @see {@link Drawable}
+ * @see {@link Animation}
+ */
 export class Sprite implements Drawable {
+    /** The image element of the sprite. */
     image?: HTMLImageElement
+
+    /** The animation of the sprite. */
     animation?: Animation
+
+    /** The size of the sprite. */
     size = vec2()
+
+    /** The current frame of the animation. */
     then = getPerformance()
+
+    /** The start time of the frame. */
     frameStart = getPerformance()
+
+    /** The current frame of the animation.*/
     animFrame = 0
 
+    /**
+     * Creates a new `Sprite` object.
+     * @param entity - The entity that the sprite belongs to.
+     */
     constructor(public entity: Entity) {
         if (entity?.image) {
             const { scene } = entity
@@ -51,6 +72,13 @@ export class Sprite implements Drawable {
         }
     }
 
+    /**
+     * Draws the sprite at the specified position with optional transformations.
+     * @param pos - The position at which to draw the sprite.
+     * @param flipH - (Optional) Whether to flip the sprite horizontally. Defaults to false.
+     * @param flipV - (Optional) Whether to flip the sprite vertically. Defaults to false.
+     * @param angle - (Optional) The angle at which to rotate the sprite, in radians. Defaults to 0.
+     */
     draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
         const { image, animation, animFrame, size } = this
         const { game, camera } = this.entity.scene

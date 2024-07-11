@@ -1,3 +1,9 @@
+/**
+ * Asynchronously preloads a collection of assets.
+ * @param assets - The collection of assets to preload.
+ * @param indicator - A callback function that receives the progress of the preload operation.
+ * @returns A promise that resolves to an object containing the preloaded assets.
+ */
 async function preload(assets: Record<string, string>, indicator: (p: number) => void) {
     const count = Object.keys(assets).length
     let loadedCount = 0

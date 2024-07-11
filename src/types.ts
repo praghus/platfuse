@@ -1,4 +1,4 @@
-import { Color, Entity, Vector } from './index'
+import { Color, Entity, Scene, Vector } from './index'
 
 export interface Constructable<T> {
     new (...args: any[]): T
@@ -33,11 +33,12 @@ export interface Drawable {
 }
 
 export interface GameConfig {
-    fixedSize?: Vector
+    scenes: Record<string, Constructable<Scene>>
     entities?: Record<string, Constructable<Entity>>
     backgroundColor?: string
     primaryColor?: string
     secondaryColor?: string
+    fixedSize?: Vector
     global?: boolean
     debug?: boolean
 }

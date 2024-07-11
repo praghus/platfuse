@@ -2,53 +2,133 @@
 import { Animation, Drawable } from '../../types'
 import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
 import { DefaultColors } from '../constants'
-import { clamp, lerp } from '../utils/helpers'
+import { clamp, deg2rad, lerp } from '../utils/helpers'
 import { Scene } from './scene'
 import { Sprite } from './sprite'
 
+/**
+ * The Entity class represents a game object in the scene.
+ */
 export class Entity {
-    id = Date.now() //          ID of the object
-    type?: string //            Type of the object
-    family?: string //          Family of the object (optional)
-    gid?: number //             Global ID of the object image from TMX map (if any)
-    ttl?: number //             Time to live of the object
-    name?: string //            Name of the object
-    image?: string //           Image of the object (if any)
-    color?: Color //            Color of the object (if no sprite)
-    layerId?: number //         Layer ID of the object (if any)
-    animation?: Animation //    Animation of the object sprite
-    sprite?: Drawable //        Sprite of the object
-    // Flags --------------------------------------------------------------------------
-    flipH = false //            Whether the object is flipped horizontally (mirrored)
-    flipV = false //            Whether the object is flipped vertically
-    solid = true //             Whether the object is solid and collides with other objects
-    visible = true //           Whether the object is visible and should be drawn
-    active = true //            Whether the object is active and should be updated
-    dead = false //             Whether the object is dead and should be removed
-    collideTiles = true //      Whether the object collides with tiles
-    collideObjects = true //    Whether the object collides with other objects
-    onGround: Entity | boolean = false // Object the entity is standing on
-    // Physics -------------------------------------------------------------------------
-    pos = vec2() //             Position of the object (center, scaled by tileSize)
-    lastPos = vec2() //         Last position of the object
-    size = vec2() //            Size of the object (scaled by tileSize)
-    force = vec2() //           Force applied to the object (acceleration)
-    mass = 1 //                 Mass of the object, 0 is static
-    damping = 1 //              How much force is kept each frame (0-1)
-    elasticity = 0 //           Bounciness of the object (0-1)
-    friction = 0.8 //           Friciton when on ground (0-1)
-    gravityScale = 1 //         Hot gravity affects the object
-    angleVelocity = 0 //        Angular velocity
-    angleDamping = 1 //         Rotation slowdown (0-1)
-    angle = 0 //                Rotation angle
-    maxSpeed = 1 //             Maximum speed
-    // Time ---------------------------------------------------------------------------
-    spawnTime = 0 //            Time the object was spawned
-    // Rendering ----------------------------------------------------------------------
-    renderOrder = 0 //          Order in which the object is drawn (higher is later)
-    // Custom -------------------------------------------------------------------------
-    properties: Record<string, any> = {} // Custom properties of the object
+    /** The ID of the object. */
+    id = Date.now()
 
+    /** The type of the object. */
+    type?: string
+
+    /** The family of the object. */
+    family?: string
+
+    /** The global ID of the object image from TMX map (if any). */
+    gid?: number
+
+    /** The time to live of the object in milliseconds. */
+    ttl?: number
+
+    /** The name of the object. */
+    name?: string
+
+    /** The image of the object (if any). */
+    image?: string
+
+    /** The color of the object (if no sprite). */
+    color?: Color
+
+    /** The layer ID of the object (if any). */
+    layerId?: number
+
+    /** Whether the object is flipped horizontally (mirrored) */
+    flipH = false
+
+    /** Whether the object is flipped vertically */
+    flipV = false
+
+    /** Whether the object is solid and collides with other objects */
+    solid = true
+
+    /** Whether the object is visible and should be drawn */
+    visible = true
+
+    /** Whether the object is active and should be updated */
+    active = true
+
+    /** Whether the object is dead and should be removed */
+    dead = false
+
+    /** Whether the object is static and should not move */
+    collideTiles = true
+
+    /** Whether the object collides with other objects */
+    collideObjects = true
+
+    /** The object the entity is standing on */
+    onGround: Entity | boolean = false
+
+    /** Current position of the object */
+    pos = vec2()
+
+    /** Last position of the object */
+    lastPos = vec2()
+
+    /** The size of the object (scaled by tileSize) */
+    size = vec2()
+
+    /** The force applied to the object (acceleration) */
+    force = vec2()
+
+    /** The object's mass (0 is static) */
+    mass = 1
+
+    /** The object's damping (0-1) */
+    damping = 1
+
+    /** The object's elasticity (0-1) */
+    elasticity = 0
+
+    /** The object's friction (0-1) */
+    friction = 0.8
+
+    /** How much gravity affects the object */
+    gravityScale = 1
+
+    /** The object's angular velocity */
+    angleVelocity = 0
+
+    /** Rotation slowdown (0-1) */
+    angleDamping = 1
+
+    /** Rotation angle (in radians) */
+    angle = 0
+
+    /** Maximum speed */
+    maxSpeed = 1
+
+    /** Time the entity was spawned */
+    spawnTime = 0
+
+    /** Render order */
+    renderOrder = 0
+
+    /** Custom properties of the object */
+    properties: Record<string, any> = {}
+
+    /**
+     * The animation of the object sprite.
+     * @see {@link Animation}
+     */
+    animation?: Animation
+
+    /**
+     * The sprite of the object.
+     * @see {@link Sprite}
+     */
+    sprite?: Drawable
+
+    /**
+     * Creates a new Entity object.
+     * @param scene
+     * @param obj
+     */
     constructor(
         public scene: Scene,
         public obj?: Record<string, any>
@@ -75,7 +155,7 @@ export class Entity {
             }
         }
         this.spawnTime = scene.game.time
-        this.angle = obj?.rotation ? obj.rotation * (Math.PI / 180) : this.angle
+        this.angle = obj?.rotation ? deg2rad(obj.rotation) : this.angle
         this.visible = obj?.visible !== undefined ? obj.visible : true
         this.force = obj?.force || this.force
         this.flipH = obj?.flipH || this.flipH
@@ -84,6 +164,13 @@ export class Entity {
         this.family = obj?.family || this.family
     }
 
+    /**
+     * Creates a sprite for the entity.
+     * If the entity has an image, a new sprite is created using the image.
+     * If the entity has a gid (global ID), the sprite is assigned from the scene's tiles using the gid.
+     * If the entity has neither an image nor a gid, the entity is drawn as a colored rectangle.
+     * @see {@link Sprite}
+     */
     createSprite() {
         if (this.image) this.sprite = new Sprite(this)
         else if (this.gid) this.sprite = this.scene.tiles[this.gid]
@@ -123,22 +210,22 @@ export class Entity {
     }
 
     /**
+     * Checks if the entity collides with a tile using raycasting.
+     * @param tileId - The data of the tile to check collision with.
+     * @param pos - The position of the entity.
+     * @returns True if the entity collides with the tile, false otherwise.
+     */
+    collideWithTileRaycast(tileId: number, pos: Vector) {
+        return tileId > 0
+    }
+
+    /**
      * Checks if this entity collides with another entity.
      * @param entity - The entity to check collision with.
      * @returns `true` if a collision occurs, `false` otherwise.
      */
     collideWithObject(entity: Entity) {
         return true
-    }
-
-    /**
-     * Checks if the entity collides with a tile using raycasting.
-     * @param tileData - The data of the tile to check collision with.
-     * @param pos - The position of the entity.
-     * @returns True if the entity collides with the tile, false otherwise.
-     */
-    collideWithTileRaycast(tileData: number, pos: Vector) {
-        return tileData > 0
     }
 
     /**
@@ -245,7 +332,7 @@ export class Entity {
      * It also updates the entity's animation.
      *
      * Based on LittleJS by Frank Force.
-     * @see https://github.com/KilledByAPixel/LittleJS/blob/main/src/engineObject.js
+     * @see {@link https://github.com/KilledByAPixel/LittleJS/blob/main/src/engineObject.js}
      */
     update() {
         const { scene } = this
@@ -253,7 +340,7 @@ export class Entity {
         this.animate()
 
         // Kill if TTL is up
-        if (this.ttl && Math.min((scene.game.time - this.spawnTime) / this.ttl, 1) === 1) {
+        if (this.ttl && Math.min(this.getAliveTime() / this.ttl, 1) === 1) {
             this.destroy()
         }
 
