@@ -108,7 +108,6 @@ export class Game {
 
     /**
      * Creates a new game instance.
-     * @constructor
      * @param {GameConfig} config - The game configuration.
      * @param {Record<string, string>} preload - The preload record.
      */

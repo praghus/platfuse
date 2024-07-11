@@ -24,7 +24,6 @@ export class Input {
 
     /**
      * Creates an instance of the Input class.
-     * @constructor
      * @param {Game} game - The game instance.
      */
     constructor(public game: Game) {
