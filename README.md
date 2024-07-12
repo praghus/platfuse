@@ -62,7 +62,7 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
         fixedSize: vec2(800, 600), // Fixed `canvas` size
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
-        secondaryColor: '#FF0000'
+        secondaryColor: '#FF0000',
         /** Available scenes */
         scenes: {
             MyMainScene
