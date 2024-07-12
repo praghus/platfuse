@@ -87,10 +87,7 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
 4. Start your game with your main scene:
 
     ```typescript
-    async function start() {
-        await myGame.start('MyMainScene')
-    }
-    start()
+    await myGame.start('MyMainScene')
     ```
 
 ## Documentation
@@ -142,11 +139,7 @@ const preloadAssets = {
 
 const game = new Game(gameConfig, preloadAssets)
 
-async function start() {
-    await game.start('MainScene')
-}
-
-start()
+await game.start('MainScene')
 ```
 
 ### Scene
