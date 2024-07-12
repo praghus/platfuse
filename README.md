@@ -58,7 +58,7 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
     const gameConfig = {
         debug: true, // Debug enabled
         global: true, // Platfuse as a global `window` object.
-        pixelPerfect: true //  Whether the `image-rendering` should be `pixelated`
+        pixelPerfect: true, //  Whether the `image-rendering` should be `pixelated`
         fixedSize: vec2(800, 600), // Fixed `canvas` size
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
