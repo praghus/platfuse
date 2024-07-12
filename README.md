@@ -58,10 +58,15 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
     const gameConfig = {
         debug: true, // Debug enabled
         global: true, // Platfuse as a global `window` object.
+        pixelPerfect: true //  Whether the `image-rendering` should be `pixelated`
         fixedSize: vec2(800, 600), // Fixed `canvas` size
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
         secondaryColor: '#FF0000'
+        /** Available scenes */
+        scenes: {
+            MyMainScene
+        }
     }
 
     const preloadAssets = {
@@ -70,17 +75,21 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
     }
     ```
 
-2. Initialize the game engine with your configuration and assets:
+2. Create your first scene by extending the [`Scene`](#scene) class and implementing the required methods.
+
+3. Initialize the game engine with your configuration and assets:
 
     ```typescript
     const myGame = new Game(gameConfig, preloadAssets)
     ```
 
-3. Create your first scene by extending the `Scene` class and implementing the required methods.
+4. Start your game with your main scene:
 
-4. Start your game by initializing it with your main scene:
     ```typescript
-    myGame.init(MyMainScene)
+    async function start() {
+        await myGame.start('MyMainScene')
+    }
+    start()
     ```
 
 ## Documentation
@@ -120,8 +129,7 @@ const gameConfig = {
     },
     scenes: {
         MainScene
-    },
-    debug: true
+    }
 }
 
 const preloadAssets = {
@@ -254,6 +262,7 @@ Platfuse is licensed under the MIT License - see the [LICENSE](LICENSE) file for
 The project is in a state of continuous development and improvement. For the latest changes, please refer to the [CHANGELOG.md](CHANGELOG.md).
 
 ## Games Made With Platfuse
-- [Posthumus](https://github.com/praghus/posthumus) - Zombie shooter platformer
-- [Showcase](https://github.com/praghus/platfuse-example) - Platformer example
-- [Boilerplate](https://github.com/praghus/platfuse-boilerplate) - Platfuse boilerplate project
+
+-   [Posthumus](https://github.com/praghus/posthumus) - Zombie shooter platformer
+-   [Showcase](https://github.com/praghus/platfuse-example) - Platformer example
+-   [Boilerplate](https://github.com/praghus/platfuse-boilerplate) - Platfuse boilerplate project

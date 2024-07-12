@@ -45,4 +45,20 @@ enum Flipped {
     Vertically = 0x40000000
 }
 
-export { NodeType, Flipped, DefaultColors }
+const BodyStyle = `
+    margin: 0;
+    overflow: hidden;
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+`
+
+const CanvasStyle = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+`
+
+export { NodeType, Flipped, DefaultColors, BodyStyle, CanvasStyle }

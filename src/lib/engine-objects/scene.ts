@@ -117,8 +117,8 @@ export class Scene {
         layers.sort(sortByRenderOrder)
         objects.sort(sortByRenderOrder)
 
-        ctx.imageSmoothingEnabled = false
         ctx.save()
+        ctx.imageSmoothingEnabled = false // always pixel perfect
         ctx.clearRect(0, 0, width, height)
         for (const layer of layers) layer.draw()
         for (const obj of objects) obj.draw()

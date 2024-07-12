@@ -3,17 +3,9 @@ import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { delay, lerp } from '../utils/helpers'
 import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
-import { DefaultColors } from '../constants'
+import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
 import { Entity } from './entity'
 import { Scene } from './scene'
-
-const canvasStyle = `
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    image-rendering:pixelated
-`
 
 /**
  * Represents a game engine that manages scenes, assets, and game state.
@@ -30,6 +22,9 @@ export class Game {
 
     /** Input object for handling user input. */
     input: Input = new Input(this)
+
+    /** Flag indicating whether the game should render pixel-perfect. */
+    pixelPerfect = false
 
     /** Background color of the game. */
     backgroundColor = DefaultColors.DarkBlue
@@ -115,18 +110,22 @@ export class Game {
         public config: GameConfig,
         public preload: Record<string, string>
     ) {
-        document.body.appendChild((this.canvas = document.createElement('canvas')))
+        this.canvas = document.createElement('canvas')
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
+        this.pixelPerfect = !!config?.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
         this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor
-        this.canvas.setAttribute('style', canvasStyle)
+        this.canvas.setAttribute('style', `${CanvasStyle} ${this.pixelPerfect ? 'image-rendering: pixelated;' : ''}`)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
         window.addEventListener('resize', this.onResize.bind(this))
         this.onResize()
+
+        document.body.style.cssText = `${BodyStyle} background: ${this.backgroundColor.toString()};`
+        document.body.appendChild(this.canvas)
 
         if (!!config.global) window.Platfuse = this
     }
