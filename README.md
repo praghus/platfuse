@@ -1,7 +1,7 @@
 # ![logo-32](https://github.com/praghus/platfuse/assets/5312169/aeadfef1-7095-41a5-ae32-56d0f6acb95d) Platfuse Game Engine 
 **[![NPM Version](https://img.shields.io/npm/v/platfuse.svg?style=flat)](https://www.npmjs.org/package/platfuse)**
 
-Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.
+**Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.**
 
 ![Jul-05-2024 22-05-43](https://github.com/praghus/platfuse/assets/5312169/bad80076-a66f-47ea-ab0a-cc9e6803517e)
 
