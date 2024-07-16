@@ -20,6 +20,8 @@ async function preload(assets: Record<string, string>, indicator: (p: number) =>
                 }
             } else if (/\.(webm|mp3|wav)$/i.test(src) || /(data:audio\/[^;]+;base64[^"]+)$/i.test(src)) {
                 const audio = new Audio()
+                audio.preload = 'auto'
+                audio.src = src
                 audio.addEventListener(
                     'canplaythrough',
                     () => {
@@ -28,7 +30,6 @@ async function preload(assets: Record<string, string>, indicator: (p: number) =>
                     },
                     false
                 )
-                audio.src = src
             } else return Promise.resolve()
         })
     }

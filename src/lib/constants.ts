@@ -45,6 +45,15 @@ enum Flipped {
     Vertically = 0x40000000
 }
 
+/**
+ * Represents the shape types.
+ */
+enum Shape {
+    Rectangle = 'rectangle',
+    Ellipse = 'ellipse',
+    Polygon = 'polygon'
+}
+
 const BodyStyle = `
     margin: 0;
     overflow: hidden;
@@ -61,4 +70,4 @@ const CanvasStyle = `
     transform: translate(-50%,-50%);
 `
 
-export { NodeType, Flipped, DefaultColors, BodyStyle, CanvasStyle }
+export { NodeType, Flipped, Shape, DefaultColors, BodyStyle, CanvasStyle }

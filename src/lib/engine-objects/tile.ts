@@ -83,7 +83,6 @@ export class Tile implements Drawable {
      * @returns The sprite clip position as a `vec2` object.
      */
     getSpriteClip() {
-        // @todo: refactor this method
         const { columns, firstgid, tilewidth, tileheight } = this.tileset
         const tileGid = this.getNextGid()
         return vec2(

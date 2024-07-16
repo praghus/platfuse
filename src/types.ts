@@ -1,4 +1,5 @@
 import { Color, Entity, Scene, Vector } from './index'
+import { Shape } from './lib/constants'
 
 export interface Constructable<T> {
     new (...args: any[]): T
@@ -69,4 +70,5 @@ export interface ParticleConfig {
     stretchScale?: number
     elasticity?: number
     renderOrder?: number
+    shape?: Shape
 }

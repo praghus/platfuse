@@ -269,7 +269,7 @@ export class Scene {
      * @param source - The source of the tileset image.
      */
     addTileset(tileset: TMXTileset, source: string) {
-        const newTileset = { ...tileset, image: { ...tileset.image, source } } // @todo: crerate Tileset class
+        const newTileset = { ...tileset, image: { ...tileset.image, source } }
         for (let i = 0; i < newTileset.tilecount; i++) {
             this.tiles[i + newTileset.firstgid] = new Tile(this, i + newTileset.firstgid, newTileset)
         }
@@ -307,6 +307,10 @@ export class Scene {
         return pos.inRange(this.size) ? this.tileCollisionData[((pos.y | 0) * this.size.x + pos.x) | 0] : 0
     }
 
+    /**
+     * Returns the visible grid of the camera.
+     * @returns {Box} The visible grid of the camera.
+     */
     getCameraVisibleGrid() {
         return new Box(
             this.camera.pos.divide(this.tileSize).invert().divide(this.camera.scale).floor(),
@@ -314,6 +318,10 @@ export class Scene {
         )
     }
 
+    /**
+     * Calculates the visible area of the camera in the scene.
+     * @returns A `Box` object representing the visible area of the camera.
+     */
     getCameraVisibleArea() {
         const viewSize = this.game.getResolution()
         return new Box(
@@ -346,12 +354,20 @@ export class Scene {
             .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
     }
 
+    /**
+     * Returns the position of the pointer relative to the scene.
+     * @returns {Vector2} The position of the pointer relative to the scene.
+     */
     getPointerPos() {
         const { pos, scale } = this.camera
         const { mouseScreenPos } = this.game.input
         return mouseScreenPos.clone().subtract(pos).divide(scale)
     }
 
+    /**
+     * Returns the pointer position relative to the grid.
+     * @returns The pointer position divided by the tile size.
+     */
     getPointerRelativeGridPos() {
         return this.getPointerPos().divide(this.tileSize)
     }
@@ -365,43 +381,89 @@ export class Scene {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
     }
 
+    /**
+     * Retrieves an object from the scene by its ID.
+     * @param id - The ID of the object to retrieve.
+     * @returns The object with the specified ID, or `undefined` if not found.
+     */
     getObjectById(id: number) {
         return this.objects.find(object => object.id === id)
     }
 
+    /**
+     * Retrieves an object from the scene by its type.
+     * @param type - The type of the object to retrieve.
+     * @returns The first object found with the specified type, or undefined if no object is found.
+     */
     getObjectByType(type: string) {
         return this.objects.find(object => object.type === type)
     }
 
+    /**
+     * Returns an array of objects of a specific type.
+     * @param type - The type of objects to filter.
+     * @returns An array of objects of the specified type.
+     */
     getObjectsByType(type: string) {
         return this.objects.filter(object => object.type === type)
     }
 
+    /**
+     * Retrieves the object layers of the scene.
+     * @returns An array of object layers.
+     */
     getObjectLayers() {
         return this.layers.filter((layer: Layer) => isValidArray(layer.objects))
     }
 
+    /**
+     * Retrieves the tile object at the specified position on the given layer.
+     * If the tile at the position is not found, it returns the tile object at index 0.
+     * @param pos - The position of the tile.
+     * @param layerId - The ID of the layer.
+     * @returns The tile object at the specified position.
+     */
     getTile(pos: Vector, layerId: number) {
         return this.getTileObject(this.getLayer(layerId).getTile(pos) || 0)
     }
 
+    /**
+     * Retrieves the tile object with the specified ID.
+     * @param id - The ID of the tile object.
+     * @returns The tile object associated with the ID.
+     */
     getTileObject(id: number) {
         const gid: number = (id &= ~(Flipped.Horizontally | Flipped.Vertically | Flipped.Diagonally))
         return this.tiles[gid]
     }
 
+    /**
+     * Removes a layer from the scene at the specified index.
+     * @param index - The index of the layer to remove.
+     */
     removeLayer(index: number) {
         this.layers.splice(index, 1)
     }
 
+    /**
+     * Shows the layer with the specified layerId.
+     * @param layerId - The ID of the layer to show.
+     */
     showLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(true)
     }
 
+    /**
+     * Hides the layer with the specified layerId.
+     * @param layerId - The ID of the layer to hide.
+     */
     hideLayer(layerId: number) {
         this.getLayer(layerId).toggleVisibility(false)
     }
 
+    /**
+     * Displays debug information on the canvas.
+     */
     displayDebug() {
         const { avgFPS, canvas, draw, primaryColor } = this.game
         const { pos, scale } = this.camera
@@ -412,6 +474,7 @@ export class Scene {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
             draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom', true)
         }
+
         write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
         write(`[${pointerPos.x.toFixed(2)},${pointerPos.y.toFixed(2)}]`, 'center')
         write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')

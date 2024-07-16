@@ -1,7 +1,5 @@
-/**
- * Represents an emitter that spawns particles in a scene.
- */
 import { ParticleConfig } from '../../types'
+import { Shape } from '../constants'
 import { Color, Vector, vec2 } from '../engine-helpers'
 import { randPointOnCircle } from '../engine-helpers/vector'
 import { rand } from '../utils/helpers'
@@ -18,6 +16,9 @@ export class Emitter extends Entity {
 
     /** The position of the emitter. */
     pos: Vector
+
+    /** The shape of the particle. */
+    shape: Shape = Shape.Rectangle
 
     /** The angle to emit the particles. */
     angle = 0
@@ -118,8 +119,16 @@ export class Emitter extends Entity {
         this.collideObjects = !!obj?.collideObjects
         this.stretchScale = obj?.stretchScale || this.stretchScale
         this.elasticity = obj?.elasticity || this.elasticity
+        this.shape = obj?.shape || this.shape
     }
 
+    /**
+     * Updates the emitter.
+     * @remarks
+     * This method is responsible for updating the emitter's behavior, such as emitting particles
+     * based on the emit rate and time. If the emitter's alive time exceeds the emit time,
+     * the emitter is destroyed.
+     */
     update() {
         const { delta } = this.scene.game
         if (!this.emitTime || this.getAliveTime() <= this.emitTime) {
@@ -130,10 +139,18 @@ export class Emitter extends Entity {
         } else this.destroy()
     }
 
+    /**
+     * Randomizes the given value by applying randomness.
+     * @param v - The value to be randomized.
+     * @returns The randomized value.
+     */
     randomize(v: number) {
         return v + v * rand(this.randomness, -this.randomness)
     }
 
+    /**
+     * Emits a particle from the emitter.
+     */
     emitParticle() {
         const pos = this.pos.add(
             this.emitSize instanceof Vector
@@ -150,8 +167,9 @@ export class Emitter extends Entity {
         const coneAngle = rand(this.emitConeAngle, -this.emitConeAngle)
         const forceAngle = this.angle + coneAngle
 
-        particle.colorStart = this.colorStart // @todo: randomize colors
-        particle.colorEndDelta = this.colorEnd.subtract(this.colorStart) // @todo: randomize colors
+        particle.shape = this.shape
+        particle.colorStart = this.colorStart
+        particle.colorEnd = this.colorEnd.subtract(this.colorStart)
         particle.renderOrder = this.renderOrder
         particle.damping = this.damping
         particle.angleDamping = this.angleDamping

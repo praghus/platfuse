@@ -33,6 +33,25 @@ export class Draw {
     }
 
     /**
+     * Draws a ellipse on the canvas with the specified color.
+     * @param rect
+     * @param color
+     * @param angle
+     */
+    fillEllipse(rect: Box, color: Color, angle = 0) {
+        const { ctx } = this.game
+        const { pos, size } = rect
+        ctx.save()
+        this.rotate(rect, angle, 1, () => {
+            ctx.beginPath()
+            ctx.ellipse(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, size.y / 2, angle, 0, Math.PI * 2)
+            ctx.fillStyle = color.toString()
+            ctx.fill()
+        })
+        ctx.restore()
+    }
+
+    /**
      * Draws a stroke using the provided points.
      * @param x - The x-coordinate of the starting point.
      * @param y - The y-coordinate of the starting point.

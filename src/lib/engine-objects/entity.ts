@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Animation, Drawable } from '../../types'
 import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
-import { DefaultColors } from '../constants'
+import { DefaultColors, Shape } from '../constants'
 import { clamp, deg2rad, lerp } from '../utils/helpers'
 import { Scene } from './scene'
 import { Sprite } from './sprite'
@@ -37,6 +37,9 @@ export class Entity {
     /** The layer ID of the object (if any). */
     layerId?: number
 
+    /** Whether the object is bounded by the scene and cannot move outside. */
+    bounded = false
+
     /** Whether the object is flipped horizontally (mirrored) */
     flipH = false
 
@@ -63,6 +66,9 @@ export class Entity {
 
     /** The object the entity is standing on */
     onGround: Entity | boolean = false
+
+    /** The shape of the entity. */
+    shape: Shape = Shape.Rectangle
 
     /** Current position of the object */
     pos = vec2()
@@ -162,6 +168,7 @@ export class Entity {
         this.flipV = obj?.flipV || this.flipV
         this.animation = obj?.animation || this.animation
         this.family = obj?.family || this.family
+        this.shape = obj?.shape || this.shape
     }
 
     /**
@@ -243,7 +250,11 @@ export class Entity {
             if (this.sprite) {
                 this.sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
             } else if (this.color) {
-                game.draw.fillRect(this.getRelativeBoundingRect(), this.color, this.angle)
+                if (this.shape === Shape.Ellipse) {
+                    game.draw.fillEllipse(this.getRelativeBoundingRect(), this.color, this.angle)
+                } else {
+                    game.draw.fillRect(this.getRelativeBoundingRect(), this.color, this.angle)
+                }
             }
             if (game.debug) this.displayDebug()
         }
@@ -356,6 +367,14 @@ export class Entity {
         this.pos.x += this.force.x *= this.damping
         this.pos.y += this.force.y *= this.damping
         this.angle += this.angleVelocity *= this.angleDamping
+
+        // Check bounds
+        if (this.bounded) {
+            this.pos.x < 0 && (this.pos.x = 0)
+            this.pos.y < 0 && (this.pos.y = 0)
+            this.pos.x > scene.size.x && (this.pos.x = scene.size.x)
+            this.pos.y > scene.size.y && (this.pos.y = scene.size.y)
+        }
 
         const wasMovingDown = this.force.y >= 0
 

@@ -1,3 +1,4 @@
+import { Shape } from '../constants'
 import { Color, vec2 } from '../engine-helpers'
 import { Entity } from './entity'
 import { Scene } from './scene'
@@ -9,11 +10,14 @@ export class Particle extends Entity {
     /** The type of the particle. */
     type = 'Platfuse.Particle'
 
+    /** The shape of the particle. */
+    shape: Shape = Shape.Rectangle
+
     /** The starting color of the particle. */
     colorStart = new Color()
 
     /** The color delta of the particle. */
-    colorEndDelta = new Color()
+    colorEnd = new Color()
 
     /** The time to live (in seconds) of the particle. */
     ttl = 0
@@ -54,10 +58,10 @@ export class Particle extends Entity {
 
         this.size = vec2(radius)
         this.color = new Color(
-            this.colorStart.r + p * this.colorEndDelta.r,
-            this.colorStart.g + p * this.colorEndDelta.g,
-            this.colorStart.b + p * this.colorEndDelta.b,
-            (this.colorStart.a + p * this.colorEndDelta.a) *
+            this.colorStart.r + p * this.colorEnd.r,
+            this.colorStart.g + p * this.colorEnd.g,
+            this.colorStart.b + p * this.colorEnd.b,
+            (this.colorStart.a + p * this.colorEnd.a) *
                 (p < fading ? p / fading : p > 1 - fading ? (1 - p) / fading : 1)
         )
 
@@ -77,4 +81,9 @@ export class Particle extends Entity {
 
         super.draw()
     }
+
+    /**
+     * Do not display debug information for the particle.
+     */
+    displayDebug() {}
 }
