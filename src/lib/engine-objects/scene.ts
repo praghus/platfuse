@@ -466,7 +466,7 @@ export class Scene {
         const pointerPos = this.getPointerPos()
         const write = (text: string, align: CanvasTextAlign = 'left') => {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
-            draw.text(text, x, height - 4, primaryColor, '1em', align, 'bottom', true)
+            draw.text(text, vec2(x, height - 4), primaryColor, '1em', align, 'bottom', true)
         }
 
         write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)

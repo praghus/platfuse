@@ -96,8 +96,7 @@ export class Draw {
     /**
      * Renders text on the canvas.
      * @param text - The text to render.
-     * @param x - The x-coordinate of the starting position.
-     * @param y - The y-coordinate of the starting position.
+     * @param pos - The position to render the text.
      * @param color - The color of the text. Defaults to white.
      * @param size - The font size of the text. Defaults to '1em'.
      * @param textAlign - The horizontal alignment of the text. Defaults to 'left'.
@@ -106,8 +105,7 @@ export class Draw {
      */
     text(
         text: string,
-        x: number,
-        y: number,
+        pos: Vector,
         color?: Color,
         size = '1em',
         textAlign: CanvasTextAlign = 'left',
@@ -123,10 +121,10 @@ export class Draw {
             ctx.strokeStyle = DefaultColors.Black.setAlpha(0.9).toString()
             ctx.lineJoin = 'round'
             ctx.lineWidth = 4
-            ctx.strokeText(text, x, y)
+            ctx.strokeText(text, pos.x, pos.y)
         }
         ctx.fillStyle = (color || DefaultColors.White).toString()
-        ctx.fillText(text, x, y)
+        ctx.fillText(text, pos.x, pos.y)
     }
 
     /**
@@ -324,8 +322,7 @@ export class Draw {
         )
         this.text(
             p < 1 ? 'Loading assets...' : 'Ready!',
-            width / 2,
-            height - height * 0.05,
+            vec2(width / 2, height - height * 0.05),
             DefaultColors.White,
             '1em',
             'center',
