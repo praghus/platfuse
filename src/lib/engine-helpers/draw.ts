@@ -180,13 +180,13 @@ export class Draw {
 
     /**
      * Rotates the canvas context around a specified position and angle, and then executes a callback function.
-     * @param box - The box object containing the position and size.
+     * @param rect - The box object containing the position and size.
      * @param angle - The angle of rotation in radians. Defaults to 0.
      * @param scale - The scale factor. Defaults to 0.
-     * @param cb - The callback function to be executed after the rotation.
      */
-    rotate({ pos, size }: Box, angle = 0, scale = 0) {
+    rotate(rect: Box, angle = 0, scale = 0) {
         if (angle === 0 && scale === 0) return
+        const { pos, size } = rect
         const ctx = this.game.ctx
         ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
         ctx.rotate(angle)
