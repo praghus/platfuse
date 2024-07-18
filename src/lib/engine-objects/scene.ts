@@ -245,7 +245,7 @@ export class Scene {
 
     addObject(entity: Entity, layerId?: number) {
         if (layerId) {
-            const layer = this.getLayer(layerId)
+            const layer = this.getLayerById(layerId)
             layer instanceof Layer
                 ? (entity.layerId = layer.id)
                 : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
@@ -377,8 +377,18 @@ export class Scene {
      * @param id - The ID of the layer to retrieve.
      * @returns The layer with the specified ID, or an empty object if no layer is found.
      */
-    getLayer(id: number) {
+    getLayerById(id: number) {
         return this.layers.find(layer => layer.id === id) || ({} as Layer)
+    }
+
+    /**
+     * Retrieves the layer at the specified index.
+     * If the layer does not exist, an empty `Layer` object is returned.
+     * @param index - The index of the layer to retrieve.
+     * @returns The layer at the specified index, or an empty `Layer` object if the layer does not exist.
+     */
+    getLayerByIndex(index: number) {
+        return this.layers[index] || ({} as Layer)
     }
 
     /**
@@ -424,7 +434,7 @@ export class Scene {
      * @returns The tile object at the specified position.
      */
     getTile(pos: Vector, layerId: number) {
-        return this.getTileObject(this.getLayer(layerId).getTile(pos) || 0)
+        return this.getTileObject(this.getLayerById(layerId).getTile(pos) || 0)
     }
 
     /**
@@ -443,22 +453,6 @@ export class Scene {
      */
     removeLayer(index: number) {
         this.layers.splice(index, 1)
-    }
-
-    /**
-     * Shows the layer with the specified layerId.
-     * @param layerId - The ID of the layer to show.
-     */
-    showLayer(layerId: number) {
-        this.getLayer(layerId).toggleVisibility(true)
-    }
-
-    /**
-     * Hides the layer with the specified layerId.
-     * @param layerId - The ID of the layer to hide.
-     */
-    hideLayer(layerId: number) {
-        this.getLayer(layerId).toggleVisibility(false)
     }
 
     /**

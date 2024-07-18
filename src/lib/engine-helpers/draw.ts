@@ -3,17 +3,23 @@ import { Game } from '../engine-objects/game'
 import { Vector, vec2 } from './vector'
 import { Box, box } from './box'
 import { Color } from './color'
-import { DefaultColors } from '../constants'
+import { DefaultColors, PixelFontImage } from '../constants'
 
 /**
  * The `Draw` class provides methods for drawing shapes, text, and images on a canvas.
  */
 export class Draw {
+    pixelFont = new Image()
+    pixelText: (text: string, pos: Vector, scale?: number) => void = () => {}
+
     /**
      * Creates a new `Draw` object.
      * @param game - The game instance.
      */
-    constructor(public game: Game) {}
+    constructor(public game: Game) {
+        this.pixelFont.src = PixelFontImage
+        this.pixelFont.onload = () => (this.pixelText = this.createPixelFontRenderer(this.pixelFont, 8))
+    }
 
     /**
      * Fills a rectangle on the canvas with the specified color.
@@ -25,10 +31,9 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1, () => {
-            ctx.fillStyle = color.toString()
-            ctx.fillRect(pos.x, pos.y, size.x, size.y)
-        })
+        this.rotate(rect, angle, 1)
+        ctx.fillStyle = color.toString()
+        ctx.fillRect(pos.x, pos.y, size.x, size.y)
         ctx.restore()
     }
 
@@ -42,12 +47,11 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1, () => {
-            ctx.beginPath()
-            ctx.ellipse(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, size.y / 2, angle, 0, Math.PI * 2)
-            ctx.fillStyle = color.toString()
-            ctx.fill()
-        })
+        this.rotate(rect, angle, 1)
+        ctx.beginPath()
+        ctx.ellipse(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, size.y / 2, angle, 0, Math.PI * 2)
+        ctx.fillStyle = color.toString()
+        ctx.fill()
         ctx.restore()
     }
 
@@ -80,13 +84,12 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1, () => {
-            ctx.strokeStyle = color.toString()
-            ctx.lineWidth = lineWidth
-            ctx.beginPath()
-            ctx.rect(pos.x, pos.y, size.x, size.y)
-            ctx.stroke()
-        })
+        this.rotate(rect, angle, 1)
+        ctx.strokeStyle = color.toString()
+        ctx.lineWidth = lineWidth
+        ctx.beginPath()
+        ctx.rect(pos.x, pos.y, size.x, size.y)
+        ctx.stroke()
         ctx.restore()
     }
 
@@ -155,24 +158,23 @@ export class Draw {
         const fpos = pos.subtract(f).multiply(s)
 
         ctx.save()
-        this.rotate(rect, angle, clip ? scale : 1, () => {
-            flip && ctx.scale(s.x, s.y)
-            ctx.translate(0.5, 0.5)
-            clip
-                ? ctx.drawImage(
-                      image,
-                      clip.x,
-                      clip.y,
-                      size.x,
-                      size.y,
-                      fpos.x - 0.5,
-                      fpos.y - 0.5,
-                      size.x * scale,
-                      size.y * scale
-                  )
-                : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
-            ctx.translate(-0.5, -0.5)
-        })
+        this.rotate(rect, angle, clip ? scale : 1)
+        flip && ctx.scale(s.x, s.y)
+        ctx.translate(0.5, 0.5)
+        clip
+            ? ctx.drawImage(
+                  image,
+                  clip.x,
+                  clip.y,
+                  size.x,
+                  size.y,
+                  fpos.x - 0.5,
+                  fpos.y - 0.5,
+                  size.x * scale,
+                  size.y * scale
+              )
+            : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
+        ctx.translate(-0.5, -0.5)
         ctx.restore()
     }
 
@@ -183,14 +185,21 @@ export class Draw {
      * @param scale - The scale factor. Defaults to 0.
      * @param cb - The callback function to be executed after the rotation.
      */
-    rotate({ pos, size }: Box, angle = 0, scale = 0, cb: () => void) {
-        if (angle) {
-            const ctx = this.game.ctx
-            ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
-            ctx.rotate(angle)
-            ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
-        }
-        cb()
+    rotate({ pos, size }: Box, angle = 0, scale = 0) {
+        if (angle === 0 && scale === 0) return
+        const ctx = this.game.ctx
+        ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
+        ctx.rotate(angle)
+        ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
+    }
+
+    /**
+     * Sets the blending mode for the canvas rendering context.
+     * @param blend - A boolean indicating whether to enable blending.
+     * @param context - The canvas rendering context.
+     */
+    setBlending(blend: boolean, context = this.game.ctx) {
+        context.globalCompositeOperation = blend ? 'lighter' : 'source-over'
     }
 
     /**
@@ -202,6 +211,62 @@ export class Draw {
     copyToMainContext(canvas: HTMLCanvasElement, pos: Vector, size: Vector) {
         const { ctx } = this.game
         ctx.drawImage(canvas, pos.x, pos.y, size.x, size.y)
+    }
+
+    /**
+     * Creates a pixel font renderer function.
+     *
+     * @param {HTMLImageElement} [image=this.pixelFont] - The image containing the pixel font.
+     * @param {number} [fontSize=8] - The size of each character in the pixel font.
+     * @param {string} [color='white'] - The color to apply to the pixel font.
+     * @returns {Function} The pixel font renderer function.
+     */
+    createPixelFontRenderer(image: HTMLImageElement, fontSize: number, color = 'white') {
+        const { ctx } = this.game
+        const cols = (image.width / fontSize) | 0
+
+        // create a canvas for the font and apply the color
+        const fontCanvas = document.createElement('canvas')
+        const fontContext = fontCanvas.getContext('2d') as CanvasRenderingContext2D
+        fontCanvas.width = image.width
+        fontCanvas.height = image.height
+        fontContext.drawImage(image, 0, 0)
+        fontContext.fillStyle = color
+        fontContext.globalCompositeOperation = 'source-in'
+        fontContext.fillRect(0, 0, image.width, image.height)
+
+        return (
+            text: string,
+            pos: Vector,
+            scale = 1,
+            textAlign: CanvasTextAlign = 'left',
+            textBaseline: CanvasTextBaseline = 'top'
+        ) => {
+            let { x, y } = pos.clone()
+            if (textAlign === 'center') x -= (text.length * fontSize * scale) / 2
+            if (textAlign === 'right') x -= text.length * fontSize * scale
+            if (textBaseline === 'middle') y -= (fontSize * scale) / 2
+            if (textBaseline === 'bottom') y -= fontSize * scale
+
+            text.split('\n')
+                .reverse()
+                .forEach((output, index) => {
+                    for (let i = 0; i < output.length; i++) {
+                        const chr = output.charCodeAt(i)
+                        ctx.drawImage(
+                            fontCanvas,
+                            (chr % cols) * fontSize,
+                            Math.ceil((chr + 1) / cols - 1) * fontSize,
+                            fontSize,
+                            fontSize,
+                            Math.floor(x + i * fontSize * scale),
+                            Math.floor(y - index * (fontSize + 1)),
+                            fontSize * scale,
+                            fontSize * scale
+                        )
+                    }
+                })
+        }
     }
 
     /**

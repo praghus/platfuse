@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 -   `Entity` - `bounds`. Whether the object is bounded by the scene and cannot move outside.
 -   `Shapes` for the Entities. Default: `Rectange` new: `Ellipse` and `Polygon`.
+-   Pixel font renderer.
 
 ### Changed
 
