@@ -4,12 +4,13 @@ All notable changes to the Platfuse Game Engine project will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.4] - UNRELEASED
+## [1.4.4] - 2024-07-16
 
 ### Added
 
 -   `Entity` - `bounds`. Whether the object is bounded by the scene and cannot move outside.
 -   `Shapes` for the Entities. Default: `Rectange` new: `Ellipse` and `Polygon`.
+-   Pixel font renderer.
 
 ### Changed
 
