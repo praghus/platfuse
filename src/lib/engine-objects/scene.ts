@@ -38,21 +38,43 @@ export class Scene {
     nextRenderOrder = 0
 
     /** The TMX map file to load. */
-    tmxMap?: string
+    tmxMap?: string | Record<string, any>
 
     /**
      * Creates a new scene object.
      * @param game - The game object that the scene belongs to.
+     * @param name - The name of the scene.
      */
-    constructor(public game: Game) {}
+    constructor(
+        public game: Game,
+        public name: string
+    ) {}
+
+    /**
+     * Destroys the scene by resetting its properties.
+     */
+    destroy() {
+        this.objects = []
+        this.layers = []
+        this.tiles = {}
+        this.tileCollisionData = []
+        this.nextRenderOrder = 0
+        this.camera.pos = vec2()
+    }
 
     /**
      * Performs pre-initialization tasks for the scene.
      * If a TMX map is provided, it sets the dimensions, creates tilesets, and creates layers based on the map.
      */
     async preInit(): Promise<void> {
-        if (this.tmxMap) {
-            const { layers, tilesets, tilewidth, tileheight, width, height } = await tmx(this.tmxMap)
+        if (this.tmxMap && typeof this.tmxMap === 'string') {
+            this.tmxMap = await tmx(this.tmxMap)
+        }
+    }
+
+    createFromTmxMap() {
+        if (typeof this.tmxMap === 'object') {
+            const { layers, tilesets, tilewidth, tileheight, width, height } = this.tmxMap
             this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
             this.createTilesets(tilesets)
             this.createLayers(layers)
@@ -117,12 +139,12 @@ export class Scene {
         layers.sort(sortByRenderOrder)
         objects.sort(sortByRenderOrder)
 
-        ctx.save()
+        // ctx.save()
         ctx.imageSmoothingEnabled = false // always pixel perfect
         ctx.clearRect(0, 0, width, height)
         for (const layer of layers) layer.draw()
         for (const obj of objects) obj.draw()
-        ctx.restore()
+        // ctx.restore()
 
         this.game.debug && this.displayDebug()
     }
@@ -235,14 +257,26 @@ export class Scene {
         return layer
     }
 
+    /**
+     * Adds an object to the scene from a specific layer.
+     *
+     * @param type - The type of the object to add.
+     * @param props - The properties of the object.
+     * @returns The added entity.
+     */
     addObjectFromLayer(type: string, props: Record<string, any>) {
         const Model: Constructable<Entity> = this.game.objectClasses[type]
         const entity: Entity = Model ? new Model(this, props) : new Entity(this, props)
-        entity.createSprite()
         this.objects.push(entity)
         return entity
     }
 
+    /**
+     * Adds an entity to the scene.
+     * @param entity - The entity to be added.
+     * @param layerId - The ID of the layer to add the entity to (optional).
+     * @returns The added entity.
+     */
     addObject(entity: Entity, layerId?: number) {
         if (layerId) {
             const layer = this.getLayerById(layerId)
@@ -250,7 +284,6 @@ export class Scene {
                 ? (entity.layerId = layer.id)
                 : console.warn(`Layer with ID:${layerId} not found or is not an object layer!`)
         }
-        entity.createSprite()
         this.objects.push(entity)
         return entity
     }
@@ -283,7 +316,7 @@ export class Scene {
     createTilesets(tilesets: TMXTileset[]) {
         tilesets.map((tileset: TMXTileset) => {
             const asset = getFilename(tileset.image.source)
-            if (Object.keys(this.game.assets).includes(asset)) {
+            if (Object.keys(this.game.images).includes(asset)) {
                 this.addTileset(tileset, asset)
             }
         })
@@ -468,7 +501,6 @@ export class Scene {
             const x = (align === 'left' && 4) || (align === 'right' && width - 4) || width / 2
             draw.text(text, vec2(x, height - 4), primaryColor, '1em', align, 'bottom', true)
         }
-
         write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
         write(`[${pointerPos.x.toFixed(2)},${pointerPos.y.toFixed(2)}]`, 'center')
         write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')

@@ -103,6 +103,8 @@ const sortByRenderOrder = (a: any, b: any) => a.renderOrder - b.renderOrder
  */
 const delay = (time: number) => new Promise(resolve => setTimeout(resolve, time))
 
+const wait = (time: number, cb: () => void) => delay(time).then(cb)
+
 /**
  * Normalizes a number within a specified range.
  *
@@ -129,5 +131,6 @@ export {
     rad2deg,
     rand,
     randInt,
-    sortByRenderOrder
+    sortByRenderOrder,
+    wait
 }

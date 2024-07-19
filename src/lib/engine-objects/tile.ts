@@ -1,6 +1,5 @@
 import { TMXTileset } from 'tmx-map-parser'
 import { getPerformance, isValidArray, normalize } from '../utils/helpers'
-import { Drawable } from '../../types'
 import { Vector, vec2 } from '../engine-helpers/vector'
 import { Scene } from './scene'
 import { Box } from '../engine-helpers'
@@ -8,7 +7,7 @@ import { Box } from '../engine-helpers'
 /**
  * The `Tile` class represents a tile on a tilemap.
  */
-export class Tile implements Drawable {
+export class Tile {
     /** The size of the tile. */
     size = vec2()
 
@@ -96,14 +95,16 @@ export class Tile implements Drawable {
      * @param pos - The position to draw the tile at.
      * @param flipH - Whether to flip the tile horizontally (default: false).
      * @param flipV - Whether to flip the tile vertically (default: false).
+     * @param angle - The angle to rotate the tile by (default: 0).
+     * @param scale - The scale to draw the tile at.
      */
-    draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
+    draw(pos: Vector, flipH = false, flipV = false, angle = 0, scale = vec2(this.scene.camera.scale)) {
         const { image, tilewidth, tileheight } = this.tileset
         const { game, camera } = this.scene
         game.draw.draw2d(
             game.getImage(image.source),
             new Box(pos.add(camera.pos), vec2(tilewidth, tileheight)),
-            camera.scale,
+            scale,
             angle,
             flipH,
             flipV,

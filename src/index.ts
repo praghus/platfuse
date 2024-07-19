@@ -1,5 +1,5 @@
 export { NodeType, Flipped, Shape, DefaultColors } from './lib/constants'
 export { Camera, Emitter, Entity, Game, Layer, Particle, Scene, Sprite, Tile } from './lib/engine-objects'
 export { Box, Color, Draw, Input, Timer, Vector, box, vec2, randVector } from './lib/engine-helpers'
-export { clamp, delay, deg2rad, lerp, normalize, percent, rad2deg, rand, randInt } from './lib/utils/helpers'
-export { Constructable, Animation, AnimationStrip, Drawable, GameConfig, ParticleConfig } from './types'
+export { clamp, delay, deg2rad, lerp, normalize, percent, rad2deg, rand, randInt, wait } from './lib/utils/helpers'
+export { Constructable, Animation, AnimationStrip, GameConfig, ParticleConfig } from './types'

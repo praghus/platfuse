@@ -1,24 +1,18 @@
-import { Animation, Drawable } from '../../types'
+import { Animation } from '../../types'
 import { normalize, getPerformance } from '../utils/helpers'
-import { Vector, vec2 } from '../engine-helpers/vector'
+import { vec2 } from '../engine-helpers/vector'
 import { Box } from '../engine-helpers'
 import { Entity } from './entity'
+import { Shape } from '../constants'
 
 /**
  * The `Sprite` class represents an image that can be drawn on the screen.
  * It can be animated using a specified animation.
- * @see {@link Drawable}
  * @see {@link Animation}
  */
-export class Sprite implements Drawable {
-    /** The image element of the sprite. */
-    image?: HTMLImageElement
-
+export class Sprite {
     /** The animation of the sprite. */
     animation?: Animation
-
-    /** The size of the sprite. */
-    size = vec2()
 
     /** The current frame of the animation. */
     then = getPerformance()
@@ -33,21 +27,13 @@ export class Sprite implements Drawable {
      * Creates a new `Sprite` object.
      * @param entity - The entity that the sprite belongs to.
      */
-    constructor(public entity: Entity) {
-        if (entity?.image) {
-            const { scene } = entity
-            this.image = scene.game.getImage(entity.image)
-            this.size = entity.size.clone().multiply(scene.tileSize)
-        } else {
-            throw new Error('Sprite must have an image')
-        }
-    }
+    constructor(public entity: Entity) {}
 
     /**
-     * Animates the sprite using the specified animation.
-     * @param animation - The animation to be played.
+     * Animates the sprite based on the current animation settings.
      */
-    animate(animation = this.animation) {
+    animate() {
+        const { animation } = this.entity
         if (animation) {
             this.animFrame = this.animFrame || 0
             this.frameStart = getPerformance()
@@ -73,38 +59,33 @@ export class Sprite implements Drawable {
     }
 
     /**
-     * Draws the sprite at the specified position with optional transformations.
-     * @param pos - The position at which to draw the sprite.
-     * @param flipH - (Optional) Whether to flip the sprite horizontally. Defaults to false.
-     * @param flipV - (Optional) Whether to flip the sprite vertically. Defaults to false.
-     * @param angle - (Optional) The angle at which to rotate the sprite, in radians. Defaults to 0.
+     * Draws the sprite.
      */
-    draw(pos: Vector, flipH = false, flipV = false, angle = 0) {
-        const { image, animation, animFrame, size } = this
-        const { game, camera } = this.entity.scene
-        if (animation && image) {
-            const { frames, strip, width, height } = animation
-            const frame = (frames && frames[animFrame]) || [0, 0]
-            const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
-            const offset = animation?.offset ? vec2(...animation.offset).scale(camera.scale) : vec2(0, 0)
-            game.draw.draw2d(
-                image,
-                new Box(pos.add(offset).add(camera.pos), vec2(width, height)),
-                camera.scale,
-                angle,
-                flipH,
-                flipV,
-                clip
-            )
-        } else if (image) {
-            game.draw.draw2d(
-                image,
-                new Box(pos.add(camera.pos), size.scale(camera.scale)),
-                camera.scale,
-                angle,
-                flipH,
-                flipV
-            )
+    draw() {
+        const { animation, animFrame } = this
+        const { angle, color, scene, shape, flipH, flipV } = this.entity
+        const { game, camera } = scene
+        const scale = vec2(camera.scale)
+        const image = this.entity.image && scene.game.getImage(this.entity.image)
+        const boundingRect = this.entity.getRelativeBoundingRect()
+
+        if (image) {
+            if (animation) {
+                const { frames, strip, width, height } = animation
+                const frame = (frames && frames[animFrame]) || [0, 0]
+                const clip = strip ? vec2(strip.x + animFrame * width, strip.y) : vec2(frame[0], frame[1])
+                const offset = animation?.offset ? vec2(...animation.offset).scale(camera.scale) : vec2(0, 0)
+                const rect = new Box(boundingRect.pos.add(offset), vec2(width, height))
+                game.draw.draw2d(image, rect, scale, angle, flipH, flipV, clip)
+            } else {
+                game.draw.draw2d(image, boundingRect, scale, angle, flipH, flipV)
+            }
+        } else if (color) {
+            if (shape === Shape.Ellipse) {
+                game.draw.fillEllipse(boundingRect, color, angle)
+            } else {
+                game.draw.fillRect(boundingRect, color, angle)
+            }
         }
     }
 }

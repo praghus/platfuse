@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Animation, Drawable } from '../../types'
+import { Animation } from '../../types'
 import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
 import { DefaultColors, Shape } from '../constants'
 import { clamp, deg2rad, lerp } from '../utils/helpers'
@@ -128,7 +128,7 @@ export class Entity {
      * The sprite of the object.
      * @see {@link Sprite}
      */
-    sprite?: Drawable
+    sprite = new Sprite(this)
 
     /**
      * Creates a new Entity object.
@@ -169,18 +169,6 @@ export class Entity {
         this.animation = obj?.animation || this.animation
         this.family = obj?.family || this.family
         this.shape = obj?.shape || this.shape
-    }
-
-    /**
-     * Creates a sprite for the entity.
-     * If the entity has an image, a new sprite is created using the image.
-     * If the entity has a gid (global ID), the sprite is assigned from the scene's tiles using the gid.
-     * If the entity has neither an image nor a gid, the entity is drawn as a colored rectangle.
-     * @see {@link Sprite}
-     */
-    createSprite() {
-        if (this.image) this.sprite = new Sprite(this)
-        else if (this.gid) this.sprite = this.scene.tiles[this.gid]
     }
 
     /**
@@ -236,36 +224,29 @@ export class Entity {
     }
 
     /**
-     * Draws the entity on the screen.
-     * - If the entity is visible and on the screen, it will be drawn using the provided scene's camera and game.
-     * - If the entity has a sprite, the sprite will be drawn at the entity's position with the specified
-     *   transformations.
-     * - If the entity does not have a sprite but has a color, a filled rectangle will be drawn at the entity's
-     *   translated bounding rectangle.
-     * - If the game is in debug mode, the entity's debug information will be displayed.
+     * Checks if the entity is currently on the screen.
+     * @returns {boolean} True if the entity is on the screen, false otherwise.
      */
-    draw() {
-        if (this.visible && this.onScreen()) {
-            const { game } = this.scene
-            if (this.sprite) {
-                this.sprite.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle)
-            } else if (this.color) {
-                if (this.shape === Shape.Ellipse) {
-                    game.draw.fillEllipse(this.getRelativeBoundingRect(), this.color, this.angle)
-                } else {
-                    game.draw.fillRect(this.getRelativeBoundingRect(), this.color, this.angle)
-                }
-            }
-            if (game.debug) this.displayDebug()
-        }
+    onScreen() {
+        return this.scene.getCameraVisibleArea().overlaps(this.pos, this.size)
     }
 
     /**
-     * Animates the entity using the specified animation.
+     * Draws the entity on the screen if it is visible and within the screen bounds.
+     * If the entity has a tile object, it draws the tile object with the specified transformations.
+     * Otherwise, it draws the entity's sprite.
+     * If the game is in debug mode, it also displays debug information.
      */
-    animate() {
-        if (this.animation && this.sprite && this.sprite.animate) {
-            this.sprite.animate(this.animation)
+    draw() {
+        if (this.visible && this.onScreen()) {
+            if (this.gid) {
+                const tile = this.scene.getTileObject(this.gid)
+                const scale = this.size.multiply(this.scene.tileSize).divide(tile.size).scale(this.scene.camera.scale)
+                tile.draw(this.scene.getScreenPos(this.pos, this.size), this.flipH, this.flipV, this.angle, scale)
+            } else {
+                this.sprite.draw()
+            }
+            if (this.scene.game.debug) this.displayDebug()
         }
     }
 
@@ -276,11 +257,9 @@ export class Entity {
      * @param flipV - (Optional) Whether to flip the animation vertically. Default is false.
      */
     setAnimation(animation: Animation, flipH = false, flipV = false) {
-        if (this.sprite && this.sprite.animate) {
-            this.flipH = flipH
-            this.flipV = flipV
-            this.animation = animation
-        }
+        this.flipH = flipH
+        this.flipV = flipV
+        this.animation = animation
     }
 
     /**
@@ -299,7 +278,7 @@ export class Entity {
      * @param frame - The frame number to set.
      */
     setAnimationFrame(frame: number) {
-        if (this.sprite) this.sprite.animFrame = frame
+        this.sprite.animFrame = frame
     }
 
     /**
@@ -348,7 +327,7 @@ export class Entity {
     update() {
         const { scene } = this
 
-        this.animate()
+        this.sprite.animate()
 
         // Kill if TTL is up
         if (this.ttl && Math.min(this.getAliveTime() / this.ttl, 1) === 1) {
@@ -475,14 +454,6 @@ export class Entity {
                 }
             }
         }
-    }
-
-    /**
-     * Checks if the entity is currently on the screen.
-     * @returns {boolean} True if the entity is on the screen, false otherwise.
-     */
-    onScreen() {
-        return this.scene.getCameraVisibleArea().overlaps(this.pos, this.size)
     }
 
     /**

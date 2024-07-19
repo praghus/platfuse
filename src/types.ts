@@ -21,18 +21,6 @@ export interface Animation {
     loop: boolean
 }
 
-export interface Drawable {
-    animation?: Animation
-    animFrame: number
-    then: number
-    frameStart: number
-    size: Vector
-
-    animate?(animation?: Animation): void
-    getNextGid?(): number
-    draw(pos: Vector, flipH: boolean, flipV: boolean, angle: number): void
-}
-
 export interface GameConfig {
     scenes: Record<string, Constructable<Scene>>
     entities?: Record<string, Constructable<Entity>>

@@ -35,10 +35,10 @@ export class Game {
     /** Secondary color. Used for text, and other UI elements like preloader. */
     secondaryColor = DefaultColors.LightBlue
 
-    /** Assets record containing images and sounds. */
-    assets: Record<string, HTMLImageElement | HTMLAudioElement> = {}
+    /** Image assets record containing image elements. */
+    images: Record<string, HTMLImageElement> = {}
 
-    /** Sounds record containing Howl instances. */
+    /** Sound assets record containing Howl objects. */
     sounds: Record<string, Howl> = {}
 
     /** Object classes record containing entity classes. */
@@ -136,11 +136,18 @@ export class Game {
      */
     async start(sceneName?: string) {
         this.update()
-        this.assets = await preload(this.preload, p => (this.preloadPercent = p))
+        const assets = await preload(this.preload, p => (this.preloadPercent = p))
+        Object.keys(assets).forEach((key: string) => {
+            if (assets[key] instanceof HTMLImageElement) {
+                this.images[key] = assets[key]
+            } else if (assets[key] instanceof Howl) {
+                this.sounds[key] = assets[key]
+            }
+        })
         await Promise.all(
             Object.keys(this.sceneClasses).map(async sceneName => {
                 const Model = this.sceneClasses[sceneName]
-                const s: Scene = new Model(this)
+                const s: Scene = new Model(this, sceneName)
                 await s.preInit()
                 this.scenes[sceneName] = s
             })
@@ -152,17 +159,34 @@ export class Game {
     }
 
     /**
-     * Plays the scene with the specified name.
+     * Plays the specified scene.
      * @param sceneName - The name of the scene to play.
+     * @param restart - Whether to restart the scene if it is already playing. Default is `false`.
+     * @throws Error if the specified scene is not found.
      */
-    playScene(sceneName: string) {
+    playScene(sceneName: string, restart = false) {
+        if (this.currentScene && this.currentScene.name === sceneName && !restart) return
         if (!this.scenes[sceneName]) {
             throw new Error(`Scene '${sceneName}' not found!`)
         }
-
+        if (this.currentScene) {
+            this.currentScene.destroy()
+        }
         const scene = this.scenes[sceneName]
+        if (scene.tmxMap) {
+            scene.createFromTmxMap()
+        }
         scene.init()
         this.currentScene = scene
+    }
+
+    /**
+     * Restarts the current scene.
+     */
+    restartScene() {
+        if (this.currentScene) {
+            this.playScene(this.currentScene.name, true)
+        }
     }
 
     /**
@@ -238,7 +262,7 @@ export class Game {
      * Toggles the pause state of the game.
      * @param paused - Optional. Specifies whether the game should be paused or not. Default is true.
      */
-    togglePause(paused = true) {
+    togglePause(paused = !this.paused) {
         this.paused = paused
     }
 
@@ -292,23 +316,8 @@ export class Game {
      * @throws Error if the image is not found in the assets.
      */
     getImage(name: string) {
-        if (this.assets[name] instanceof HTMLImageElement) {
-            return this.assets[name] as HTMLImageElement
-        } else throw new Error(`'${name}' is not a valid image!`)
-    }
-
-    /**
-     * Retrieves a sound by its name.
-     * @param name - The name of the sound to retrieve.
-     * @returns The Howl instance representing the sound.
-     * @throws Error if the sound is invalid.
-     */
-    getSound(name: string) {
-        if (this.sounds[name] instanceof Howl) {
-            return this.sounds[name] as Howl
-        } else if (this.assets[name] instanceof HTMLAudioElement) {
-            return (this.sounds[name] = new Howl({ src: this.assets[name].src }))
-        } else throw new Error(`'${name}' is not a valid sound!`)
+        if (this.images[name]) return this.images[name]
+        else throw new Error(`'${name}' is not a valid image!`)
     }
 
     /**
@@ -316,10 +325,9 @@ export class Game {
      * @param name - The name of the sound to play.
      */
     playSound(name: string) {
-        const sound = this.getSound(name)
-        if (sound) {
-            sound.volume(this.audioVolume)
-            sound.play()
+        if (this.sounds[name]) {
+            this.sounds[name].volume(this.audioVolume)
+            this.sounds[name].play()
         }
     }
 

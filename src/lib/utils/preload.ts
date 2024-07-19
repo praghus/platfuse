@@ -1,3 +1,5 @@
+import { Howl } from 'howler'
+
 /**
  * Asynchronously preloads a collection of assets.
  * @param assets - The collection of assets to preload.
@@ -19,17 +21,11 @@ async function preload(assets: Record<string, string>, indicator: (p: number) =>
                     return res(img)
                 }
             } else if (/\.(webm|mp3|wav)$/i.test(src) || /(data:audio\/[^;]+;base64[^"]+)$/i.test(src)) {
-                const audio = new Audio()
-                audio.preload = 'auto'
-                audio.src = src
-                audio.addEventListener(
-                    'canplaythrough',
-                    () => {
-                        indicator(++loadedCount / count)
-                        return res(audio)
-                    },
-                    false
-                )
+                const audio = new Howl({ src })
+                audio.once('load', () => {
+                    indicator(++loadedCount / count)
+                    return res(audio)
+                })
             } else return Promise.resolve()
         })
     }

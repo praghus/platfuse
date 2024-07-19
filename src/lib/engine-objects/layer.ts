@@ -106,7 +106,7 @@ export class Layer {
                 game.draw.draw2d(
                     game.getImage(image.source),
                     new Box(pos, vec2(tilewidth, tileheight)),
-                    1,
+                    vec2(1),
                     0,
                     H,
                     V,
@@ -212,7 +212,7 @@ export class Layer {
                     // draw layer canvas on main canvas
                     draw.copyToMainContext(
                         this.layerCanvas as HTMLCanvasElement,
-                        camera.pos.subtract(vec2(camera.scale)), // subtract 1 to prevent clipping
+                        camera.pos.subtract(vec2(camera.scale)),
                         this.size.multiply(this.scene.tileSize).scale(camera.scale)
                     )
                     // render animated tiles on main canvas

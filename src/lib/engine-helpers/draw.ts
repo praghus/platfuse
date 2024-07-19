@@ -10,7 +10,13 @@ import { DefaultColors, PixelFontImage } from '../constants'
  */
 export class Draw {
     pixelFont = new Image()
-    pixelText: (text: string, pos: Vector, scale?: number) => void = () => {}
+    pixelText: (
+        text: string,
+        pos: Vector,
+        scale?: number,
+        textAlign?: CanvasTextAlign,
+        textBaseline?: CanvasTextBaseline
+    ) => void = () => {}
 
     /**
      * Creates a new `Draw` object.
@@ -31,7 +37,7 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1)
+        this.rotate(rect, angle)
         ctx.fillStyle = color.toString()
         ctx.fillRect(pos.x, pos.y, size.x, size.y)
         ctx.restore()
@@ -47,7 +53,7 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1)
+        this.rotate(rect, angle)
         ctx.beginPath()
         ctx.ellipse(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, size.y / 2, angle, 0, Math.PI * 2)
         ctx.fillStyle = color.toString()
@@ -84,7 +90,7 @@ export class Draw {
         const { ctx } = this.game
         const { pos, size } = rect
         ctx.save()
-        this.rotate(rect, angle, 1)
+        this.rotate(rect, angle)
         ctx.strokeStyle = color.toString()
         ctx.lineWidth = lineWidth
         ctx.beginPath()
@@ -141,7 +147,7 @@ export class Draw {
     draw2d(
         image: HTMLImageElement,
         rect: Box,
-        scale = 1,
+        scale = vec2(1),
         angle = 0,
         flipH = false,
         flipV = false,
@@ -152,11 +158,11 @@ export class Draw {
         const { pos, size } = rect
         const flip = flipH || flipV
         const s = vec2(flipH ? -1 : 1, flipV ? -1 : 1)
-        const f = vec2(flipH ? -size.x * scale : 0, flipV ? -size.y * scale : 0)
+        const f = vec2(flipH ? -size.x * scale.x : 0, flipV ? -size.y * scale.y : 0)
         const fpos = pos.subtract(f).multiply(s)
 
         ctx.save()
-        this.rotate(rect, angle, clip ? scale : 1)
+        this.rotate(rect, angle, clip ? scale : vec2(1))
         flip && ctx.scale(s.x, s.y)
         ctx.translate(0.5, 0.5)
         clip
@@ -168,8 +174,8 @@ export class Draw {
                   size.y,
                   fpos.x - 0.5,
                   fpos.y - 0.5,
-                  size.x * scale,
-                  size.y * scale
+                  size.x * scale.x,
+                  size.y * scale.y
               )
             : ctx.drawImage(image, pos.x - 0.5, pos.y - 0.5, size.x, size.y)
         ctx.translate(-0.5, -0.5)
@@ -182,13 +188,12 @@ export class Draw {
      * @param angle - The angle of rotation in radians. Defaults to 0.
      * @param scale - The scale factor. Defaults to 0.
      */
-    rotate(rect: Box, angle = 0, scale = 0) {
-        if (angle === 0 && scale === 0) return
+    rotate(rect: Box, angle = 0, scale = vec2(1)) {
         const { pos, size } = rect
         const ctx = this.game.ctx
-        ctx.translate(pos.x + (size.x * scale) / 2, pos.y + (size.y * scale) / 2)
+        ctx.translate(pos.x + (size.x * scale.x) / 2, pos.y + (size.y * scale.y) / 2)
         ctx.rotate(angle)
-        ctx.translate(-(pos.x + (size.x * scale) / 2), -(pos.y + (size.y * scale) / 2))
+        ctx.translate(-(pos.x + (size.x * scale.x) / 2), -(pos.y + (size.y * scale.y) / 2))
     }
 
     /**
