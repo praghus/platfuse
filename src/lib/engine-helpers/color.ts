@@ -1,3 +1,5 @@
+import { clamp } from '../utils/helpers'
+
 /**
  * A class representing a color.
  */
@@ -105,6 +107,18 @@ class Color {
         else if (b < 0) b = 0
 
         return new Color(r, g, b, this.a)
+    }
+
+    /**
+     * Converts the color to a 32-bit integer representation in RGBA format.
+     * @returns The color as a 32-bit integer.
+     */
+    rgbaInt() {
+        const r = (clamp(this.r / 255) * 255) | 0
+        const g = (clamp(this.g / 255) * 255) << 8
+        const b = (clamp(this.b / 255) * 255) << 16
+        const a = (clamp(this.a) * 255) << 24
+        return r + g + b + a
     }
 
     /**

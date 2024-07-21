@@ -1,9 +1,10 @@
 import { Animation } from '../../types'
 import { normalize, getPerformance } from '../utils/helpers'
 import { vec2 } from '../engine-helpers/vector'
-import { Box } from '../engine-helpers'
+import { Box, Color } from '../engine-helpers'
 import { Entity } from './entity'
 import { Shape } from '../constants'
+import { glDraw } from '../utils/webgl'
 
 /**
  * The `Sprite` class represents an image that can be drawn on the screen.
@@ -86,6 +87,23 @@ export class Sprite {
             } else {
                 game.draw.fillRect(boundingRect, color, angle)
             }
+        }
+
+        if (this.entity.scene.game.webGL) {
+            const { pos, size } = boundingRect
+            glDraw(
+                (pos.x + size.x / 2) / scale.x,
+                (pos.y + size.y / 2) / scale.y,
+                size.x / scale.x,
+                size.y / scale.y,
+                angle,
+                0,
+                0,
+                0,
+                0,
+                0,
+                color ? color.rgbaInt() : new Color('#0033ff').rgbaInt()
+            )
         }
     }
 }

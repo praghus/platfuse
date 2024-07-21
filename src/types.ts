@@ -29,6 +29,7 @@ export interface GameConfig {
     secondaryColor?: string
     fixedSize?: Vector
     pixelPerfect?: boolean
+    postProcessShader?: string
     global?: boolean
     debug?: boolean
 }

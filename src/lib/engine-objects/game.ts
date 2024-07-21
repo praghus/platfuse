@@ -6,16 +6,22 @@ import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
 import { Entity } from './entity'
 import { Scene } from './scene'
+import { glCopyToContext, glInit, glInitPostProcess, glPreRender, glRenderPostProcess } from '../utils/webgl'
 
 /**
  * Represents a game engine that manages scenes, assets, and game state.
  */
 export class Game {
+    webGL = true
+
     /** Draw object for rendering shapes and images. */
     draw = new Draw(this)
 
     /** Canvas element for rendering the game. */
     canvas: HTMLCanvasElement
+
+    /** Canvas element for rendering the game with WebGL */
+    glCanvas: HTMLCanvasElement
 
     /** Canvas rendering context. */
     ctx: CanvasRenderingContext2D
@@ -37,6 +43,8 @@ export class Game {
 
     /** Image assets record containing image elements. */
     images: Record<string, HTMLImageElement> = {}
+
+    // textures: Record<string, WebGLTexture> = {}
 
     /** Sound assets record containing Howl objects. */
     sounds: Record<string, Howl> = {}
@@ -111,6 +119,7 @@ export class Game {
         public preload: Record<string, string>
     ) {
         this.canvas = document.createElement('canvas')
+        this.glCanvas = document.createElement('canvas')
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
@@ -120,13 +129,19 @@ export class Game {
         this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor
         this.canvas.setAttribute('style', `${CanvasStyle} ${this.pixelPerfect ? 'image-rendering: pixelated;' : ''}`)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
+        this.glCanvas.style.cssText = this.canvas.style.cssText
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+
         window.addEventListener('resize', this.onResize.bind(this))
         this.onResize()
 
         document.body.style.cssText = `${BodyStyle} background: ${this.backgroundColor.toString()};`
         document.body.appendChild(this.canvas)
 
+        if (this.webGL) {
+            glInit(this)
+            glInitPostProcess(config?.postProcessShader)
+        }
         if (!!config.global) window.Platfuse = this
     }
 
@@ -251,7 +266,12 @@ export class Game {
                 }
                 this.frameTimeBuffer += deltaSmooth
             }
+            this.webGL && glPreRender(this)
             scene.draw()
+            if (this.webGL) {
+                glRenderPostProcess(this.time)
+                glCopyToContext(this.ctx)
+            }
         } else {
             this.draw.preloader(this.preloadPercent)
         }

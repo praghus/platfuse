@@ -3,6 +3,7 @@ import { getPerformance, isValidArray, normalize } from '../utils/helpers'
 import { Vector, vec2 } from '../engine-helpers/vector'
 import { Scene } from './scene'
 import { Box } from '../engine-helpers'
+import { glDraw } from '../utils/webgl'
 
 /**
  * The `Tile` class represents a tile on a tilemap.
@@ -101,14 +102,48 @@ export class Tile {
     draw(pos: Vector, flipH = false, flipV = false, angle = 0, scale = vec2(this.scene.camera.scale)) {
         const { image, tilewidth, tileheight } = this.tileset
         const { game, camera } = this.scene
-        game.draw.draw2d(
-            game.getImage(image.source),
-            new Box(pos.add(camera.pos), vec2(tilewidth, tileheight)),
-            scale,
-            angle,
-            flipH,
-            flipV,
-            this.getSpriteClip()
-        )
+        const texture = game.getImage(image.source)
+        const clip = this.getSpriteClip()
+
+        if (this.scene.game.webGL) {
+            const p = vec2(
+                pos.x / scale.x + tilewidth / 2 + camera.pos.x / scale.x,
+                pos.y / scale.y + tileheight / 2 + camera.pos.y / scale.y
+            )
+
+            const x = clip.x / texture.width
+            const y = clip.y / texture.height
+            const w = 1 / texture.width
+            const h = 1 / texture.height
+
+            const tileImageFixBleed = vec2(0.3)
+
+            // glSetTexture(game.textures[image.source])
+            // glCreateTexture(texture)
+            glDraw(
+                p.x,
+                p.y,
+                tilewidth,
+                tileheight,
+                angle,
+                x + tileImageFixBleed.x,
+                y + tileImageFixBleed.y,
+                x - tileImageFixBleed.x + w,
+                y - tileImageFixBleed.y + h,
+                0,
+                0
+                // new Color('#00ff00').rgbaInt()
+            )
+        } else {
+            game.draw.draw2d(
+                texture,
+                new Box(pos.add(camera.pos), vec2(tilewidth, tileheight)),
+                scale,
+                angle,
+                flipH,
+                flipV,
+                clip
+            )
+        }
     }
 }
