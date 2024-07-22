@@ -1,5 +1,6 @@
 import { Shape } from '../constants'
-import { Color, vec2 } from '../engine-helpers'
+import { Color } from '../engine-helpers/color'
+import { vec2 } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 

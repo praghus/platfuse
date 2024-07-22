@@ -2,9 +2,13 @@ import { Howl } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { delay, lerp } from '../utils/helpers'
-import { WebGL } from '../engine-helpers/webgl'
-import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
+import { PostProcess } from '../engine-helpers/post-process'
+import { Color } from '../engine-helpers/color'
+import { Draw } from '../engine-helpers/draw'
+import { Input } from '../engine-helpers/input'
+import { Timer } from '../engine-helpers/timer'
+import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 
@@ -12,29 +16,23 @@ import { Scene } from './scene'
  * Represents a game engine that manages scenes, assets, and game state.
  */
 export class Game {
-    /** Draw object for rendering 2D shapes and images. */
-    draw = new Draw(this)
-
-    /** WebGL object for rendering with WebGL. */
-    webGL?: WebGL
-
-    /** Flag indicating whether the game should use WebGL for rendering. */
-    useWebGL = true
-
     /** Canvas element for rendering the game. */
     canvas: HTMLCanvasElement
-
-    /** Canvas element for rendering the game with WebGL */
-    glCanvas: HTMLCanvasElement
 
     /** Canvas rendering context. */
     ctx: CanvasRenderingContext2D
 
-    /** Input object for handling user input. */
-    input: Input = new Input(this)
+    /** Draw object for rendering 2D shapes and images. */
+    draw = new Draw(this)
+
+    /** The post-processing effect to apply to the game. */
+    postProcess?: PostProcess
 
     /** Flag indicating whether the game should render pixel-perfect. */
     pixelPerfect = false
+
+    /** Input object for handling user input. */
+    input: Input = new Input(this)
 
     /** Background color of the game. */
     backgroundColor = DefaultColors.DarkBlue
@@ -123,30 +121,25 @@ export class Game {
         public preload: Record<string, string>
     ) {
         this.canvas = document.createElement('canvas')
-        this.glCanvas = document.createElement('canvas')
+
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
-        this.useWebGL = config?.useWebGL !== undefined ? config.useWebGL : this.useWebGL
         this.pixelPerfect = !!config?.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
         this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor
         this.canvas.setAttribute('style', `${CanvasStyle} ${this.pixelPerfect ? 'image-rendering: pixelated;' : ''}`)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
-        this.glCanvas.style.cssText = this.canvas.style.cssText
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-
-        window.addEventListener('resize', this.onResize.bind(this))
-        this.onResize()
 
         document.body.style.cssText = `${BodyStyle} background: ${this.backgroundColor.toString()};`
         document.body.appendChild(this.canvas)
 
-        if (this.useWebGL) {
-            this.webGL = new WebGL(this)
-            this.webGL.initPostProcess(config?.postProcessShader)
-        }
+        window.addEventListener('resize', this.onResize.bind(this))
+        this.onResize()
+
+        if (config?.postProcessShader) this.postProcess = new PostProcess(this, config.postProcessShader)
         if (!!config.global) window.Platfuse = this
     }
 
@@ -244,9 +237,6 @@ export class Game {
         this.timeReal += frameTimeDelta / 1e3
         this.frameTimeBuffer += (this.paused ? 0 : 1) * frameTimeDelta
 
-        if (this.webGL) {
-            this.webGL.preRender()
-        }
         if (scene instanceof Scene) {
             if (this.paused) {
                 scene.postUpdate()
@@ -267,7 +257,7 @@ export class Game {
                     scene.updateObjects()
                     scene.update()
                     scene.updateCamera()
-                    // do post update
+                    // post update
                     scene.postUpdate()
                     scene.postUpdateLayers()
                     this.input.postUpdate()
@@ -276,12 +266,10 @@ export class Game {
             }
             scene.draw()
         } else {
+            this.time = this.frame++ / this.frameRate
             this.draw.preloader(this.preloadPercent)
         }
-        if (this.webGL) {
-            this.webGL.renderPostProcess()
-            this.webGL.flush()
-        }
+        this?.postProcess?.render()
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
 
@@ -365,8 +353,16 @@ export class Game {
     setAudioVolume(volume: number) {
         this.audioVolume = volume
     }
-}
 
+    /**
+     * Toggles the fullscreen mode.
+     */
+    toggleFullscreen() {
+        if (!!document.fullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen()
+        } else if (document.body.requestFullscreen) document.body.requestFullscreen()
+    }
+}
 /**
  * Global declaration for the Platfuse window object.
  */

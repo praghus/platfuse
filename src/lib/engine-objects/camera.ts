@@ -1,7 +1,7 @@
-import { Entity } from './entity'
-import { Vector, vec2 } from '../engine-helpers'
-import { Scene } from './scene'
 import { lerp } from '../utils/helpers'
+import { Vector, vec2 } from '../engine-helpers/vector'
+import { Entity } from './entity'
+import { Scene } from './scene'
 
 /**
  * Represents a camera object used for rendering and controlling the view of a scene.
