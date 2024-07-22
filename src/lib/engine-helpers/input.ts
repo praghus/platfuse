@@ -1,4 +1,4 @@
-import { Game } from '../engine-objects'
+import { Game } from '../engine-objects/game'
 import { percent } from '../utils/helpers'
 import { Vector, vec2 } from './vector'
 

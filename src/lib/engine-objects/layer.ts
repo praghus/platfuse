@@ -1,6 +1,7 @@
 import { TMXLayer, getFlips } from 'tmx-map-parser'
 import { NodeType } from '../constants'
-import { Box, Vector, vec2 } from '../engine-helpers'
+import { Vector, vec2 } from '../engine-helpers/vector'
+import { Box } from '../engine-helpers/box'
 import { Entity } from './entity'
 import { Scene } from './scene'
 import { Tile } from './tile'

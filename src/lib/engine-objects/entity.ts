@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Animation } from '../../types'
-import { Color, Vector, box, vec2, randVector, Box } from '../engine-helpers'
-import { DefaultColors, Shape } from '../constants'
 import { clamp, deg2rad, lerp } from '../utils/helpers'
+import { Color } from '../engine-helpers/color'
+import { Box, box } from '../engine-helpers/box'
+import { Vector, vec2, randVector } from '../engine-helpers/vector'
+import { DefaultColors, Shape } from '../constants'
 import { Scene } from './scene'
 import { Sprite } from './sprite'
 

@@ -21,6 +21,12 @@ export interface Animation {
     loop: boolean
 }
 
+export interface CustomShader {
+    uniforms?: Record<string, any>
+    vertexShader: string
+    fragmentShader: string
+}
+
 export interface GameConfig {
     scenes: Record<string, Constructable<Scene>>
     entities?: Record<string, Constructable<Entity>>
@@ -29,6 +35,8 @@ export interface GameConfig {
     secondaryColor?: string
     fixedSize?: Vector
     pixelPerfect?: boolean
+    useWebGL?: boolean
+    postProcessShader?: CustomShader
     global?: boolean
     debug?: boolean
 }

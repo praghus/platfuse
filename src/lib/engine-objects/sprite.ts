@@ -1,7 +1,7 @@
 import { Animation } from '../../types'
 import { normalize, getPerformance } from '../utils/helpers'
 import { vec2 } from '../engine-helpers/vector'
-import { Box } from '../engine-helpers'
+import { Box } from '../engine-helpers/box'
 import { Entity } from './entity'
 import { Shape } from '../constants'
 
@@ -62,6 +62,7 @@ export class Sprite {
      * Draws the sprite.
      */
     draw() {
+        if (!this.entity.onScreen()) return
         const { animation, animFrame } = this
         const { angle, color, scene, shape, flipH, flipV } = this.entity
         const { game, camera } = scene

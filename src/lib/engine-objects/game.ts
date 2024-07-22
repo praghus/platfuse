@@ -2,8 +2,13 @@ import { Howl } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { delay, lerp } from '../utils/helpers'
-import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
+import { PostProcess } from '../engine-helpers/post-process'
+import { Color } from '../engine-helpers/color'
+import { Draw } from '../engine-helpers/draw'
+import { Input } from '../engine-helpers/input'
+import { Timer } from '../engine-helpers/timer'
+import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 
@@ -11,20 +16,23 @@ import { Scene } from './scene'
  * Represents a game engine that manages scenes, assets, and game state.
  */
 export class Game {
-    /** Draw object for rendering shapes and images. */
-    draw = new Draw(this)
-
     /** Canvas element for rendering the game. */
     canvas: HTMLCanvasElement
 
     /** Canvas rendering context. */
     ctx: CanvasRenderingContext2D
 
-    /** Input object for handling user input. */
-    input: Input = new Input(this)
+    /** Draw object for rendering 2D shapes and images. */
+    draw = new Draw(this)
+
+    /** The post-processing effect to apply to the game. */
+    postProcess?: PostProcess
 
     /** Flag indicating whether the game should render pixel-perfect. */
     pixelPerfect = false
+
+    /** Input object for handling user input. */
+    input: Input = new Input(this)
 
     /** Background color of the game. */
     backgroundColor = DefaultColors.DarkBlue
@@ -37,6 +45,8 @@ export class Game {
 
     /** Image assets record containing image elements. */
     images: Record<string, HTMLImageElement> = {}
+
+    // textures: Record<string, WebGLTexture> = {}
 
     /** Sound assets record containing Howl objects. */
     sounds: Record<string, Howl> = {}
@@ -111,6 +121,7 @@ export class Game {
         public preload: Record<string, string>
     ) {
         this.canvas = document.createElement('canvas')
+
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
@@ -121,12 +132,14 @@ export class Game {
         this.canvas.setAttribute('style', `${CanvasStyle} ${this.pixelPerfect ? 'image-rendering: pixelated;' : ''}`)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-        window.addEventListener('resize', this.onResize.bind(this))
-        this.onResize()
 
         document.body.style.cssText = `${BodyStyle} background: ${this.backgroundColor.toString()};`
         document.body.appendChild(this.canvas)
 
+        window.addEventListener('resize', this.onResize.bind(this))
+        this.onResize()
+
+        if (config?.postProcessShader) this.postProcess = new PostProcess(this, config.postProcessShader)
         if (!!config.global) window.Platfuse = this
     }
 
@@ -244,7 +257,7 @@ export class Game {
                     scene.updateObjects()
                     scene.update()
                     scene.updateCamera()
-                    // do post update
+                    // post update
                     scene.postUpdate()
                     scene.postUpdateLayers()
                     this.input.postUpdate()
@@ -253,8 +266,10 @@ export class Game {
             }
             scene.draw()
         } else {
+            this.time = this.frame++ / this.frameRate
             this.draw.preloader(this.preloadPercent)
         }
+        this?.postProcess?.render()
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
 
@@ -338,8 +353,16 @@ export class Game {
     setAudioVolume(volume: number) {
         this.audioVolume = volume
     }
-}
 
+    /**
+     * Toggles the fullscreen mode.
+     */
+    toggleFullscreen() {
+        if (!!document.fullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen()
+        } else if (document.body.requestFullscreen) document.body.requestFullscreen()
+    }
+}
 /**
  * Global declaration for the Platfuse window object.
  */
