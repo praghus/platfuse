@@ -3,7 +3,6 @@ import { getPerformance, isValidArray, normalize } from '../utils/helpers'
 import { Vector, vec2 } from '../engine-helpers/vector'
 import { Scene } from './scene'
 import { Box } from '../engine-helpers'
-import { glDraw } from '../utils/webgl'
 
 /**
  * The `Tile` class represents a tile on a tilemap.
@@ -105,7 +104,7 @@ export class Tile {
         const texture = game.getImage(image.source)
         const clip = this.getSpriteClip()
 
-        if (this.scene.game.webGL) {
+        if (game.webGL) {
             const p = vec2(
                 pos.x / scale.x + tilewidth / 2 + camera.pos.x / scale.x,
                 pos.y / scale.y + tileheight / 2 + camera.pos.y / scale.y
@@ -120,7 +119,7 @@ export class Tile {
 
             // glSetTexture(game.textures[image.source])
             // glCreateTexture(texture)
-            glDraw(
+            game.webGL.draw(
                 p.x,
                 p.y,
                 tilewidth,

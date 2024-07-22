@@ -4,7 +4,6 @@ import { vec2 } from '../engine-helpers/vector'
 import { Box, Color } from '../engine-helpers'
 import { Entity } from './entity'
 import { Shape } from '../constants'
-import { glDraw } from '../utils/webgl'
 
 /**
  * The `Sprite` class represents an image that can be drawn on the screen.
@@ -89,9 +88,9 @@ export class Sprite {
             }
         }
 
-        if (this.entity.scene.game.webGL) {
+        if (game.webGL) {
             const { pos, size } = boundingRect
-            glDraw(
+            game.webGL.draw(
                 (pos.x + size.x / 2) / scale.x,
                 (pos.y + size.y / 2) / scale.y,
                 size.x / scale.x,

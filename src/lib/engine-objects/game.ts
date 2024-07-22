@@ -2,20 +2,24 @@ import { Howl } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { delay, lerp } from '../utils/helpers'
+import { WebGL } from '../engine-helpers/webgl'
 import { Color, Draw, Input, Timer, Vector } from '../engine-helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
 import { Entity } from './entity'
 import { Scene } from './scene'
-import { glCopyToContext, glInit, glInitPostProcess, glPreRender, glRenderPostProcess } from '../utils/webgl'
 
 /**
  * Represents a game engine that manages scenes, assets, and game state.
  */
 export class Game {
-    webGL = true
-
-    /** Draw object for rendering shapes and images. */
+    /** Draw object for rendering 2D shapes and images. */
     draw = new Draw(this)
+
+    /** WebGL object for rendering with WebGL. */
+    webGL?: WebGL
+
+    /** Flag indicating whether the game should use WebGL for rendering. */
+    useWebGL = true
 
     /** Canvas element for rendering the game. */
     canvas: HTMLCanvasElement
@@ -123,6 +127,7 @@ export class Game {
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
+        this.useWebGL = config?.useWebGL !== undefined ? config.useWebGL : this.useWebGL
         this.pixelPerfect = !!config?.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
@@ -138,9 +143,9 @@ export class Game {
         document.body.style.cssText = `${BodyStyle} background: ${this.backgroundColor.toString()};`
         document.body.appendChild(this.canvas)
 
-        if (this.webGL) {
-            glInit(this)
-            glInitPostProcess(config?.postProcessShader)
+        if (this.useWebGL) {
+            this.webGL = new WebGL(this)
+            this.webGL.initPostProcess(config?.postProcessShader)
         }
         if (!!config.global) window.Platfuse = this
     }
@@ -266,11 +271,11 @@ export class Game {
                 }
                 this.frameTimeBuffer += deltaSmooth
             }
-            this.webGL && glPreRender(this)
+            this.webGL && this.webGL.preRender()
             scene.draw()
             if (this.webGL) {
-                glRenderPostProcess(this.time)
-                glCopyToContext(this.ctx)
+                this.webGL.renderPostProcess()
+                this.webGL.flush()
             }
         } else {
             this.draw.preloader(this.preloadPercent)
