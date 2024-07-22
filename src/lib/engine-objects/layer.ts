@@ -210,12 +210,23 @@ export class Layer {
         if (this.visible) {
             switch (this.type) {
                 case NodeType.Layer:
+                    const image = this.layerCanvas as HTMLCanvasElement
+                    const rect = new Box(vec2(), this.scene.game.getResolution().divide(camera.scale))
+                    const clip = camera.pos.divide(camera.scale).scale(-1)
+                    // ctx.drawImage(
+                    //     i,
+                    //     -camera.pos.x / camera.scale,
+                    //     -camera.pos.y / camera.scale,
+                    //     // Math.min(i.height - (r.y / camera.scale), -camera.pos.y), //clip.y,
+                    //     r.x / camera.scale,
+                    //     r.y / camera.scale,
+                    //     -camera.scale, //fpos.x - 0.5,
+                    //     -camera.scale, //fpos.y - 0.5,
+                    //     r.x,
+                    //     r.y
+                    // )
                     // draw layer canvas on main canvas
-                    draw.copyToMainContext(
-                        this.layerCanvas as HTMLCanvasElement,
-                        camera.pos.subtract(vec2(camera.scale)),
-                        this.size.multiply(this.scene.tileSize).scale(camera.scale)
-                    )
+                    draw.draw2d(image, rect, vec2(camera.scale), 0, false, false, clip)
                     // render animated tiles on main canvas
                     this.forEachVisibleTile((tile, pos, flipH, flipV) => {
                         tile.animated && tile.draw(pos, flipH, flipV)

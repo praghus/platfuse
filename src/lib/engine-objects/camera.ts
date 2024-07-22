@@ -127,7 +127,6 @@ export class Camera {
             if (this.scrolling) {
                 // smooth scroll
                 const midPos = followRect.pos
-                    .clone()
                     .invert()
                     .add(viewSize.divide(vec2(2)))
                     .subtract(followRect.size.divide(vec2(2)))

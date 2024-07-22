@@ -145,7 +145,7 @@ export class Draw {
      * @param context - The CanvasRenderingContext2D to use for drawing (optional).
      */
     draw2d(
-        image: HTMLImageElement,
+        image: HTMLImageElement | HTMLCanvasElement,
         rect: Box,
         scale = vec2(1),
         angle = 0,

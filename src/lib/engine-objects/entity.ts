@@ -291,7 +291,7 @@ export class Entity {
     getTranslatedBoundingRect() {
         return new Box(
             this.scene.getScreenPos(this.pos, this.size),
-            this.size.clone().multiply(this.scene.tileSize).scale(this.scene.camera.scale)
+            this.size.multiply(this.scene.tileSize).scale(this.scene.camera.scale)
         )
     }
 

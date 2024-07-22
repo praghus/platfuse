@@ -381,11 +381,10 @@ export class Scene {
      */
     getScreenPos(pos: Vector, size?: Vector) {
         return pos
-            .clone()
             .multiply(this.tileSize)
             .subtract(size ? size.multiply(this.tileSize).divide(2) : vec2())
             .scale(this.camera.scale)
-            .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
+            // .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
     }
 
     /**
@@ -395,7 +394,7 @@ export class Scene {
     getPointerPos() {
         const { pos, scale } = this.camera
         const { mouseScreenPos } = this.game.input
-        return mouseScreenPos.clone().subtract(pos).divide(scale)
+        return mouseScreenPos.subtract(pos).divide(scale)
     }
 
     /**
