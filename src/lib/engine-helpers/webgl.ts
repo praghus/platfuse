@@ -243,8 +243,12 @@ export class WebGL {
 
     renderPostProcess() {
         if (!this.glPostShader) return
+
         const { game, gl, glPostShader, glGeometryBuffer, glPostTexture } = this
         const { ctx, canvas, glCanvas, time } = game
+        const vertexByteStride = 8
+        const pLocation = gl.getAttribLocation(glPostShader, 'p')
+        const uniformLocation = (name: string) => gl.getUniformLocation(glPostShader, name)
 
         this.flush()
         // copy to the main canvas
@@ -255,20 +259,14 @@ export class WebGL {
         gl.bindBuffer(gl.ARRAY_BUFFER, glGeometryBuffer)
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
         gl.disable(gl.BLEND)
-
         // set textures, pass in the 2d canvas and gl canvas in separate texture channels
         gl.activeTexture(gl.TEXTURE0)
         gl.bindTexture(gl.TEXTURE_2D, glPostTexture)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas)
-
         // set vertex position attribute
-        const vertexByteStride = 8
-        const pLocation = gl.getAttribLocation(glPostShader, 'p')
         gl.enableVertexAttribArray(pLocation)
         gl.vertexAttribPointer(pLocation, 2, gl.FLOAT, false, vertexByteStride, 0)
-
         // set uniforms and draw
-        const uniformLocation = (name: string) => gl.getUniformLocation(glPostShader, name)
         gl.uniform1i(uniformLocation('iChannel0'), 0)
         gl.uniform1f(uniformLocation('iTime'), time)
         gl.uniform3f(uniformLocation('iResolution'), canvas.width, canvas.height, 1)

@@ -244,6 +244,9 @@ export class Game {
         this.timeReal += frameTimeDelta / 1e3
         this.frameTimeBuffer += (this.paused ? 0 : 1) * frameTimeDelta
 
+        if (this.webGL) {
+            this.webGL.preRender()
+        }
         if (scene instanceof Scene) {
             if (this.paused) {
                 scene.postUpdate()
@@ -271,14 +274,13 @@ export class Game {
                 }
                 this.frameTimeBuffer += deltaSmooth
             }
-            this.webGL && this.webGL.preRender()
             scene.draw()
-            if (this.webGL) {
-                this.webGL.renderPostProcess()
-                this.webGL.flush()
-            }
         } else {
             this.draw.preloader(this.preloadPercent)
+        }
+        if (this.webGL) {
+            this.webGL.renderPostProcess()
+            this.webGL.flush()
         }
         this.animationFrame = requestAnimationFrame((time: number) => this.update(time))
     }
