@@ -257,6 +257,6 @@ The project is in a state of continuous development and improvement. For the lat
 
 ## Games Made With Platfuse
 
--   [Posthumus](https://github.com/praghus/posthumus) - Zombie shooter platformer
--   [Showcase](https://github.com/praghus/platfuse-example) - Platformer example
+-   [Posthumus](https://praghus.github.io/posthumus) - Zombie shooter platformer
+-   [Showcase](https://praghus.github.io/platfuse-example/) - Platformer example
 -   [Boilerplate](https://github.com/praghus/platfuse-boilerplate) - Platfuse boilerplate project
