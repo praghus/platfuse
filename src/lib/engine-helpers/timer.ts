@@ -1,5 +1,5 @@
 import { Game } from '../engine-objects/game'
-import { percent } from '../utils/helpers'
+import { percent } from '../utils/math'
 
 /**
  * Represents a timer used in a game.

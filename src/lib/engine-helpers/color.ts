@@ -1,9 +1,9 @@
-import { clamp } from '../utils/helpers'
+import { clamp } from '../utils/math'
 
 /**
  * A class representing a color.
  */
-class Color {
+export class Color {
     /** The red channel value. */
     r = 255
 
@@ -131,5 +131,3 @@ class Color {
         return '#' + toHex(this.r) + toHex(this.g) + toHex(this.b) + (includeAlpha ? toHex(this.a * 255) : '')
     }
 }
-
-export { Color }

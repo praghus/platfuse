@@ -1,5 +1,6 @@
-import { lerp } from '../utils/helpers'
-import { Vector, vec2 } from '../engine-helpers/vector'
+import { lerp } from '../utils/math'
+import { vec2 } from '../utils/geometry'
+import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 

@@ -1,7 +1,8 @@
 import { Howl } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
-import { delay, lerp } from '../utils/helpers'
+import { lerp } from '../utils/math'
+import { delay } from '../utils/helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
 import { PostProcess } from '../engine-helpers/post-process'
 import { Color } from '../engine-helpers/color'
@@ -29,7 +30,7 @@ export class Game {
     postProcess?: PostProcess
 
     /** Flag indicating whether the game should render pixel-perfect. */
-    pixelPerfect = false
+    pixelPerfect = true
 
     /** Input object for handling user input. */
     input: Input = new Input(this)
@@ -125,7 +126,7 @@ export class Game {
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
-        this.pixelPerfect = !!config?.pixelPerfect
+        this.pixelPerfect = config?.pixelPerfect !== undefined ? config.pixelPerfect : this.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
         this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor

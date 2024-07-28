@@ -1,7 +1,8 @@
 import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
 import { Constructable } from '../../types'
-import { isValidArray, getFilename, sortByRenderOrder } from '../utils/helpers'
-import { Vector, vec2 } from '../engine-helpers/vector'
+import { sortByRenderOrder } from '../utils/helpers'
+import { vec2 } from '../utils/geometry'
+import { Vector } from '../engine-helpers/vector'
 import { Box } from '../engine-helpers/box'
 import { Flipped } from '../constants'
 import { Camera } from './camera'
@@ -32,6 +33,9 @@ export class Scene {
     /** An array of all the layers in the scene. */
     layers: Layer[] = []
 
+    /** The custom data for the scene. */
+    data: Record<string, any> = {}
+
     /** The global gravity value for the scene. */
     gravity = 0
 
@@ -55,9 +59,10 @@ export class Scene {
      * Destroys the scene by resetting its properties.
      */
     destroy() {
-        this.objects = []
-        this.layers = []
+        this.data = {}
         this.tiles = {}
+        this.layers = []
+        this.objects = []
         this.tileCollisionData = []
         this.nextRenderOrder = 0
         this.camera.pos = vec2()
@@ -134,18 +139,17 @@ export class Scene {
      * Draws the scene on the main context.
      */
     draw() {
-        const { ctx, width, height } = this.game
+        const { ctx, width, height, pixelPerfect } = this.game
         const layers = this.layers.filter(l => l instanceof Layer && l.visible)
         const objects = this.objects.filter(o => o.visible && !o.layerId)
         layers.sort(sortByRenderOrder)
         objects.sort(sortByRenderOrder)
 
-        // ctx.save()
-        ctx.imageSmoothingEnabled = false // always pixel perfect
+        ctx.imageSmoothingEnabled = !pixelPerfect
         ctx.clearRect(0, 0, width, height)
+
         for (const layer of layers) layer.draw()
         for (const obj of objects) obj.draw()
-        // ctx.restore()
 
         this.game.debug && this.displayDebug()
     }
@@ -316,7 +320,7 @@ export class Scene {
      */
     createTilesets(tilesets: TMXTileset[]) {
         tilesets.map((tileset: TMXTileset) => {
-            const asset = getFilename(tileset.image.source)
+            const asset = tileset.image.source.replace(/^.*[\\\/]/, '')
             if (Object.keys(this.game.images).includes(asset)) {
                 this.addTileset(tileset, asset)
             }
@@ -384,7 +388,7 @@ export class Scene {
             .multiply(this.tileSize)
             .subtract(size ? size.multiply(this.tileSize).divide(2) : vec2())
             .scale(this.camera.scale)
-            // .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
+        // .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
     }
 
     /**
@@ -456,7 +460,7 @@ export class Scene {
      * @returns An array of object layers.
      */
     getObjectLayers() {
-        return this.layers.filter((layer: Layer) => isValidArray(layer.objects))
+        return this.layers.filter((layer: Layer) => layer.objects?.length)
     }
 
     /**
@@ -486,6 +490,24 @@ export class Scene {
      */
     removeLayer(index: number) {
         this.layers.splice(index, 1)
+    }
+
+    /**
+     * Sets the value of a specific key in the data object.
+     * @param key - The key to set the value for.
+     * @param value - The value to set.
+     */
+    setData(key: string, value: any) {
+        this.data = { ...this.data, [key]: value }
+    }
+
+    /**
+     * Retrieves the value associated with the specified key from the data object.
+     * @param key - The key of the value to retrieve.
+     * @returns The value associated with the specified key, or undefined if the key does not exist.
+     */
+    getData(key: string) {
+        return this.data[key]
     }
 
     /**

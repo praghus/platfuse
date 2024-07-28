@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Animation } from '../../types'
-import { clamp, deg2rad, lerp } from '../utils/helpers'
+import { box, vec2, randVector } from '../utils/geometry'
+import { Box } from '../engine-helpers/box'
 import { Color } from '../engine-helpers/color'
-import { Box, box } from '../engine-helpers/box'
-import { Vector, vec2, randVector } from '../engine-helpers/vector'
+import { clamp, deg2rad, lerp } from '../utils/math'
+import { Vector } from '../engine-helpers/vector'
 import { DefaultColors, Shape } from '../constants'
 import { Scene } from './scene'
 import { Sprite } from './sprite'
@@ -357,33 +358,12 @@ export class Entity {
             this.pos.y > scene.size.y && (this.pos.y = scene.size.y)
         }
 
-        const wasMovingDown = this.force.y >= 0
+        const wasMovingDown = this.force.y > 0
 
         if (this.onGround) {
             const groundSpeed = this.onGround instanceof Entity ? this.onGround.force.x : 0
             this.force.x = groundSpeed + (this.force.x - groundSpeed) * this.friction
             this.onGround = false
-        }
-
-        if (this.collideTiles) {
-            if (scene.testTileCollision(this.pos, this.size, this)) {
-                if (!scene.testTileCollision(this.lastPos, this.size, this)) {
-                    const isBlockedY = scene.testTileCollision(vec2(this.lastPos.x, this.pos.y), this.size, this)
-                    const isBlockedX = scene.testTileCollision(vec2(this.pos.x, this.lastPos.y), this.size, this)
-                    if (isBlockedY || !isBlockedX) {
-                        this.onGround = wasMovingDown
-                        this.force.y *= -this.elasticity
-                        const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
-                        if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale)
-                            this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
-                        this.pos.y = this.lastPos.y
-                    }
-                    if (isBlockedX) {
-                        this.pos.x = this.lastPos.x
-                        this.force.x *= -this.elasticity
-                    }
-                }
-            }
         }
 
         if (this.collideObjects) {
@@ -453,6 +433,28 @@ export class Entity {
                         o.force.x = lerp(elasticity, inelastic, elastic1)
                     } // bounce if other object is fixed
                     else this.force.x *= -elasticity
+                }
+            }
+        }
+
+        if (this.collideTiles) {
+            if (scene.testTileCollision(this.pos, this.size, this)) {
+                if (!scene.testTileCollision(this.lastPos, this.size, this)) {
+                    const isBlockedY = scene.testTileCollision(vec2(this.lastPos.x, this.pos.y), this.size, this)
+                    const isBlockedX = scene.testTileCollision(vec2(this.pos.x, this.lastPos.y), this.size, this)
+                    if (isBlockedY || !isBlockedX) {
+                        this.onGround = wasMovingDown
+                        this.force.y *= -this.elasticity
+                        const o = ((this.lastPos.y - this.size.y / 2) | 0) - (this.lastPos.y - this.size.y / 2)
+                        if (o < 0 && o > this.damping * this.force.y + scene.gravity * this.gravityScale) {
+                            this.force.y = this.damping ? (o - scene.gravity * this.gravityScale) / this.damping : 0
+                        }
+                        this.pos.y = this.lastPos.y
+                    }
+                    if (isBlockedX) {
+                        this.pos.x = this.lastPos.x
+                        this.force.x *= -this.elasticity
+                    }
                 }
             }
         }

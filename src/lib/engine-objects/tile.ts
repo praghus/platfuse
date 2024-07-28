@@ -1,6 +1,8 @@
 import { TMXTileset } from 'tmx-map-parser'
-import { getPerformance, isValidArray, normalize } from '../utils/helpers'
-import { Vector, vec2 } from '../engine-helpers/vector'
+import { normalize } from '../utils/math'
+import { getPerformance } from '../utils/helpers'
+import { vec2 } from '../utils/geometry'
+import { Vector } from '../engine-helpers/vector'
 import { Box } from '../engine-helpers/box'
 import { Scene } from './scene'
 
@@ -54,7 +56,7 @@ export class Tile {
      */
     getTileProperties(gid: number, tileset: TMXTileset) {
         const { firstgid, tiles } = tileset
-        return (isValidArray(tiles) && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
+        return (tiles.length && tiles.filter(tile => tile.id === gid - firstgid)[0]) || {}
     }
 
     /**

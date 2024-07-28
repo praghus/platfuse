@@ -1,9 +1,9 @@
-import { Vector, vec2 } from './vector'
+import { Vector } from './vector'
 
 /**
  * Represents a box in 2D space.
  */
-class Box {
+export class Box {
     /**
      * Creates a new instance of the Box class.
      * @param pos - The position of the box.
@@ -68,15 +68,3 @@ class Box {
         Math.abs(this.pos.x - pos.x) * 2 < this.size.x + size.x &&
         Math.abs(this.pos.y - pos.y) * 2 < this.size.y + size.y
 }
-
-/**
- * Creates a new Box instance with the specified parameters.
- * @param x - The x-coordinate of the box's position.
- * @param y - The y-coordinate of the box's position.
- * @param w - The width of the box.
- * @param h - The height of the box.
- * @returns A new Box instance.
- */
-const box = (x = 0, y = 0, w = 0, h = 0) => new Box(vec2(x, y), vec2(w, h))
-
-export { Box, box }

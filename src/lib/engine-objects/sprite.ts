@@ -1,6 +1,7 @@
 import { Animation } from '../../types'
-import { normalize, getPerformance } from '../utils/helpers'
-import { vec2 } from '../engine-helpers/vector'
+import { normalize } from '../utils/math'
+import { getPerformance } from '../utils/helpers'
+import { vec2 } from '../utils/geometry'
 import { Box } from '../engine-helpers/box'
 import { Entity } from './entity'
 import { Shape } from '../constants'
@@ -11,7 +12,10 @@ import { Shape } from '../constants'
  * @see {@link Animation}
  */
 export class Sprite {
-    /** The animation of the sprite. */
+    /**
+     * The animation of the sprite.
+     * @see {@link Animation}
+     */
     animation?: Animation
 
     /** The current frame of the animation. */

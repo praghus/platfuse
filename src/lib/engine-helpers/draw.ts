@@ -1,7 +1,8 @@
 /* eslint-disable max-params */
 import { Game } from '../engine-objects/game'
-import { Vector, vec2 } from './vector'
-import { Box, box } from './box'
+import { box, vec2 } from '../utils/geometry'
+import { Vector } from './vector'
+import { Box } from './box'
 import { Color } from './color'
 import { DefaultColors, PixelFontImage } from '../constants'
 

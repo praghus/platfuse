@@ -1,10 +1,13 @@
 import { TMXLayer, getFlips } from 'tmx-map-parser'
 import { NodeType } from '../constants'
-import { Vector, vec2 } from '../engine-helpers/vector'
+import { vec2 } from '../utils/geometry'
 import { Box } from '../engine-helpers/box'
+import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 import { Tile } from './tile'
+import { Color } from '../engine-helpers/color'
+import { getTmxColor } from '../utils/helpers'
 
 export class Layer {
     /** The unique identifier of the layer. */
@@ -31,6 +34,24 @@ export class Layer {
     /** The rendering context of the layer canvas. */
     layerContext?: CanvasRenderingContext2D
 
+    /** The repeatX mode for the image layer. */
+    repeatX = false
+
+    /** The repeatY mode for the image layer. */
+    repeatY = false
+
+    /** The offset of the layer. */
+    offset = vec2()
+
+    /** The parallax factor of the layer. */
+    parallax = vec2(1)
+
+    /** The image of the image layer. */
+    image?: HTMLImageElement
+
+    /** The tint color of the layer. */
+    tint?: Color
+
     /** The render order of the layer. */
     renderOrder = 0
 
@@ -53,13 +74,24 @@ export class Layer {
             this.id = layerData.id
             this.name = layerData.name
             this.type = layerData.type
+            this.data = layerData?.data
             this.size = vec2(layerData.width, layerData.height)
             this.visible = layerData.visible === undefined ? true : !!layerData.visible
             this.properties = layerData?.properties || {}
-            if (layerData.type === NodeType.Layer) {
-                this.data = layerData?.data
-                this.renderTilesToLayerCanvas()
+            this.offset = vec2(layerData?.offsetx || 0, layerData?.offsety || 0)
+            this.parallax = vec2(layerData?.parallaxx || 1, layerData?.parallaxy || 1)
+
+            if (layerData?.image) {
+                const asset = layerData.image.source.replace(/^.*[\\\/]/, '')
+                this.image = scene.game.getImage(asset)
+                this.size = vec2(this.image.width, this.image.height).divide(scene.tileSize)
+                this.repeatX = !!layerData?.repeatx
+                this.repeatY = !!layerData?.repeaty
             }
+            if (layerData.tintcolor) this.tint = new Color(getTmxColor(layerData.tintcolor))
+
+            this.renderToCanvas()
+            console.info('Layer', this)
         } else {
             this.type = NodeType.Custom
         }
@@ -68,13 +100,24 @@ export class Layer {
     /**
      * Renders the tiles to the layer canvas.
      */
-    renderTilesToLayerCanvas() {
+    renderToCanvas() {
+        if (this.type === NodeType.ObjectGroup) return
+        this.layerCanvas = document.createElement('canvas')
+        this.layerCanvas.width = this.size.x * this.scene.tileSize.x
+        this.layerCanvas.height = this.size.y * this.scene.tileSize.y
+        this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
+        if (this.tint) {
+            this.layerContext.globalCompositeOperation = 'multiply'
+            this.layerContext.fillStyle = this.tint.toString()
+            this.layerContext.fillRect(0, 0, this.layerCanvas.width, this.layerCanvas.height)
+            this.layerContext.globalAlpha = this.tint.a
+            this.layerContext.globalCompositeOperation = 'destination-in'
+        }
         if (this.data) {
-            this.layerCanvas = document.createElement('canvas')
-            this.layerCanvas.width = this.size.x * this.scene.tileSize.x
-            this.layerCanvas.height = this.size.y * this.scene.tileSize.y
-            this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
             this.data.forEach((tileId, index) => tileId && this.drawTileAt(tileId, index))
+        }
+        if (this.image) {
+            this.layerContext.drawImage(this.image, 0, 0)
         }
     }
 
@@ -97,23 +140,18 @@ export class Layer {
      */
     drawTileAt(tileId: number, index: number) {
         if (tileId) {
+            const { game, tileSize } = this.scene
             const tile = this.scene.getTileObject(tileId)
-            const pos = vec2(index % this.size.x, Math.floor(index / this.size.x)).multiply(this.scene.tileSize)
-            const { H, V } = getFlips(tileId) || { H: false, V: false }
             const { image, tilewidth, tileheight } = tile.tileset
-            const { game } = this.scene
+            const { H, V } = getFlips(tileId) || { H: false, V: false }
+            const clip = tile.getSpriteClip()
+            const rect = new Box(
+                vec2(index % this.size.x, Math.floor(index / this.size.x)).multiply(tileSize),
+                vec2(tilewidth, tileheight)
+            )
             // render static (non-animated) tiles to layer canvas
             if (!tile.animated) {
-                game.draw.draw2d(
-                    game.getImage(image.source),
-                    new Box(pos, vec2(tilewidth, tileheight)),
-                    vec2(1),
-                    0,
-                    H,
-                    V,
-                    tile.getSpriteClip(),
-                    this.layerContext
-                )
+                game.draw.draw2d(game.getImage(image.source), rect, vec2(1), 0, H, V, clip, this.layerContext)
             }
         }
     }
@@ -161,13 +199,12 @@ export class Layer {
      * Toggles the visibility of the layer.
      * @param toggle - A boolean value indicating whether to show or hide the layer.
      */
-    toggleVisibility(toggle: boolean) {
-        this.visible = toggle
+    toggleVisibility(visible = !this.visible) {
+        this.visible = visible
     }
 
     /**
      * Iterates over each visible tile and executes the provided callback function.
-     *
      * @param fn - The callback function to execute for each visible tile.
      *             It receives the tile object, position, and flips as parameters.
      */
@@ -190,14 +227,17 @@ export class Layer {
     /**
      * Iterates over each visible object in the layer and invokes the provided callback function.
      * The callback function receives the object as a parameter.
-     *
      * @param cb - The callback function to be invoked for each visible object.
      */
     forEachVisibleObject(cb: (obj: Entity) => void) {
         const objects = this.scene.objects.filter(({ layerId }) => layerId === this.id)
         objects.sort((a, b) => a.renderOrder - b.renderOrder)
-        for (const obj of objects) {
-            obj.visible && cb(obj)
+        for (const obj of objects) obj.visible && cb(obj)
+    }
+
+    drawToMainContext(pos: Vector, size: Vector) {
+        if (this.layerCanvas) {
+            this.scene.game.draw.copyToMainContext(this.layerCanvas, pos, size)
         }
     }
 
@@ -205,34 +245,39 @@ export class Layer {
      * Draws the layer.
      */
     draw() {
-        const { camera } = this.scene
-        const { draw } = this.scene.game
+        const { camera, game } = this.scene
+
         if (this.visible) {
+            // draw layer on main canvas
+            if (this.layerCanvas) {
+                const offset = this.offset.scale(camera.scale)
+                const pos = camera.pos.multiply(this.parallax).add(offset)
+                const size = this.size.multiply(this.scene.tileSize).scale(camera.scale)
+
+                if (this.repeatX && this.repeatY) {
+                    for (let x = pos.x % size.x; x < game.width; x += size.x)
+                        for (let y = pos.y % size.y; y < game.height; y += size.y)
+                            this.drawToMainContext(vec2(x, y), size)
+                } else if (this.repeatX) {
+                    for (let x = pos.x % size.x; x < game.width; x += size.x)
+                        this.drawToMainContext(vec2(x, pos.y), size)
+                } else if (this.repeatY) {
+                    for (let y = pos.y % size.y; y < game.height; y += size.y)
+                        this.drawToMainContext(vec2(pos.x, y), size)
+                } else {
+                    const clip = pos.divide(camera.scale).scale(-1)
+                    const rect = new Box(vec2(), this.scene.game.getResolution().divide(camera.scale))
+                    game.draw.draw2d(this.layerCanvas, rect, vec2(camera.scale), 0, false, false, clip)
+                }
+            }
             switch (this.type) {
                 case NodeType.Layer:
-                    const image = this.layerCanvas as HTMLCanvasElement
-                    const rect = new Box(vec2(), this.scene.game.getResolution().divide(camera.scale))
-                    const clip = camera.pos.divide(camera.scale).scale(-1)
-                    // ctx.drawImage(
-                    //     i,
-                    //     -camera.pos.x / camera.scale,
-                    //     -camera.pos.y / camera.scale,
-                    //     // Math.min(i.height - (r.y / camera.scale), -camera.pos.y), //clip.y,
-                    //     r.x / camera.scale,
-                    //     r.y / camera.scale,
-                    //     -camera.scale, //fpos.x - 0.5,
-                    //     -camera.scale, //fpos.y - 0.5,
-                    //     r.x,
-                    //     r.y
-                    // )
-                    // draw layer canvas on main canvas
-                    draw.draw2d(image, rect, vec2(camera.scale), 0, false, false, clip)
                     // render animated tiles on main canvas
-                    this.forEachVisibleTile((tile, pos, flipH, flipV) => {
-                        tile.animated && tile.draw(pos, flipH, flipV)
-                    })
+                    this.forEachVisibleTile((tile, pos, flipH, flipV) => tile.animated && tile.draw(pos, flipH, flipV))
                     break
-                default:
+                case NodeType.ImageLayer:
+                    break
+                case NodeType.ObjectGroup:
                     this.forEachVisibleObject(obj => obj.draw())
                     break
             }

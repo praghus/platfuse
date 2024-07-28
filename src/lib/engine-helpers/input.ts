@@ -1,6 +1,7 @@
 import { Game } from '../engine-objects/game'
-import { percent } from '../utils/helpers'
-import { Vector, vec2 } from './vector'
+import { percent } from '../utils/math'
+import { vec2 } from '../utils/geometry'
+import { Vector } from './vector'
 
 const isTouchDevice = window.ontouchstart !== undefined
 const preventDefaultInput = false
