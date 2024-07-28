@@ -91,7 +91,6 @@ export class Layer {
             if (layerData.tintcolor) this.tint = new Color(getTmxColor(layerData.tintcolor))
 
             this.renderToCanvas()
-            console.info('Layer', this)
         } else {
             this.type = NodeType.Custom
         }
