@@ -30,7 +30,7 @@ export class Game {
     postProcess?: PostProcess
 
     /** Flag indicating whether the game should render pixel-perfect. */
-    pixelPerfect = true
+    pixelPerfect = false
 
     /** Input object for handling user input. */
     input: Input = new Input(this)
@@ -126,7 +126,7 @@ export class Game {
         this.objectClasses = config?.entities || {}
         this.sceneClasses = config?.scenes || {}
         this.debug = !!config.debug
-        this.pixelPerfect = config?.pixelPerfect !== undefined ? config.pixelPerfect : this.pixelPerfect
+        this.pixelPerfect = !!config?.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
         this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor

@@ -11,7 +11,7 @@ import { getTmxColor } from '../utils/helpers'
 
 export class Layer {
     /** The unique identifier of the layer. */
-    id = Date.now()
+    id = Date.now() // TODO: use a better way to generate unique IDs
 
     /** The name of the layer (optional). */
     name?: string
@@ -22,7 +22,7 @@ export class Layer {
     /** The size of the layer. */
     size = vec2()
 
-    /** The data of the layer. */
+    /** The tiles data of the layer. */
     data?: (number | null)[]
 
     /** The objects in the layer. */
@@ -89,34 +89,34 @@ export class Layer {
                 this.repeatY = !!layerData?.repeaty
             }
             if (layerData.tintcolor) this.tint = new Color(getTmxColor(layerData.tintcolor))
-
-            this.renderToCanvas()
         } else {
             this.type = NodeType.Custom
         }
+        this.renderToCanvas()
     }
 
     /**
      * Renders the tiles to the layer canvas.
      */
     renderToCanvas() {
-        if (this.type === NodeType.ObjectGroup) return
-        this.layerCanvas = document.createElement('canvas')
-        this.layerCanvas.width = this.size.x * this.scene.tileSize.x
-        this.layerCanvas.height = this.size.y * this.scene.tileSize.y
-        this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
-        if (this.tint) {
-            this.layerContext.globalCompositeOperation = 'multiply'
-            this.layerContext.fillStyle = this.tint.toString()
-            this.layerContext.fillRect(0, 0, this.layerCanvas.width, this.layerCanvas.height)
-            this.layerContext.globalAlpha = this.tint.a
-            this.layerContext.globalCompositeOperation = 'destination-in'
-        }
-        if (this.data) {
-            this.data.forEach((tileId, index) => tileId && this.drawTileAt(tileId, index))
-        }
-        if (this.image) {
-            this.layerContext.drawImage(this.image, 0, 0)
+        if (this.image || this.data?.length) {
+            this.layerCanvas = document.createElement('canvas')
+            this.layerCanvas.width = this.size.x * this.scene.tileSize.x
+            this.layerCanvas.height = this.size.y * this.scene.tileSize.y
+            this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
+            if (this.tint) {
+                this.layerContext.globalCompositeOperation = 'multiply'
+                this.layerContext.fillStyle = this.tint.toString()
+                this.layerContext.fillRect(0, 0, this.layerCanvas.width, this.layerCanvas.height)
+                this.layerContext.globalAlpha = this.tint.a
+                this.layerContext.globalCompositeOperation = 'destination-in'
+            }
+            if (this.data) {
+                this.data.forEach((tileId, index) => tileId && this.drawTileAt(tileId, index))
+            }
+            if (this.image) {
+                this.layerContext.drawImage(this.image, 0, 0)
+            }
         }
     }
 
@@ -277,6 +277,7 @@ export class Layer {
                 case NodeType.ImageLayer:
                     break
                 case NodeType.ObjectGroup:
+                case NodeType.Custom:
                     this.forEachVisibleObject(obj => obj.draw())
                     break
             }

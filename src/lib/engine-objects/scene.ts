@@ -139,18 +139,17 @@ export class Scene {
      * Draws the scene on the main context.
      */
     draw() {
-        const { ctx, width, height, pixelPerfect } = this.game
+        const { ctx, width, height } = this.game
         const layers = this.layers.filter(l => l instanceof Layer && l.visible)
         const objects = this.objects.filter(o => o.visible && !o.layerId)
         layers.sort(sortByRenderOrder)
         objects.sort(sortByRenderOrder)
 
-        ctx.imageSmoothingEnabled = !pixelPerfect
+        ctx.imageSmoothingEnabled = false
         ctx.clearRect(0, 0, width, height)
 
         for (const layer of layers) layer.draw()
         for (const obj of objects) obj.draw()
-
         this.game.debug && this.displayDebug()
     }
 
@@ -388,7 +387,6 @@ export class Scene {
             .multiply(this.tileSize)
             .subtract(size ? size.multiply(this.tileSize).divide(2) : vec2())
             .scale(this.camera.scale)
-        // .subtract(vec2(this.camera.scale)) // @todo: check if this is needed
     }
 
     /**

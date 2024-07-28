@@ -6,7 +6,7 @@ import { Vector } from './vector'
 const isTouchDevice = window.ontouchstart !== undefined
 const preventDefaultInput = false
 
-// @todo: Add support for touch events and gamepad input.
+// TODO: Add support for touch events and gamepad input.
 /**
  * Represents the Input class.
  */
