@@ -244,10 +244,9 @@ export class Layer {
      * Draws the layer.
      */
     draw() {
-        const { camera, game } = this.scene
-
         if (this.visible) {
-            // draw layer on main canvas
+            const { camera, game } = this.scene
+
             if (this.layerCanvas) {
                 const offset = this.offset.scale(camera.scale)
                 const pos = camera.pos.multiply(this.parallax).add(offset)
@@ -269,6 +268,7 @@ export class Layer {
                     game.draw.draw2d(this.layerCanvas, rect, vec2(camera.scale), 0, false, false, clip)
                 }
             }
+
             switch (this.type) {
                 case NodeType.Layer:
                     // render animated tiles on main canvas
