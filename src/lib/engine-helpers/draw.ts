@@ -1,16 +1,18 @@
 /* eslint-disable max-params */
 import { Game } from '../engine-objects/game'
-import { box, vec2 } from '../utils/geometry'
+import { vec2 } from '../utils/geometry'
 import { Vector } from './vector'
 import { Box } from './box'
 import { Color } from './color'
-import { DefaultColors, PixelFontImage } from '../constants'
+import { DefaultColors, PixelFontImage, PlatfuseLogo } from '../constants'
 
 /**
  * The `Draw` class provides methods for drawing shapes, text, and images on a canvas.
  */
 export class Draw {
     pixelFont = new Image()
+    logo = new Image()
+
     pixelText: (
         text: string,
         pos: Vector,
@@ -24,8 +26,10 @@ export class Draw {
      * @param game - The game instance.
      */
     constructor(public game: Game) {
+        this.logo.src = PlatfuseLogo
         this.pixelFont.src = PixelFontImage
-        this.pixelFont.onload = () => (this.pixelText = this.createPixelFontRenderer(this.pixelFont, 8))
+        this.pixelFont.onload = () =>
+            (this.pixelText = this.createPixelFontRenderer(this.pixelFont, 8, game.primaryColor.toString()))
     }
 
     /**
@@ -275,68 +279,52 @@ export class Draw {
 
     /**
      * Displays a preloader with a progress bar on the canvas.
-     * @param p - The progress value between 0 and 1.
+     * @param p - The progress percent value.
      */
     preloader(p: number) {
-        const { ctx, canvas, backgroundColor, secondaryColor } = this.game
+        const { ctx, canvas, backgroundColor, primaryColor } = this.game
         const { width, height } = canvas
-        const logoSize = vec2(height / 4).floor()
+
+        const logoSize = vec2(height / 5).floor()
         const logoPos = vec2(width / 2 - logoSize.x / 2, height / 2 - logoSize.y / 2).floor()
-        const step = logoSize.x / 8
+        const barSize = vec2(width / 3, height / 16).floor()
+        const barPos = vec2(width / 2 - barSize.x / 2, height / 2 - barSize.y / 2).floor()
+        const fs = barSize.y / 4 + 'px'
         const gradient = ctx.createRadialGradient(width / 2, height / 2, logoSize.y, width / 2, height / 2, height)
 
+        gradient.addColorStop(0, backgroundColor.brightness(10).toString())
+        gradient.addColorStop(0.6, backgroundColor.toString())
+        gradient.addColorStop(1, backgroundColor.toString())
+
         ctx.save()
-
-        gradient.addColorStop(0, backgroundColor.brightness(15).toString())
-        gradient.addColorStop(0.7, backgroundColor.toString())
-
+        ctx.imageSmoothingEnabled = false
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
-        ctx.shadowBlur = 6
-        ctx.shadowOffsetX = 3
-        ctx.shadowOffsetY = 3
-
-        this.fillRect(box(logoPos.x, logoPos.y, logoSize.x, logoSize.y), DefaultColors.LightBlue)
-        this.fillRect(
-            box(logoPos.x + step * 0.8, logoPos.y + step * 0.8, logoSize.x - step * 1.6, logoSize.y - step * 1.6),
-            DefaultColors.DarkBlue
-        )
-        ctx.fillStyle = DefaultColors.White.toString()
-        this.stroke(
-            logoPos.x + step * 2,
-            logoPos.y + step * 7,
-            [
-                vec2(0, step * 0.2),
-                vec2(0, -step * 5),
-                vec2(step * 4, -step * 5),
-                vec2(step * 4, -step),
-                vec2(step * 1.25, -step),
-                vec2(step * 1.25, step * 0.2)
-            ],
-            0
-        )
-        ctx.fill()
-        this.fillRect(
-            box(
-                (-step * 1.5) / 2 + logoPos.x + logoSize.x / 2,
-                (-step * 1.5) / 2 + logoPos.y + logoSize.y / 2,
-                step * 1.5,
-                step * 1.5
-            ),
-            DefaultColors.LightBlue
-        )
-        this.text(
-            p < 1 ? 'Loading assets...' : 'Ready!',
-            vec2(width / 2, height - height * 0.05),
-            DefaultColors.White,
-            '1em',
-            'center',
-            'bottom'
-        )
-        // Progress bar
-        // this.fillRect(box(0, height - height * 0.015, width, height * 0.015), backgroundColor)
-        this.fillRect(box(0, height - height * 0.015, width * p, height * 0.015), secondaryColor)
+        if (p < 0) {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+            ctx.shadowBlur = 6
+            ctx.shadowOffsetX = 6
+            ctx.shadowOffsetY = 6
+            ctx.drawImage(this.logo, logoPos.x, logoPos.y, logoSize.x, logoSize.y)
+        } else {
+            this.text(
+                'Loading assets...',
+                vec2(width / 2, height / 2 - barSize.y / 1.5),
+                primaryColor,
+                fs,
+                'center',
+                'bottom'
+            )
+            this.fillRect(new Box(barPos, barSize), backgroundColor.brightness(20))
+            this.fillRect(
+                new Box(
+                    barPos.add(vec2(barSize.x * 0.02)),
+                    barSize.subtract(vec2(barSize.x * 0.04)).multiply(vec2(p, 1))
+                ),
+                backgroundColor.brightness(40)
+            )
+            this.text(`${(p * 100).toFixed(0)}%`, vec2(width / 2, height / 2), primaryColor, fs, 'center', 'middle')
+        }
         ctx.restore()
     }
 }

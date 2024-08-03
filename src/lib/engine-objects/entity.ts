@@ -467,7 +467,7 @@ export class Entity {
         const rect = this.getRelativeBoundingRect()
         const { draw, primaryColor } = this.scene.game
         const { angle, id, type, visible, force, pos } = this
-        const { Cyan, LightGreen, Red } = DefaultColors
+        const { Atlantis, GoldenFizz, Plum } = DefaultColors
         const {
             pos: { x, y },
             size
@@ -476,13 +476,13 @@ export class Entity {
         const x1 = x + s1
         const fs = '1em'
 
-        draw.outline(rect, visible ? LightGreen : Cyan, 1)
+        draw.outline(rect, visible ? Atlantis : Plum, 1)
         draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, vec2(x1, y - 14), primaryColor, fs, 'center', 'top', true)
         draw.text(`x:${pos.x.toFixed(1)}`, vec2(x1 - s1 - 2, y), primaryColor, fs, 'right', 'top', true)
         draw.text(`y:${pos.y.toFixed(1)}`, vec2(x1 - s1 - 2, y + 14), primaryColor, fs, 'right', 'top', true)
         Math.abs(force.x) > 0.012 &&
-            draw.text(`x:${force.x.toFixed(3)}`, vec2(x1 + s1 + 2, y), Red, fs, 'left', 'top', true)
+            draw.text(`x:${force.x.toFixed(3)}`, vec2(x1 + s1 + 2, y), GoldenFizz, fs, 'left', 'top', true)
         Math.abs(force.y) > 0.012 &&
-            draw.text(`y:${force.y.toFixed(3)}`, vec2(x1 + s1 + 2, y + 14), Red, fs, 'left', 'top', true)
+            draw.text(`y:${force.y.toFixed(3)}`, vec2(x1 + s1 + 2, y + 14), GoldenFizz, fs, 'left', 'top', true)
     }
 }

@@ -1,4 +1,4 @@
-import { tmx, TMXTileset, TMXLayer } from 'tmx-map-parser'
+import { TMXTiledMap, TMXLayer, TMXTileset } from 'tmx-map-parser'
 import { Constructable } from '../../types'
 import { sortByRenderOrder } from '../utils/helpers'
 import { vec2 } from '../utils/geometry'
@@ -42,8 +42,8 @@ export class Scene {
     /** The next available render order for layers. */
     nextRenderOrder = 0
 
-    /** The TMX map file to load. */
-    tmxMap?: string | Record<string, any>
+    /** The TMX map file name. */
+    tmxMap?: string
 
     /**
      * Creates a new scene object.
@@ -69,22 +69,14 @@ export class Scene {
     }
 
     /**
-     * Performs pre-initialization tasks for the scene.
-     * If a TMX map is provided, it sets the dimensions, creates tilesets, and creates layers based on the map.
+     * Creates a scene from a TMX map.
+     * @param tmxMap The TMX map to create the scene from.
      */
-    async preInit(): Promise<void> {
-        if (this.tmxMap && typeof this.tmxMap === 'string') {
-            this.tmxMap = await tmx(this.tmxMap)
-        }
-    }
-
-    createFromTmxMap() {
-        if (typeof this.tmxMap === 'object') {
-            const { layers, tilesets, tilewidth, tileheight, width, height } = this.tmxMap
-            this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
-            this.createTilesets(tilesets)
-            this.createLayers(layers)
-        }
+    createFromTmxMap(tmxMap: TMXTiledMap) {
+        const { layers, tilesets, tilewidth, tileheight, width, height } = tmxMap
+        this.setDimensions(vec2(width, height), vec2(tilewidth, tileheight))
+        this.createTilesets(tilesets)
+        this.createLayers(layers)
     }
 
     /**
@@ -173,15 +165,18 @@ export class Scene {
 
     /**
      * Sets the tile collision layer for the scene.
-     * @param layerIndex - The index of the layer to set as the collision layer.
+     * @param layerId - The ID of the layer to set as the collision layer.
+     * @param exclude - An array of tile IDs to exclude from the collision layer.
      */
-    setTileCollisionLayer(layerIndex: number, exclude = [] as number[]) {
-        const layer = this.layers[layerIndex]
-        if (layer) {
+    setTileCollisionLayer(layerId: number, exclude = [] as number[]) {
+        const layer = this.getLayerById(layerId)
+        if (layer instanceof Layer) {
             this.tileCollisionData =
                 layer?.data?.map((id): number => {
                     return id && !exclude.includes(id) ? id : 0
                 }) || []
+        } else {
+            console.warn(`Layer with ID:${layerId} not found or is not tile layer`)
         }
     }
 
@@ -252,7 +247,10 @@ export class Scene {
      */
     addLayer(l: Constructable<Layer> | TMXLayer, order?: number) {
         const layer = typeof l === 'function' ? new l(this) : new Layer(this, l)
-        // Extract object from TMXLayer
+        if (this.getLayerById(layer.id)) {
+            throw new Error(`Layer with Id: ${layer.id} already exists in the Scene!`)
+        }
+        // Extract objects from TMXLayer
         if (typeof l !== 'function') {
             l.objects && l.objects.forEach(obj => this.addObjectFromLayer(obj.type, { ...obj, layerId: l.id }))
         }
@@ -410,10 +408,10 @@ export class Scene {
     /**
      * Retrieves a layer from the scene based on the provided ID.
      * @param id - The ID of the layer to retrieve.
-     * @returns The layer with the specified ID, or an empty object if no layer is found.
+     * @returns The layer with the specified ID, or undefined if no layer is found.
      */
     getLayerById(id: number) {
-        return this.layers.find(layer => layer.id === id) || ({} as Layer)
+        return this.layers.find(layer => layer.id === id)
     }
 
     /**
@@ -469,7 +467,8 @@ export class Scene {
      * @returns The tile object at the specified position.
      */
     getTile(pos: Vector, layerId: number) {
-        return this.getTileObject(this.getLayerById(layerId).getTile(pos) || 0)
+        const layer = this.getLayerById(layerId)
+        return layer && this.getTileObject(layer.getTile(pos) || 0)
     }
 
     /**
@@ -483,11 +482,11 @@ export class Scene {
     }
 
     /**
-     * Removes a layer from the scene at the specified index.
-     * @param index - The index of the layer to remove.
+     * Removes a layer from the scene.
+     * @param layer - The layer to be removed.
      */
-    removeLayer(index: number) {
-        this.layers.splice(index, 1)
+    removeLayer(layer: Layer) {
+        this.layers.splice(this.layers.indexOf(layer), 1)
     }
 
     /**
@@ -515,6 +514,7 @@ export class Scene {
         const { avgFPS, canvas, draw, primaryColor } = this.game
         const { pos, scale } = this.camera
         const { width, height } = canvas
+        const platfuseVersion = this.game.getVersion()
         const grid = this.getCameraVisibleGrid()
         const pointerPos = this.getPointerPos()
         const write = (text: string, align: CanvasTextAlign = 'left') => {
@@ -523,6 +523,6 @@ export class Scene {
         }
         write(`[${grid.pos.x},${grid.pos.y}][${pos.x.toFixed(2)},${pos.y.toFixed(2)}][x${scale.toFixed(1)}]`)
         write(`[${pointerPos.x.toFixed(2)},${pointerPos.y.toFixed(2)}]`, 'center')
-        write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS]`, 'right')
+        write(`[${this.objects.length}][${avgFPS.toFixed(1)} FPS][v${platfuseVersion}]`, 'right')
     }
 }

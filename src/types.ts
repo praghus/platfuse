@@ -30,10 +30,9 @@ export interface CustomShader {
 export interface GameConfig {
     scenes: Record<string, Constructable<Scene>>
     entities?: Record<string, Constructable<Entity>>
+    fixedSize?: number[]
     backgroundColor?: string
     primaryColor?: string
-    secondaryColor?: string
-    fixedSize?: Vector
     pixelPerfect?: boolean
     useWebGL?: boolean
     postProcessShader?: CustomShader

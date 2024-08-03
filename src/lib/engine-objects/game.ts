@@ -2,6 +2,7 @@ import { Howl } from 'howler'
 import { Constructable, GameConfig } from '../../types'
 import { preload } from '../utils/preload'
 import { lerp } from '../utils/math'
+import { vec2 } from '../utils/geometry'
 import { delay } from '../utils/helpers'
 import { BodyStyle, CanvasStyle, DefaultColors } from '../constants'
 import { PostProcess } from '../engine-helpers/post-process'
@@ -9,7 +10,6 @@ import { Color } from '../engine-helpers/color'
 import { Draw } from '../engine-helpers/draw'
 import { Input } from '../engine-helpers/input'
 import { Timer } from '../engine-helpers/timer'
-import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 
@@ -36,18 +36,13 @@ export class Game {
     input: Input = new Input(this)
 
     /** Background color of the game. */
-    backgroundColor = DefaultColors.DarkBlue
+    backgroundColor = DefaultColors.Black
 
     /** Primary color. Used for text, and other UI elements like preloader. */
     primaryColor = DefaultColors.White
 
-    /** Secondary color. Used for text, and other UI elements like preloader. */
-    secondaryColor = DefaultColors.LightBlue
-
     /** Image assets record containing image elements. */
     images: Record<string, HTMLImageElement> = {}
-
-    // textures: Record<string, WebGLTexture> = {}
 
     /** Sound assets record containing Howl objects. */
     sounds: Record<string, Howl> = {}
@@ -107,7 +102,7 @@ export class Game {
     frameTimeBuffer = 0
 
     /** Game preloader percent. */
-    preloadPercent = 0
+    preloadPercent = -1
 
     /** Game global audio volume. */
     audioVolume = 1
@@ -129,7 +124,6 @@ export class Game {
         this.pixelPerfect = !!config?.pixelPerfect
         this.backgroundColor = config?.backgroundColor ? new Color(config.backgroundColor) : this.backgroundColor
         this.primaryColor = config?.primaryColor ? new Color(config.primaryColor) : this.primaryColor
-        this.secondaryColor = config?.secondaryColor ? new Color(config.secondaryColor) : this.secondaryColor
         this.canvas.setAttribute('style', `${CanvasStyle} ${this.pixelPerfect ? 'image-rendering: pixelated;' : ''}`)
         this.canvas.style.backgroundColor = this.backgroundColor.toString()
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
@@ -150,23 +144,23 @@ export class Game {
      */
     async start(sceneName?: string) {
         this.update()
+        await delay(1000)
         const assets = await preload(this.preload, p => (this.preloadPercent = p))
+        // Assets
         Object.keys(assets).forEach((key: string) => {
             if (assets[key] instanceof HTMLImageElement) {
                 this.images[key] = assets[key]
             } else if (assets[key] instanceof Howl) {
                 this.sounds[key] = assets[key]
+            } else if (typeof assets[key] === 'object') {
+                sessionStorage.setItem(key, JSON.stringify(assets[key]))
             }
         })
-        await Promise.all(
-            Object.keys(this.sceneClasses).map(async sceneName => {
-                const Model = this.sceneClasses[sceneName]
-                const s: Scene = new Model(this, sceneName)
-                await s.preInit()
-                this.scenes[sceneName] = s
-            })
-        )
-        await delay(1000)
+        // Scenes
+        Object.keys(this.sceneClasses).map(sceneName => {
+            const Model = this.sceneClasses[sceneName]
+            this.scenes[sceneName] = new Model(this, sceneName)
+        })
         if (sceneName) {
             this.playScene(sceneName)
         }
@@ -188,7 +182,7 @@ export class Game {
         }
         const scene = this.scenes[sceneName]
         if (scene.tmxMap) {
-            scene.createFromTmxMap()
+            scene.createFromTmxMap(this.getTmxMap(scene.tmxMap))
         }
         scene.init()
         this.currentScene = scene
@@ -209,12 +203,12 @@ export class Game {
     onResize() {
         this.width = window.innerWidth
         this.height = window.innerHeight
-        if (this.config?.fixedSize instanceof Vector) {
+        if (this.config?.fixedSize?.length === 2) {
             const { fixedSize } = this.config
             const aspect = innerWidth / innerHeight
-            const fixedAspect = fixedSize.x / fixedSize.y
-            this.canvas.width = fixedSize.x
-            this.canvas.height = fixedSize.y
+            const fixedAspect = fixedSize[0] / fixedSize[1]
+            this.canvas.width = fixedSize[0]
+            this.canvas.height = fixedSize[1]
             this.canvas.style.width = aspect < fixedAspect ? '100%' : ''
             this.canvas.style.height = aspect < fixedAspect ? '' : '100%'
         } else {
@@ -283,11 +277,19 @@ export class Game {
     }
 
     /**
+     * Gets Platfuse version string.
+     * @returns The version of the game.
+     */
+    getVersion() {
+        return '[VI]{version}[/VI]'
+    }
+
+    /**
      * Gets the resolution of the game.
      * @returns A Vector representing the width and height of the game.
      */
     getResolution() {
-        return new Vector(this.width, this.height)
+        return vec2(this.width, this.height)
     }
 
     /**
@@ -326,6 +328,18 @@ export class Game {
     }
 
     /**
+     * Retrieves a TmxMap object from the session storage based on the provided name.
+     * If the object is not found, an empty object is returned.
+     * @param name - The name of the TmxMap object to retrieve.
+     * @returns The retrieved TmxMap object or an empty object if not found.
+     */
+    getTmxMap(name: string) {
+        const map = sessionStorage.getItem(name)
+        if (map) return JSON.parse(map)
+        else throw new Error(`'${name}' not found!`)
+    }
+
+    /**
      * Retrieves an image by its name from the assets.
      * @param name - The name of the image to retrieve.
      * @returns The HTMLImageElement corresponding to the specified name.
@@ -344,6 +358,8 @@ export class Game {
         if (this.sounds[name]) {
             this.sounds[name].volume(this.audioVolume)
             this.sounds[name].play()
+        } else {
+            console.warn(`Sound '${name}' not found!`)
         }
     }
 

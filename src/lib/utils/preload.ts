@@ -1,4 +1,5 @@
 import { Howl } from 'howler'
+import { tmx } from 'tmx-map-parser'
 
 /**
  * Asynchronously preloads a collection of assets.
@@ -26,7 +27,16 @@ async function preload(assets: Record<string, string>, indicator: (p: number) =>
                     indicator(++loadedCount / count)
                     return res(audio)
                 })
-            } else return Promise.resolve()
+            } else if (/\.(tmx)$/i.test(src) || /tiledversion=\"([^"]*)\"/gi.test(src)) {
+                tmx(src).then(map => {
+                    indicator(++loadedCount / count)
+                    return res(map)
+                })
+            } else {
+                console.warn(`Unsupported asset type: ${src}`)
+                indicator(++loadedCount / count)
+                return Promise.resolve()
+            }
         })
     }
 

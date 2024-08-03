@@ -1,4 +1,5 @@
-# ![logo-32](https://github.com/praghus/platfuse/assets/5312169/aeadfef1-7095-41a5-ae32-56d0f6acb95d) Platfuse Game Engine 
+# ![l](https://github.com/user-attachments/assets/208bf5e3-a4ac-4397-abd8-e761e0d3b14c) Platfuse Game Engine
+
 **[![NPM Version](https://img.shields.io/npm/v/platfuse.svg?style=flat)](https://www.npmjs.org/package/platfuse)**
 
 **Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.**
@@ -60,10 +61,9 @@ To get started with Platfuse, you'll need to have Node.js installed on your syst
         debug: true, // Debug enabled
         global: true, // Platfuse as a global `window` object.
         pixelPerfect: true, //  Whether the `image-rendering` should be `pixelated`
-        fixedSize: vec2(800, 600), // Fixed `canvas` size
+        fixedSize: [800, 600], // Fixed `canvas` size
         backgroundColor: '#000000',
         primaryColor: '#FFFFFF',
-        secondaryColor: '#FF0000',
         /** Available scenes */
         scenes: {
             MyMainScene
@@ -109,7 +109,7 @@ The [`Game`](https://praghus.github.io/platfuse/interfaces/Game.html) class key 
 Example:
 
 ```typescript
-import { Game, vec2 } from 'platfuse'
+import { Game } from 'platfuse'
 import { MainScene } from './scenes'
 import { Enemy, Player } from './models'
 import playerImage from './assets/images/player.png'
@@ -118,7 +118,7 @@ import tilesetImage from './assets/images/tileset.png'
 import sound from './assets/sounds/sound.mp3'
 
 const gameConfig = {
-    fixedSize: vec2(1280, 720), // Optional, can be used to maintain fixed aspect ratio of the game view.
+    fixedSize: [1280, 720], // Optional, can be used to maintain fixed aspect ratio of the game view.
     entities: {
         // Classes which will be used when creating objects defined in the tmx file.
         // Key values should correspond to the object classes defined in the map.
@@ -155,14 +155,13 @@ Example:
 ```typescript
 import { Scene } from 'platfuse'
 import { CustomLayer } from './layers/custom-layer'
-import tiledMap from './assets/map.tmx'
 
 class MainScene extends Scene {
     /**
      * Initialize scene with map data from *.tmx file.
      * Generate tilesets, layers and game objects.
      */
-    tmxMap = tiledMap
+    tmxMap = 'map.tmx'
     /**
      *  Set global gravity value for physics
      */
@@ -238,6 +237,23 @@ The [`Entity`](https://praghus.github.io/platfuse/classes/Entity.html) class inc
 -   **Animation and Movement Update**: The `update` method integrates physics calculations with animation updates, ensuring that entity movements are both visually and physically consistent.
 
 This physics model provides a foundation for creating dynamic and interactive game experiences, allowing entities to move, collide, and interact in a realistic manner.
+
+Example:
+
+```typescript
+import { Entity, vec2 } from 'platfuse'
+
+class Player extends Entity {
+    image = 'player.png' //  Asset name to be used for drawing.
+    size = vec2(1, 1.5) // Entity size (in tiles).
+    solid = true // Entity is solid and physics affects it.
+    collideTiles = true // Entity collide with tiles.
+    collideObjects = true // Entity collite with other solid Entities.
+
+    // Custom update logic here.
+    update() {}
+}
+```
 
 ---
 

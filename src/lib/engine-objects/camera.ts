@@ -152,11 +152,10 @@ export class Camera {
         // shake
         if (this.isShaking) {
             this.shakeElapsed += game.delta
-            // progress = clamp(this.shakeElapsed / this.shakeDuration, 0, 1)
             if (this.shakeElapsed < this.shakeDuration) {
                 this.offset = vec2(
-                    Math.random() * this.shakeIntensity.x * viewSize.x * 2 - this.shakeIntensity.x * viewSize.x,
-                    Math.random() * this.shakeIntensity.y * viewSize.y * 2 - this.shakeIntensity.y * viewSize.y
+                    Math.random() * this.shakeIntensity.x * -this.shakeIntensity.x,
+                    Math.random() * this.shakeIntensity.y * -this.shakeIntensity.y
                 ).scale(this.scale)
             } else {
                 this.isShaking = false

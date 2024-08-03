@@ -11,7 +11,7 @@ import { getTmxColor } from '../utils/helpers'
 
 export class Layer {
     /** The unique identifier of the layer. */
-    id = Date.now() // TODO: use a better way to generate unique IDs
+    id = 0
 
     /** The name of the layer (optional). */
     name?: string
@@ -88,7 +88,9 @@ export class Layer {
                 this.repeatX = !!layerData?.repeatx
                 this.repeatY = !!layerData?.repeaty
             }
-            if (layerData.tintcolor) this.tint = new Color(getTmxColor(layerData.tintcolor))
+            if (layerData.tintcolor) {
+                this.tint = new Color(getTmxColor(layerData.tintcolor))
+            }
         } else {
             this.type = NodeType.Custom
         }
@@ -96,7 +98,7 @@ export class Layer {
     }
 
     /**
-     * Renders the tiles to the layer canvas.
+     * Renders the tiles to the layer canvas.z
      */
     renderToCanvas() {
         if (this.image || this.data?.length) {
@@ -104,6 +106,7 @@ export class Layer {
             this.layerCanvas.width = this.size.x * this.scene.tileSize.x
             this.layerCanvas.height = this.size.y * this.scene.tileSize.y
             this.layerContext = this.layerCanvas.getContext('2d') as CanvasRenderingContext2D
+
             if (this.tint) {
                 this.layerContext.globalCompositeOperation = 'multiply'
                 this.layerContext.fillStyle = this.tint.toString()
@@ -234,6 +237,11 @@ export class Layer {
         for (const obj of objects) obj.visible && cb(obj)
     }
 
+    /**
+     * Draws the layer canvas to the main context at the specified position and size.
+     * @param pos - The position to draw the layer canvas.
+     * @param size - The size of the layer canvas.
+     */
     drawToMainContext(pos: Vector, size: Vector) {
         if (this.layerCanvas) {
             this.scene.game.draw.copyToMainContext(this.layerCanvas, pos, size)
