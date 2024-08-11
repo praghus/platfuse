@@ -348,7 +348,7 @@ export class Scene {
      */
     getCameraVisibleGrid() {
         return new Box(
-            this.camera.pos.divide(this.tileSize).invert().divide(this.camera.scale).floor(),
+            this.camera.pos.divide(this.tileSize).negate().divide(this.camera.scale).floor(),
             this.game.getResolution().divide(this.tileSize).divide(this.camera.scale).add(vec2(1))
         )
     }
@@ -360,7 +360,7 @@ export class Scene {
     getCameraVisibleArea() {
         const viewSize = this.game.getResolution()
         return new Box(
-            this.camera.pos.invert().add(viewSize.divide(2)).divide(this.camera.scale),
+            this.camera.pos.negate().add(viewSize.divide(2)).divide(this.camera.scale),
             viewSize.divide(this.camera.scale)
         ).divide(this.tileSize)
     }

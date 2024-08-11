@@ -5,6 +5,7 @@ import { Vector } from './vector'
 import { Box } from './box'
 import { Color } from './color'
 import { DefaultColors, PixelFontImage, PlatfuseLogo } from '../constants'
+import { Polygon } from './polygon'
 
 /**
  * The `Draw` class provides methods for drawing shapes, text, and images on a canvas.
@@ -66,40 +67,44 @@ export class Draw {
         ctx.restore()
     }
 
-    /**
-     * Draws a stroke using the provided points.
-     * @param x - The x-coordinate of the starting point.
-     * @param y - The y-coordinate of the starting point.
-     * @param points - An array of Vector objects representing the points to be connected.
-     * @param lineWidth - The width of the stroke line (default: 1).
-     */
-    stroke(x: number, y: number, points: Vector[], lineWidth = 1) {
+    fillPolygon(polygon: Polygon, color: Color) {
         const { ctx } = this.game
-        ctx.lineWidth = lineWidth
-        ctx.lineJoin = 'miter'
+        ctx.save()
         ctx.beginPath()
-        ctx.moveTo(points[0].x + x, points[0].y + y)
-        points.map((v: Vector) => ctx.lineTo(x + v.x, y + v.y))
-        ctx.lineTo(points[0].x + x, points[0].y + y)
-        ctx.stroke()
+        this.polygon(polygon)
+        ctx.fillStyle = color.toString()
+        ctx.fill()
+        ctx.restore()
+    }
+
+    polygon(polygon: Polygon) {
+        const { ctx } = this.game
+        const { pos, points } = polygon
+        ctx.moveTo(points[0].x + pos.x, points[0].y + pos.y)
+        points.map((v: Vector) => ctx.lineTo(pos.x + v.x, pos.y + v.y))
+        ctx.lineTo(points[0].x + pos.x, points[0].y + pos.y)
     }
 
     /**
-     * Draws an outlined rectangle on the canvas.
-     * @param rect - The rectangle to outline.
+     * Draws an outlined element on the canvas.
+     * @param element - The element to outline.
      * @param color - The color of the outline.
      * @param lineWidth - The width of the outline line. Default is 1.
      * @param angle - The angle of rotation for the rectangle. Default is 0.
      */
-    outline(rect: Box, color: Color, lineWidth = 1, angle = 0) {
+    outline(element: Box | Polygon, color: Color, lineWidth = 1, angle = 0) {
         const { ctx } = this.game
-        const { pos, size } = rect
+        const { pos, size } = element
         ctx.save()
-        this.rotate(rect, angle)
         ctx.strokeStyle = color.toString()
         ctx.lineWidth = lineWidth
         ctx.beginPath()
-        ctx.rect(pos.x, pos.y, size.x, size.y)
+        if (element instanceof Polygon) {
+            this.polygon(element)
+        } else {
+            this.rotate(element, angle)
+            ctx.rect(pos.x, pos.y, size.x, size.y)
+        }
         ctx.stroke()
         ctx.restore()
     }
@@ -189,12 +194,12 @@ export class Draw {
 
     /**
      * Rotates the canvas context around a specified position and angle, and then executes a callback function.
-     * @param rect - The box object containing the position and size.
+     * @param element - The element to rotate around.
      * @param angle - The angle of rotation in radians. Defaults to 0.
      * @param scale - The scale factor. Defaults to 0.
      */
-    rotate(rect: Box, angle = 0, scale = vec2(1)) {
-        const { pos, size } = rect
+    rotate(element: Box | Polygon, angle = 0, scale = vec2(1)) {
+        const { pos, size } = element
         const ctx = this.game.ctx
         ctx.translate(pos.x + (size.x * scale.x) / 2, pos.y + (size.y * scale.y) / 2)
         ctx.rotate(angle)

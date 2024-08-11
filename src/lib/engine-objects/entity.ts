@@ -8,13 +8,15 @@ import { Vector } from '../engine-helpers/vector'
 import { DefaultColors, Shape } from '../constants'
 import { Scene } from './scene'
 import { Sprite } from './sprite'
+import { Polygon } from '../engine-helpers/polygon'
+import { tmxPolygon } from '../utils/tmx'
 
 /**
  * The Entity class represents a game object in the scene.
  */
 export class Entity {
     /** The ID of the object. */
-    id = Date.now()
+    id?: number
 
     /** The type of the object. */
     type?: string
@@ -50,7 +52,7 @@ export class Entity {
     flipV = false
 
     /** Whether the object is solid and collides with other objects */
-    solid = true
+    solid = false
 
     /** Whether the object is visible and should be drawn */
     visible = true
@@ -62,10 +64,10 @@ export class Entity {
     dead = false
 
     /** Whether the object is static and should not move */
-    collideTiles = true
+    collideTiles = false
 
     /** Whether the object collides with other objects */
-    collideObjects = true
+    collideObjects = false
 
     /** The object the entity is standing on */
     onGround: Entity | boolean = false
@@ -86,7 +88,7 @@ export class Entity {
     force = vec2()
 
     /** The object's mass (0 is static) */
-    mass = 1
+    mass = 0
 
     /** The object's damping (0-1) */
     damping = 1
@@ -117,6 +119,9 @@ export class Entity {
 
     /** Render order */
     renderOrder = 0
+
+    /** Points for polygon shape */
+    points: Vector[] = []
 
     /** Custom properties of the object */
     properties: Record<string, any> = {}
@@ -149,29 +154,41 @@ export class Entity {
             this.name = obj.name
             this.layerId = obj.layerId
             this.properties = obj.properties
-            // Translate TMX bounding rect into game grid
+            this.spawnTime = scene.game.time
+            this.angle = obj?.rotation ? deg2rad(obj.rotation) : this.angle
+            this.animation = obj?.animation || this.animation
+            this.visible = obj?.visible !== undefined ? obj.visible : true
+            this.force = obj?.force || this.force
+            this.flipH = obj?.flipH || this.flipH
+            this.flipV = obj?.flipV || this.flipV
+            this.family = obj?.family || this.family
+            this.shape = obj?.shape || this.shape
+
             if (obj.x && obj.y) {
                 const { tileSize } = scene
-                const tmxRect = box(obj.x, obj.y, obj.width, obj.height)
-                this.size = vec2(tmxRect.size.x / tileSize.x, tmxRect.size.y / tileSize.y)
-                this.pos = vec2(
-                    tmxRect.pos.x / tileSize.x + this.size.x / 2,
-                    tmxRect.pos.y / tileSize.y + this.size.y / 2 - (this.gid ? this.size.y : 0)
-                )
+                if (obj.shape === Shape.Polygon) {
+                    // If the object is a polygon, calculate the size and position based on the points
+                    const { pos, size, points } = tmxPolygon(obj).divide(tileSize)
+                    this.pos = pos
+                    this.size = size
+                    this.points = points
+                } else {
+                    // If the object is a rectangle, calculate the size and position based on the tile size
+                    const rotatedCenter = vec2(obj.width, obj.height)
+                        .divide(2)
+                        .subtract(vec2(0, this.gid ? obj.height : 0))
+                        .rotate(this.angle)
+                    this.size = vec2(obj.width, obj.height).divide(tileSize)
+                    this.pos = vec2(obj.x, obj.y).add(rotatedCenter).divide(tileSize)
+                }
             } else {
                 this.size = obj.size || this.size
                 this.pos = obj.pos || this.pos
             }
+            if (!this.points.length) {
+                this.points = new Box(this.pos, this.size).toPolygon().points
+            }
         }
-        this.spawnTime = scene.game.time
-        this.angle = obj?.rotation ? deg2rad(obj.rotation) : this.angle
-        this.visible = obj?.visible !== undefined ? obj.visible : true
-        this.force = obj?.force || this.force
-        this.flipH = obj?.flipH || this.flipH
-        this.flipV = obj?.flipV || this.flipV
-        this.animation = obj?.animation || this.animation
-        this.family = obj?.family || this.family
-        this.shape = obj?.shape || this.shape
     }
 
     /**
@@ -223,6 +240,7 @@ export class Entity {
      * @returns `true` if a collision occurs, `false` otherwise.
      */
     collideWithObject(entity: Entity) {
+        // return this.getPolygon().overlaps(entity.getPolygon())
         return true
     }
 
@@ -285,11 +303,11 @@ export class Entity {
     }
 
     /**
-     * Returns the translated position rectangle of the entity.
-     * The translated position rectangle is calculated based on the entity's position in the scene.
-     * @returns The translated position rectangle of the entity.
+     * Returns the bounding rectangle of the entity on the screen.
+     * The bounding rectangle is calculated by converting the entity's position and size to screen coordinates.
+     * @returns The bounding rectangle of the entity.
      */
-    getTranslatedBoundingRect() {
+    getScreenBoundingRect() {
         return new Box(
             this.scene.getScreenPos(this.pos, this.size),
             this.size.multiply(this.scene.tileSize).scale(this.scene.camera.scale)
@@ -303,7 +321,18 @@ export class Entity {
      * @returns The relative bounding rectangle of the entity.
      */
     getRelativeBoundingRect() {
-        return this.getTranslatedBoundingRect().move(this.scene.camera.pos)
+        return this.getScreenBoundingRect().move(this.scene.camera.pos)
+    }
+
+    getPolygon(pos = this.pos) {
+        return new Polygon(pos, this.points).rotate(this.angle)
+    }
+
+    getRelativePolygon() {
+        return this.getPolygon()
+            .multiply(this.scene.tileSize)
+            .scale(this.scene.camera.scale)
+            .move(this.scene.camera.pos)
     }
 
     /**
@@ -312,10 +341,12 @@ export class Entity {
      * @param size - The size vector of the other object.
      * @returns True if the entity is overlapping with the other object, false otherwise.
      */
-    isOverlapping(pos: Vector, size = vec2()) {
+    isOverlapping(o: Entity, pos?: Vector) {
+        pos = pos || o.pos
+        // return this.getPolygon().checkCollision(o.getPolygon(pos))
         return (
-            Math.abs(this.pos.x - pos.x) * 2 < this.size.x + size.x &&
-            Math.abs(this.pos.y - pos.y) * 2 < this.size.y + size.y
+            Math.abs(this.pos.x - pos.x) * 2 < this.size.x + o.size.x &&
+            Math.abs(this.pos.y - pos.y) * 2 < this.size.y + o.size.y
         )
     }
 
@@ -371,14 +402,14 @@ export class Entity {
             const collidingObjects = scene.objects.filter(o => o.visible && o.collideObjects)
             for (const o of collidingObjects) {
                 if ((!this.solid && !o.solid) || o.dead || o == this) continue
-                if (!o.isOverlapping(this.pos, this.size)) continue
+                if (!o.isOverlapping(this)) continue
 
                 const collide1 = this.collideWithObject(o)
                 const collide2 = o.collideWithObject(this)
 
                 if (!collide1 || !collide2) continue
 
-                if (o.isOverlapping(this.lastPos, this.size)) {
+                if (o.isOverlapping(this, this.lastPos)) {
                     // if already was touching, try to push away
                     const deltaPos = this.lastPos.subtract(o.pos)
                     const length = deltaPos.length()
@@ -410,7 +441,6 @@ export class Entity {
                         const elastic1 =
                             (o.force.y * (o.mass - this.mass)) / (this.mass + o.mass) +
                             (this.force.y * 2 * this.mass) / (this.mass + o.mass)
-
                         // lerp betwen elastic or inelastic based on elasticity
                         this.force.y = lerp(elasticity, inelastic, elastic0)
                         o.force.y = lerp(elasticity, inelastic, elastic1)
@@ -467,7 +497,7 @@ export class Entity {
         const rect = this.getRelativeBoundingRect()
         const { draw, primaryColor } = this.scene.game
         const { angle, id, type, visible, force, pos } = this
-        const { Atlantis, GoldenFizz, Plum } = DefaultColors
+        const { Atlantis, GoldenFizz, Plum, Mandy } = DefaultColors
         const {
             pos: { x, y },
             size
@@ -476,7 +506,15 @@ export class Entity {
         const x1 = x + s1
         const fs = '1em'
 
-        draw.outline(rect, visible ? Atlantis : Plum, 1)
+        const pointer = this.scene.getPointerRelativeGridPos()
+        const collide = this.getPolygon().checkCollisionWithPoint(pointer)
+        const polygon = this.getRelativePolygon()
+        if (polygon) {
+            draw.outline(polygon, collide ? Mandy : Atlantis, 1)
+            draw.outline(polygon.getBoundingRect(), Plum, 1)
+        } else {
+            draw.outline(rect.toPolygon(), !visible ? Plum : Atlantis, 1, angle)
+        }
         draw.text(`${type || id || ''}[${angle.toFixed(2)}]`, vec2(x1, y - 14), primaryColor, fs, 'center', 'top', true)
         draw.text(`x:${pos.x.toFixed(1)}`, vec2(x1 - s1 - 2, y), primaryColor, fs, 'right', 'top', true)
         draw.text(`y:${pos.y.toFixed(1)}`, vec2(x1 - s1 - 2, y + 14), primaryColor, fs, 'right', 'top', true)

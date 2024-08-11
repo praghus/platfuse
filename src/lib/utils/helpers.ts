@@ -5,8 +5,6 @@
  */
 const getPerformance = () => (typeof performance !== 'undefined' && performance.now()) || 0
 
-const getTmxColor = (color: string) => `#${color.slice(3, 9)}${color.slice(1, 3)}`
-
 /**
  * Sorts objects based on their render order.
  * @param a - The first object to compare.
@@ -29,4 +27,4 @@ const delay = (time: number) => new Promise(resolve => setTimeout(resolve, time)
  */
 const wait = (time: number, cb: () => void) => delay(time).then(cb)
 
-export { delay, getPerformance, getTmxColor, sortByRenderOrder, wait }
+export { delay, getPerformance, sortByRenderOrder, wait }

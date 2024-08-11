@@ -173,8 +173,8 @@ export class Vector {
      * @returns A new Vector representing the rotated vector.
      */
     rotate(angle: number) {
-        const c = Math.cos(angle),
-            s = Math.sin(angle)
+        const c = Math.cos(angle)
+        const s = Math.sin(angle)
         return new Vector(this.x * c - this.y * s, this.x * s + this.y * c)
     }
 
@@ -202,8 +202,12 @@ export class Vector {
      * Returns a new Vector object with the negated values of the current vector.
      * @returns {Vector} - A new Vector object with negated values.
      */
-    invert() {
+    negate() {
         return new Vector(-this.x, -this.y)
+    }
+
+    magnitude() {
+        return Math.hypot(this.x, this.y)
     }
 
     /**
@@ -230,6 +234,10 @@ export class Vector {
      */
     lerp(v: Vector, percent: number) {
         return this.add(v.subtract(this).scale(clamp(percent)))
+    }
+
+    perpendicular() {
+        return new Vector(-this.y, this.x)
     }
 
     /**

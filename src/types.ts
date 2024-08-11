@@ -53,6 +53,7 @@ export interface ParticleConfig {
     ttl?: number
     sizeStart?: number
     sizeEnd?: number
+    mass?: number
     speed?: number
     damping?: number
     angleDamping?: number

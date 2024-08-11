@@ -1,3 +1,4 @@
+import { Polygon } from './polygon'
 import { Vector } from './vector'
 
 /**
@@ -20,7 +21,8 @@ export class Box {
      * @returns A new Box instance with the updated position.
      */
     move(v: Vector) {
-        return new Box(this.pos.add(v), this.size)
+        this.pos = this.pos.add(v)
+        return this
     }
 
     /**
@@ -29,7 +31,9 @@ export class Box {
      * @returns A new Box instance with the updated size.
      */
     scale(s: number) {
-        return new Box(this.pos.scale(s), this.size.scale(s))
+        this.pos = this.pos.scale(s)
+        this.size = this.size.scale(s)
+        return this
     }
 
     /**
@@ -38,7 +42,9 @@ export class Box {
      * @returns A new Box instance with the updated position and size.
      */
     multiply(v: Vector) {
-        return new Box(this.pos.multiply(v), this.size.multiply(v))
+        this.pos = this.pos.multiply(v)
+        this.size = this.size.multiply(v)
+        return this
     }
 
     /**
@@ -47,7 +53,9 @@ export class Box {
      * @returns A new Box instance with the updated position and size.
      */
     divide(v: Vector) {
-        return new Box(this.pos.divide(v), this.size.divide(v))
+        this.pos = this.pos.divide(v)
+        this.size = this.size.divide(v)
+        return this
     }
 
     /**
@@ -55,7 +63,23 @@ export class Box {
      * @returns A new Box instance with the rounded position and size.
      */
     floor() {
-        return new Box(this.pos.floor(), this.size.floor())
+        this.pos = this.pos.floor()
+        this.size = this.size.floor()
+        return this
+    }
+
+    /**
+     * Converts the box to a polygon.
+     * @returns A new Polygon instance representing the box.
+     */
+    toPolygon() {
+        const center = this.size.divide(2)
+        return new Polygon(this.pos.add(center), [
+            new Vector().subtract(center),
+            new Vector(this.size.x, 0).subtract(center),
+            new Vector(this.size.x, this.size.y).subtract(center),
+            new Vector(0, this.size.y).subtract(center)
+        ])
     }
 
     /**

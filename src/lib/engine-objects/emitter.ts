@@ -48,6 +48,9 @@ export class Emitter extends Entity {
     /** The size of particles at the start. */
     sizeStart = 0.1
 
+    /** The mass of the particles. */
+    mass = 0.0001
+
     /** The size of particles at the end. */
     sizeEnd = 1
 
@@ -109,6 +112,7 @@ export class Emitter extends Entity {
         this.ttl = obj?.ttl || this.ttl
         this.sizeStart = obj?.sizeStart || this.sizeStart
         this.sizeEnd = obj?.sizeEnd || this.sizeEnd
+        this.mass = obj?.mass || this.mass
         this.speed = obj?.speed || this.speed
         this.damping = obj?.damping || this.damping
         this.angleDamping = obj?.angleDamping || this.angleDamping
@@ -186,6 +190,7 @@ export class Emitter extends Entity {
         particle.fadeRate = this.fadeRate
         particle.stretchScale = this.stretchScale
         particle.layerId = this.layerId
+        particle.mass = this.mass
 
         this.scene.objects.push(particle)
     }

@@ -4,7 +4,11 @@
 
 **Platfuse is a lightweight, highly customizable game engine built with TypeScript, designed to make 2D game development in web environments both straightforward and efficient.**
 
+<div align="center">
+
 ![Jul-05-2024 22-05-43](https://github.com/praghus/platfuse/assets/5312169/bad80076-a66f-47ea-ab0a-cc9e6803517e)
+
+</div>
 
 ## Main features
 
@@ -116,6 +120,7 @@ import playerImage from './assets/images/player.png'
 import enemyImage from './assets/images/enemy.png'
 import tilesetImage from './assets/images/tileset.png'
 import sound from './assets/sounds/sound.mp3'
+import tiledMap from './assets/maps/map.tmx'
 
 const gameConfig = {
     fixedSize: [1280, 720], // Optional, can be used to maintain fixed aspect ratio of the game view.
@@ -134,7 +139,8 @@ const preloadAssets = {
     'player.png': playerImage,
     'enemy.png': enemyImage,
     'tileset.png': tilesetImage,
-    'sound.mp3' sound
+    'sound.mp3': sound,
+    'map.tmx': tiledMap
 }
 
 const game = new Game(gameConfig, preloadAssets)
@@ -247,6 +253,7 @@ class Player extends Entity {
     image = 'player.png' //  Asset name to be used for drawing.
     size = vec2(1, 1.5) // Entity size (in tiles).
     solid = true // Entity is solid and physics affects it.
+    mass = 1
     collideTiles = true // Entity collide with tiles.
     collideObjects = true // Entity collite with other solid Entities.
 

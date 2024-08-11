@@ -67,12 +67,14 @@ export class Sprite {
      */
     draw() {
         if (!this.entity.onScreen()) return
+
         const { animation, animFrame } = this
         const { angle, color, scene, shape, flipH, flipV } = this.entity
         const { game, camera } = scene
         const scale = vec2(camera.scale)
         const image = this.entity.image && scene.game.getImage(this.entity.image)
         const boundingRect = this.entity.getRelativeBoundingRect()
+        const polygon = this.entity.getRelativePolygon()
 
         if (image) {
             if (animation) {
@@ -88,6 +90,8 @@ export class Sprite {
         } else if (color) {
             if (shape === Shape.Ellipse) {
                 game.draw.fillEllipse(boundingRect, color, angle)
+            } else if (shape === Shape.Polygon && polygon) {
+                game.draw.fillPolygon(polygon, color)
             } else {
                 game.draw.fillRect(boundingRect, color, angle)
             }

@@ -124,11 +124,11 @@ export class Camera {
         const viewSize = vec2(game.width, game.height)
 
         if (this.followEntity) {
-            const followRect = this.followEntity.getTranslatedBoundingRect()
+            const followRect = this.followEntity.getScreenBoundingRect()
             if (this.scrolling) {
                 // smooth scroll
                 const midPos = followRect.pos
-                    .invert()
+                    .negate()
                     .add(viewSize.divide(vec2(2)))
                     .subtract(followRect.size.divide(vec2(2)))
                 this.pos.x = Math.ceil(lerp(this.speed.x, this.pos.x, midPos.x))

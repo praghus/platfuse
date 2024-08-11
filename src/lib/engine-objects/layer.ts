@@ -1,13 +1,13 @@
 import { TMXLayer, getFlips } from 'tmx-map-parser'
 import { NodeType } from '../constants'
+import { tmxColor } from '../utils/tmx'
 import { vec2 } from '../utils/geometry'
 import { Box } from '../engine-helpers/box'
+import { Color } from '../engine-helpers/color'
 import { Vector } from '../engine-helpers/vector'
 import { Entity } from './entity'
 import { Scene } from './scene'
 import { Tile } from './tile'
-import { Color } from '../engine-helpers/color'
-import { getTmxColor } from '../utils/helpers'
 
 export class Layer {
     /** The unique identifier of the layer. */
@@ -33,6 +33,9 @@ export class Layer {
 
     /** The rendering context of the layer canvas. */
     layerContext?: CanvasRenderingContext2D
+
+    /** Flag indicating whether the layer is locked. */
+    locked = false
 
     /** The repeatX mode for the image layer. */
     repeatX = false
@@ -77,6 +80,7 @@ export class Layer {
             this.data = layerData?.data
             this.size = vec2(layerData.width, layerData.height)
             this.visible = layerData.visible === undefined ? true : !!layerData.visible
+            // this.locked = layerData.locked === undefined ? true : !!layerData.locked
             this.properties = layerData?.properties || {}
             this.offset = vec2(layerData?.offsetx || 0, layerData?.offsety || 0)
             this.parallax = vec2(layerData?.parallaxx || 1, layerData?.parallaxy || 1)
@@ -89,7 +93,7 @@ export class Layer {
                 this.repeatY = !!layerData?.repeaty
             }
             if (layerData.tintcolor) {
-                this.tint = new Color(getTmxColor(layerData.tintcolor))
+                this.tint = new Color(tmxColor(layerData.tintcolor))
             }
         } else {
             this.type = NodeType.Custom
