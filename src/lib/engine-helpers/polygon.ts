@@ -1,5 +1,4 @@
 import { vec2 } from '../utils/geometry'
-import { Box } from './box'
 import { Vector } from './vector'
 
 /**
@@ -37,10 +36,6 @@ export class Polygon {
         }
         this.normals = this.edges.map(edge => edge.perpendicular().normalize())
         return this
-    }
-
-    getBoundingRect() {
-        return new Box(this.pos.subtract(this.size.divide(2)), this.size)
     }
 
     setPos(pos: Vector) {

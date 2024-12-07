@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Animation } from '../../types'
-import { box, vec2, randVector } from '../utils/geometry'
+import { vec2, randVector } from '../utils/geometry'
 import { Box } from '../engine-helpers/box'
 import { Color } from '../engine-helpers/color'
 import { clamp, deg2rad, lerp } from '../utils/math'
@@ -511,7 +511,7 @@ export class Entity {
         const polygon = this.getRelativePolygon()
         if (polygon) {
             draw.outline(polygon, collide ? Mandy : Atlantis, 1)
-            draw.outline(polygon.getBoundingRect(), Plum, 1)
+            draw.outline(new Box(polygon.pos.subtract(polygon.size.divide(2)), polygon.size), Plum, 1)
         } else {
             draw.outline(rect.toPolygon(), !visible ? Plum : Atlantis, 1, angle)
         }

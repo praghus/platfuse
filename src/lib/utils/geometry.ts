@@ -1,16 +1,5 @@
-import { Box } from '../engine-helpers/box'
 import { Vector } from '../engine-helpers/vector'
 import { rand } from './math'
-
-/**
- * Creates a new Box instance with the specified parameters.
- * @param x - The x-coordinate of the box's position.
- * @param y - The y-coordinate of the box's position.
- * @param w - The width of the box.
- * @param h - The height of the box.
- * @returns A new Box instance.
- */
-const box = (x = 0, y = 0, w = 0, h = 0) => new Box(vec2(x, y), vec2(w, h))
 
 /**
  * Creates a 2D vector.
@@ -36,4 +25,4 @@ const randVector = (length = 1) => new Vector().setAngle(rand(2 * Math.PI), leng
 const randPointOnCircle = (radius = 1, minRadius = 0) =>
     radius > 0 ? randVector(radius * rand(minRadius / radius, 1) ** 0.5) : new Vector()
 
-export { box, vec2, randVector, randPointOnCircle }
+export { vec2, randVector, randPointOnCircle }
